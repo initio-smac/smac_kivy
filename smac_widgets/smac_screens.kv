@@ -1,0 +1,51 @@
+#: import BoxLayout_header smac_widgets.smac_layouts.BoxLayout_header
+#: import BoxLayout_container smac_widgets.smac_layouts.BoxLayout_container
+
+<Screen_network>:
+	BoxLayout:
+		orientation: "vertical"
+		BoxLayout_header:
+			Label:
+				text: root.name
+			#Button:
+			#    id: id_btn
+		    #	text: "SEND INFO"
+			#	on_release:
+			#		app.send_info()
+		BoxLayout:
+			size_hint_y: None
+			height: app.grid_min
+			TextInput:
+			    hint_text: "Topic"
+				id: id_ip_topic
+			TextInput:
+			    hint_text: "Device"
+			    id: id_ip_device
+			TextInput:
+			    hint_text: "Passkey"
+			    id: id_ip_passkey
+			Button:
+				text: 'add topic'
+				on_release:
+					#app.send_req_delete_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
+					app.send_req_add_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
+
+		ScrollView:
+			size_hint_y: 1
+			BoxLayout_container:
+				id: id_network_container
+
+
+<Screen_property>:
+	BoxLayout:
+		orientation: "vertical"
+		BoxLayout_header:
+			Button:
+				text: "back"
+				on_release:
+					app.change_screen("Screen_network")
+			Label:
+				text: root.name
+		ScrollView:
+			BoxLayout_container:
+				id: id_prop_container

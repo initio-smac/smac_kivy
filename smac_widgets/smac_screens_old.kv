@@ -1,0 +1,58 @@
+#: import BoxLayout_header smac_widgets.smac_layouts.BoxLayout_header
+#: import BoxLayout_container smac_widgets.smac_layouts.BoxLayout_container
+
+<Screen_groups>:
+	BoxLayout:
+		orientation: "vertical"
+		BoxLayout_header:
+			Label:
+				text: root.name
+			#Button:
+			#	text: "Screen_devices"
+			#	on_release:
+			#		app.change_screen("Screen_devices")
+		Button:
+			size_hint: None, None
+			size: dp(100), dp(50)
+			text: "add"
+			on_release:
+				app.open_add_group_modal()
+		ScrollView:
+			BoxLayout_container:
+				id: id_group_container
+
+
+<Screen_devices>:
+	BoxLayout:
+		orientation: "vertical"
+		BoxLayout_header:
+			Button:
+				text: "back"
+				on_release:
+					app.change_screen("Screen_groups")
+			Label:
+				text: root.name
+			#Button:
+			#	text: "Screen_deviceProperty"
+			#	on_release:
+			#		app.change_screen("Screen_deviceProperty")
+		Button:
+			text: "add device"
+			size_hint: None, None
+			size: app.grid_min*2, app.grid_min
+			on_release:
+				
+		ScrollView:
+			BoxLayout_container:
+				id: id_device_container
+
+<Screen_deviceProperty>:
+	BoxLayout_header:
+		Button:
+			text: "back"
+			on_release:
+				app.change_screen("Screen_devices")
+		Label:
+			text: root.name
+	BoxLayout_container:
+		id: id_prop_container
