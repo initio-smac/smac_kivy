@@ -2,7 +2,7 @@ import asyncio
 import socket
 import time
 
-
+# zmq interface for SMAC
 class SMACZMQ():
     #--------------------------------------------------------------------------------
     # Cast bytes to bytearray     0   1   2   3   4   5   6   7   8   9   
