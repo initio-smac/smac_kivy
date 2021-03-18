@@ -1,0 +1,7 @@
+Tasks to be completed
+
+# ,/ changed function name in smac_db file "update_device_pin"
+# add limits in config
+# ,/ add requirements file with module versions
+# ,/ add info about python version
+# ,/ get id_device from server

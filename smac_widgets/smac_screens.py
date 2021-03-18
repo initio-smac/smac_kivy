@@ -57,15 +57,18 @@ class Screen_network(Screen):
 				w.name_topic= name_topic
 				w.view_topic = view_topic
 				w.icon1 = 'icons/BOTTOM.png' if view_topic else 'icons/TOP.png'
+
 				#w.bind( on_release=self.goto_prop_page )
-				for id_device, name_device, view_device, is_busy, pin_device, pin_device_valid in db.get_device_list_by_topic(id_topic):
+				for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid in db.get_device_list_by_topic(id_topic):
 					#print("id_device: {}".format(id_device))
 					if w.DEVICE_IDS.get(id_device, None) == None:
 						w1 = Widget_device(text=name_device)
-						w1.disable_icon2 = True if (id_topic == "") else False
+						w1.disable_icon2 = True if (id_topic == None) else False
 						w1.PROP_IDS = {}
 						w1.id_device = id_device
 						w1.ids["id_icon1"].bind(on_release=self.change_device_view)
+						w1.icon2 = 'icons/SETTING.png'
+						w1.ids["id_icon2"].bind(on_release=self.goto_setting_page)
 						w.DEVICE_IDS[id_device] = w1
 						w.add_widget(w1)
 
@@ -138,6 +141,12 @@ class Screen_network(Screen):
 			self.RENDERING = False
 		else:
 			print("ALREADY RENDERING")
+
+	def goto_setting_page(self, wid, *args):
+		w = wid.parent.parent
+		app = App.get_running_app()
+		app.APP_DATA["id_device"] = w.id_device
+		app.change_screen(screen="Screen_deviceSetting")
 
 	def change_value(self, wid, *args):
 		wid_prop = wid.parent.parent.parent
@@ -225,8 +234,9 @@ class Screen_network(Screen):
 		asyncio.gather(self.interval(1))
 
 	def on_leave(self, *args):
-		container = self.ids["id_network_container"]
-		container.clear_widgets()
+		#container = self.ids["id_network_container"]
+		#container.clear_widgets()
+		pass
 
 	def goto_prop_page(self, wid,  *args):
 		app = App.get_running_app()
@@ -267,23 +277,8 @@ class Screen_network(Screen):
 					w2.value = value
 					w1.add_widget(w2)
 
-class Screen_property(Screen):
+class Screen_deviceSetting(Screen):
 
-	def on_enter(self, *args):
-		app = App.get_running_app()
-		#print(app.app_data)
-		entries = db.get_property(id_device=app.app_data["id_device"])
-		#print(entries)
-		container = self.ids["id_prop_container"]
-		for i in entries:
-			w = Widget_property(text=i[4])
-			#w.bind( on_release=self.goto_prop_page )
-			container.add_widget( w )
-
-	def on_leave(self, *args):
-		container = self.ids["id_prop_container"]
-		container.clear_widgets()
-
-	def goto_prop_page(self, *args):
-		app = App.get_running_app()
-		app.change_screen("Screen_property")
+	def update_device_pin(self, id_device, passkey):
+		db.update_device_pin(id_device, passkey)
+		print("Pin updated")

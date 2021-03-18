@@ -2,6 +2,7 @@ from kivy.animation import Animation
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.behaviors import ButtonBehavior
+from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.slider import Slider
@@ -13,6 +14,7 @@ from kivy.utils import get_color_from_hex
 class Widget_base( ButtonBehavior, BoxLayout ):
 	orientation = "vertical"
 	text = StringProperty("")
+	text1 = StringProperty("")
 	icon1 = StringProperty("")
 	disable_icon1 = BooleanProperty(False)
 	icon2 = StringProperty("")
@@ -123,9 +125,6 @@ class Widget_group( Widget_base ):
 class Widget_device( Widget_base ):
 	color = ColorProperty([1,1,1,1])
 
-
-
-
 	def on_hide(self, wid, value, *args):
 		#print(value)
 		#print(args)
@@ -133,6 +132,9 @@ class Widget_device( Widget_base ):
 		opacity = 1-value
 		anim = Animation(height=height, opacity=opacity, duration=.1)
 		anim.start(self)
+
+class Widget_block(BoxLayout):
+	text = StringProperty("")
 
 
 class BoxLayout_header(BoxLayout):
@@ -151,4 +153,7 @@ class BoxLayout_container( BoxLayout):
 
 
 class BoxLayout_addGroupContent(BoxLayout_container):
+	pass
+
+class Button_custom1(Button):
 	pass

@@ -1,1 +1,1 @@
-{"ID_DEVICE": "D_cf", "NAME_DEVICE": "initiouser2-H81M-S", "TYPE_DEVICE": "0", "PIN_DEVICE": "1234", "SUB_TOPIC": ["T2", "T3", "T1"]}
+{"ID_DEVICE": "D_cf", "NAME_DEVICE": "initiouser2-H81M-S", "TYPE_DEVICE": "0", "PIN_DEVICE": "1234", "SUB_TOPIC": ["T2", "T3", "T1"], "LIMIT_DEVICE":  10, "LIMIT_TOPIC": 10}

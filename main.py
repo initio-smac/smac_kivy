@@ -3,30 +3,17 @@ import os
 from kivy.properties import *
 from kivy.utils import get_color_from_hex, platform
 #from kivy.uix.screenmanager import ScreenManager, Screen, CardTransition, NoTransition, SlideTransition, SwapTransition, FadeTransition, WipeTransition, FallOutTransition, RiseInTransition
-from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
+from kivy.uix.screenmanager import ScreenManager, NoTransition
 from kivy.core.window import Window
 from kivy.uix.modalview import ModalView
-from kivy.clock import Clock
-#Clock.max_iteration = 10
-
-from functools import partial
 
 from smac_device import set_property, get_device_property, get_property_value
 
 Window.clearcolor = get_color_from_hex("#e0e0e0")
 
-import asyncio
 import json
 
-#from smac_client import client
-#from async_sktPub import test
-
-
-
 from smac_device_keys import SMAC_DEVICES
-from smac_keys import smac_keys
-from smac_client import client
-from smac_platform import SMAC_PLATFORM
 from smac_widgets.smac_screens import *
 from smac_widgets.smac_layouts import *
 from smac_db import db
@@ -53,26 +40,31 @@ class SmacApp(App):
     screen_manager = ScreenManager(transition=NoTransition())
     modal = ModalView(auto_dismiss=False)
     modal_opened = False
-    app_data = DictProperty({
+    APP_DATA = DictProperty({
         "id_topic": "",
         "name_topic": "",
+        "name_home": "",
         "id_device": ""
     })
     ID_DEVICE = ""
     NAME_DEVICE = ""
     TYPE_DEVICE = "0"
     PIN_DEVICE = "1234"
-    SUB_TOPIC = ["#"]
+    SUB_TOPIC = []
     ACKS ={}
-    SET_PROP_COUNTER = {}
+    LIMITS = {
+        "LIMIT_DEVICE": 10,
+        "LIMIT_TOPIC": 10
+    }
 
     SENDING_INFO = 0
     TEST_VAL = 0
 
     def build(self):
         self.screen_manager.add_widget(Screen_network(name='Screen_network'))
+        self.screen_manager.add_widget(Screen_deviceSetting(name='Screen_deviceSetting'))
         #self.screen_manager.add_widget(Screen_devices(name='Screen_devices'))
-        self.screen_manager.add_widget(Screen_property(name='Screen_property'))
+        #self.screen_manager.add_widget(Screen_property(name='Screen_deviceSetting'))
         return self.screen_manager
 
     def change_screen(self, screen, *args):
@@ -275,15 +267,18 @@ class SmacApp(App):
                     print(data)
                     id_device = data.get(smac_keys["ID_DEVICE"])
                     value = data.get(smac_keys["VALUE"])
+                    value = value if type(value) == int else int(value)
                     print("2a")
-                    db.update_device_busy(id_device=id_device, is_busy=value )
-                    Clock.schedule_once(partial(db.update_device_busy, id_device, 0), value)
+                    busy_period = int(time.time()) + value
+                    db.update_device_busy(id_device=id_device, is_busy=1, busy_period=busy_period )
+                    #db.update_device_busy_period(id_device=id_device, busy_period=busy_period)
+                    #Clock.schedule_once(partial(db.update_device_busy, id_device, 0), value)
                     print("id_device: {} is busy".format(id_device))
 
                 if cmd == smac_keys["CMD_INVALID_PIN"]:
                     id_device = data.get(smac_keys["ID_DEVICE"])
                     #value = data.get(smac_keys["VALUE"])
-                    db.update_pin_valid_by_device(id_device=id_device, pin_device_valid=0 )
+                    db.update_pin_valid(id_device=id_device, pin_device_valid=0 )
                     ##Clock.schedule_once(partial(db.update_device_busy, id_device, 0), 5)
                     print("id_device: {} pin is invalid".format(id_device))
 
@@ -500,11 +495,12 @@ class SmacApp(App):
 
         #task1 = asyncio.ensure_future( self.async_test() )
         task2 = asyncio.ensure_future( client.main() )
-        task3 = asyncio.ensure_future( self.set_property_of_current_device() )
+        task3 = asyncio.ensure_future( self.UI_loop() )
+        task4 = asyncio.ensure_future( self.UI_loop2() )
         #task3 = asyncio.ensure_future( self.send_test() )
 
         #return asyncio.gather( start_app(),zmq_sub_start, zmq_pub_start, task1, zmq_t1, zmq_t2, udp_t1, udp_t2, test1 )
-        return asyncio.gather( start_app(), task2, task3)
+        return asyncio.gather( start_app(), task2, task3, task4)
 
     def test_send_status(self, *args):
         self.TEST_VAL = 1 - self.TEST_VAL
@@ -517,14 +513,17 @@ class SmacApp(App):
 
 
     def send_info(self, *args):
-        Clock.schedule_once(partial(client.send_message, self.ID_DEVICE, "#", smac_keys["CMD_REQ_SEND_INFO"] , {}, False, None, True, False), 5)
+        #Clock.schedule_once(partial(client.send_message, self.ID_DEVICE, "#", smac_keys["CMD_REQ_SEND_INFO"] , {}, False, None, True, False), 5)
+        client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_REQ_SEND_INFO"], message={}, udp=True, tcp=True)
         self.send_device_info(dest_topic="#")
         #Clock.schedule_interval(self.test_send_status, 0)
         #Clock.schedule_interval(self.check_for_new_value, 0)
 
-    # check for value_temp and update the value of property according to that
-    async def set_property_of_current_device(self, *args):
+
+    async def UI_loop(self, *args):
         while 1:
+            # check for value_temp and update the value of property according to that
+            # set_property_of_current_device
             for id_property, property_name, type_property, value_min, value_max, value, value_temp, value_last_updated in db.get_property_list_by_device(self.ID_DEVICE):
                 type_property = str(type_property)
                 t_diff = time.time() - int(value_last_updated)
@@ -544,6 +543,15 @@ class SmacApp(App):
                     #else:
                         #self.open_modal(text=)
             await asyncio.sleep(.1)
+
+    async def UI_loop2(self, *args):
+        while 1:
+            # check for busy period and update the db
+            id_topic = ""
+            for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid in db.get_device_list_by_topic(id_topic):
+                if busy_period == int(time.time()):
+                    db.update_device_busy(id_device=id_device, is_busy=0, busy_period=0)
+            await asyncio.sleep(1) # Busy period of device should be > than this interval period
 
     def get_local_ip(self, *args):
         try:
@@ -584,6 +592,8 @@ class SmacApp(App):
             d["NAME_DEVICE"] = ""
             d["PIN_DEVICE"] = "1234"
             d["SUB_TOPIC"] = ["#"]
+            d["LIMIT_TOPIC"] = 10
+            d["LIMIT_DEVICE"] = 10
             f.write(json.dumps(d))
             f.close()
 
@@ -609,6 +619,14 @@ class SmacApp(App):
                 fd["SUB_TOPIC"] = ["#", self.ID_DEVICE]
                 changed = True
             self.SUB_TOPIC = fd["SUB_TOPIC"]
+            if fd["TYPE_DEVICE"] == "":
+                fd["TYPE_DEVICE"] = get_device_type()
+                changed = True
+            self.TYPE_DEVICE = fd["TYPE_DEVICE"]
+            if fd.get("LIMIT_DEVICE") != None:
+                self.LIMITS["LIMIT_DEVICE"] = fd["LIMIT_DEVICE"]
+            if fd.get("LIMIT_TOPICS") != None:
+                self.LIMITS["LIMIT_TOPIC"] = fd["LIMIT_TOPIC"]
             f.close()
 
         print("fd", fd)

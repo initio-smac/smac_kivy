@@ -37,7 +37,7 @@
         size_hint_y: None
         height: app.grid_min
         Label:
-            text: root.text
+            text: root.text + root.text1
             bold: True
         Image_icon:
             id: id_icon2
@@ -137,12 +137,12 @@
             color: get_color_from_hex("#404040")
             font_size: dp(15)
             text: str( int(root.value) )
-        Label:
-            size_hint: None, None
-            size: app.grid_min*1.5, root.height
-            color: get_color_from_hex("#404040")
-            font_size: dp(15)
-            text: str( root.MSG_COUNTER )
+        #Label:
+        #    size_hint: None, None
+        #    size: app.grid_min*1.5, root.height
+        #    color: get_color_from_hex("#404040")
+        #    font_size: dp(15)
+        #    text: str( root.MSG_COUNTER )
             #pos: root.x+id_slider.width, root.y
 
 
@@ -200,6 +200,8 @@
     size_hint: None, None
     #pos_hint: {'center_x': .5, 'center_y': .5}
     size: app.grid_min, app.grid_min
+    #texture_size: app.grid_min, app.grid_min
+    mipmap: True
     canvas.before:
         PushMatrix
         Rotate:
@@ -207,6 +209,28 @@
             origin: self.center
     canvas.after:
         PopMatrix
+
+<Widget_block>:
+    orientation: 'vertical'
+    padding: dp(5)
+    size_hint: 1, None
+    height: self.minimum_height
+    canvas.before:
+        Color:
+            rgba: 1,1,1,1
+        RoundedRectangle:
+            size: self.size
+            pos: self.pos
+            radius: [ dp(5), ]
+    Label:
+        text: root.text
+        size_hint: 1, None
+        height: app.grid_min
+        color: get_color_from_hex("#404040")
+
+<Button_custom1>:
+    size_hint: None, None
+    size: app.grid_min*4, app.grid_min
 
 
 

@@ -5,47 +5,83 @@
 	BoxLayout:
 		orientation: "vertical"
 		BoxLayout_header:
+		    Image_icon:
+		        source: 'icons/HOME.png'
 			Label:
 				text: root.name
+				color: get_color_from_hex("#202020")
 			#Button:
 			#    id: id_btn
 		    #	text: "SEND INFO"
 			#	on_release:
 			#		app.send_info()
-		BoxLayout:
-			size_hint_y: None
-			height: app.grid_min
-			TextInput:
-			    hint_text: "Topic"
-				id: id_ip_topic
-			TextInput:
-			    hint_text: "Device"
-			    id: id_ip_device
-			TextInput:
-			    hint_text: "Passkey"
-			    id: id_ip_passkey
-			Button:
-				text: 'add topic'
-				on_release:
-					#app.send_req_delete_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
-					app.send_req_add_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
 
 		ScrollView:
 			size_hint_y: 1
 			BoxLayout_container:
+
 				id: id_network_container
+				spacing: dp(10)
 
-
-<Screen_property>:
-	BoxLayout:
+<Screen_deviceSetting>:
+    BoxLayout:
 		orientation: "vertical"
 		BoxLayout_header:
-			Button:
-				text: "back"
-				on_release:
-					app.change_screen("Screen_network")
+		    Image_icon:
+		        source: "icons/LEFT.png"
+		        on_release:
+		            app.change_screen("Screen_network")
 			Label:
 				text: root.name
+				color: get_color_from_hex("#202020")
 		ScrollView:
+			size_hint_y: 1
 			BoxLayout_container:
-				id: id_prop_container
+				spacing: dp(5)
+				padding: dp(5)
+				Widget_block:
+				    text: "Add device to a Home"
+				    BoxLayout:
+				        size_hint: 1, None
+				        height: app.grid_min
+                        DropDown:
+                        Button_custom1:
+                            text: 'add device'
+                            on_release:
+                                #app.send_req_delete_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
+                                #app.send_req_add_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
+                Widget_block:
+				    text: "Create a Home"
+                    BoxLayout:
+				        size_hint: 1, None
+				        height: app.grid_min
+                        TextInput:
+                            hint_text: "Home"
+                            id: id_name_home
+                        TextInput:
+                            hint_text: "Room"
+                            id: id_name_room
+                        Button_custom1:
+                            text: 'add home'
+                            on_release:
+                Widget_block:
+				    text: "Remove this device from a Home"
+                    BoxLayout:
+				        size_hint: 1, None
+				        height: 0
+                Widget_block:
+				    text: "Update Passkey of the device"
+                    BoxLayout:
+				        size_hint: 1, None
+				        height: app.grid_min
+				        TextInput:
+                            hint_text: "PIN"
+                            id: id_passkey
+                        Button_custom1:
+                            text: 'update PIN'
+                            on_release:
+                                root.update_device_pin(app.APP_DATA["id_device"], id_passkey.text)
+
+
+
+
