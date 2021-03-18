@@ -6,12 +6,12 @@ kivy version = 2.0.0
 buildozer version = 1.2.0
 
 # installing python3.7
-https://linuxize.com/post/how-to-install-python-3-7-on-ubuntu-18-04/\n
+https://linuxize.com/post/how-to-install-python-3-7-on-ubuntu-18-04/ <br />
 <code>
-sudo apt-get update
-sudo apt install software-properties-common
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt install python3.7
+sudo apt-get update <br />
+sudo apt install software-properties-common <br />
+sudo add-apt-repository ppa:deadsnakes/ppa <br />
+sudo apt install python3.7 <br />
 </code>
 
 # creating a virtualenv
