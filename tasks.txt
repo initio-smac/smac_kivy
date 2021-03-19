@@ -12,3 +12,4 @@ Tasks to be completed
 3. in device setting, need models for fails cases . Entering text. default have drop down menu
 4. Need Card layout for home screen as well
 5. for PC properties like shutdown/restart. those are event type. no need to show on/off 1/o etc..
+6. while closing the app, thre are erros in the terminal. needs cleanup
