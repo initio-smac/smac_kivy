@@ -13,3 +13,4 @@ Tasks to be completed
 4. Need Card layout for home screen as well
 5. for PC properties like shutdown/restart. those are event type. no need to show on/off 1/o etc..
 6. while closing the app, thre are erros in the terminal. needs cleanup
+7. search "slack" in google and install . join "initio-world.slack.com"
