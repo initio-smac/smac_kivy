@@ -77,5 +77,7 @@ smac_keys={
     'CMD_DEVICE_BUSY'            :'a',
     'a'                          :'CMD_DEVICE_BUSY',
     'CMD_INVALID_PIN'            :'b',
-    'b'                          :'CMD_INVALID_PIN'
+    'b'                          :'CMD_INVALID_PIN',
+    'NAME_HOME'                  :'c',
+    'c'                          :'NAME_HOME'
     }

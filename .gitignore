@@ -131,4 +131,8 @@ dmypy.json
 # smac files
 .buildozer/
 .idea/
+smac_widgets/__pycache__
+smac_widgets/__pycache__/*
+__pycache__
+__pycache__/*
 

@@ -1,4 +1,5 @@
 import os
+import time
 
 from kivy import platform
 from kivy.app import App
@@ -19,6 +20,8 @@ if platform == "android":
     bt = autoclass('android.bluetooth.BluetoothAdapter')
     mBluetoothAdapter = bt.getDefaultAdapter();
 
+def generate_id_topic(id_device):
+    return id_device+".T{}".format( int(time.time()) )
 
 def get_device_name():
     if platform == "android":

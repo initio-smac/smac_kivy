@@ -128,14 +128,19 @@ class Widget_device( Widget_base ):
 	def on_hide(self, wid, value, *args):
 		#print(value)
 		#print(args)
-		height = 0 if value else self.minimum_height
-		opacity = 1-value
-		anim = Animation(height=height, opacity=opacity, duration=.1)
-		anim.start(self)
+		if value != '':
+			height = 0 if value else self.minimum_height
+			opacity = 1-value
+			anim = Animation(height=height, opacity=opacity, duration=.1)
+			anim.start(self)
 
 class Widget_block(BoxLayout):
 	text = StringProperty("")
+	bg_color = ColorProperty([1,1,1,1])
 
+
+class Widget_block2(BoxLayout):
+	text = StringProperty("")
 
 class BoxLayout_header(BoxLayout):
 	pass
@@ -157,3 +162,16 @@ class BoxLayout_addGroupContent(BoxLayout_container):
 
 class Button_custom1(Button):
 	pass
+
+class Label_button(ButtonBehavior, Label):
+	bg_color = ColorProperty([1,1,1,1])
+
+class Dropdown_custom(BoxLayout):
+	orientation = 'vertical'
+	value = StringProperty("")
+
+class BoxLayout_menu(BoxLayout):
+	orientation = "vertical"
+
+class Label_menuItem(ButtonBehavior, Label):
+	bg_color = ColorProperty([1, 1, 1, 1])

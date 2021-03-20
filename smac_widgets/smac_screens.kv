@@ -2,26 +2,38 @@
 #: import BoxLayout_container smac_widgets.smac_layouts.BoxLayout_container
 
 <Screen_network>:
-	BoxLayout:
-		orientation: "vertical"
-		BoxLayout_header:
-		    Image_icon:
-		        source: 'icons/HOME.png'
-			Label:
-				text: root.name
-				color: get_color_from_hex("#202020")
-			#Button:
-			#    id: id_btn
-		    #	text: "SEND INFO"
-			#	on_release:
-			#		app.send_info()
+    BoxLayout:
+        ScrollView:
+            size_hint: None, 1
+            width: 0
+            id: id_menu_container
+            #size_hint_y: 1
+            BoxLayout_menu:
+                id: id_menu
+                Label_menuItem:
+                    text: "Menu"
+                    bg_color: get_color_from_hex("#d9d9d9")
+        BoxLayout:
+            orientation: "vertical"
+            BoxLayout_header:
+                Image_icon:
+                    source: 'icons/HOME.png'
+                    on_release:
+                        root.open_close_menu()
+                Label:
+                    text: app.APP_DATA["name_home"]
+                    color: get_color_from_hex("#202020")
+                #Button:
+                #    id: id_btn
+                #	text: "SEND INFO"
+                #	on_release:
+                #		app.send_info()
 
-		ScrollView:
-			size_hint_y: 1
-			BoxLayout_container:
-
-				id: id_network_container
-				spacing: dp(10)
+            ScrollView:
+                size_hint_y: 1
+                BoxLayout_container:
+                    id: id_network_container
+                    spacing: dp(10)
 
 <Screen_deviceSetting>:
     BoxLayout:
@@ -44,10 +56,12 @@
 				    BoxLayout:
 				        size_hint: 1, None
 				        height: app.grid_min
-                        DropDown:
+                        Dropdown_custom:
+                            id: id_dropdown_container
                         Button_custom1:
                             text: 'add device'
                             on_release:
+                                root.subscribe_topic(id_dropdown_container)
                                 #app.send_req_delete_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
                                 #app.send_req_add_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
                 Widget_block:
@@ -64,11 +78,14 @@
                         Button_custom1:
                             text: 'add home'
                             on_release:
+                                root.add_home(id_name_home.text, id_name_room.text)
                 Widget_block:
 				    text: "Remove this device from a Home"
                     BoxLayout:
+                        orientation: 'vertical'
 				        size_hint: 1, None
-				        height: 0
+				        height: self.minimum_height
+				        id: id_device_container
                 Widget_block:
 				    text: "Update Passkey of the device"
                     BoxLayout:

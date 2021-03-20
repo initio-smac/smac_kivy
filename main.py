@@ -50,7 +50,7 @@ class SmacApp(App):
     NAME_DEVICE = ""
     TYPE_DEVICE = "0"
     PIN_DEVICE = "1234"
-    SUB_TOPIC = []
+    SUB_TOPIC = ["#"]
     ACKS ={}
     LIMITS = {
         "LIMIT_DEVICE": 10,
@@ -100,7 +100,7 @@ class SmacApp(App):
             #self.open_modal(text=text, auto_close=True, timeout=2)
 
 
-    def send_req_add_topic(self, id_topic, id_device, passkey, *args):
+    '''def send_req_add_topic(self, id_topic, id_device, passkey, *args):
         if id_device == self.ID_DEVICE:
             self.add_topic(frm=id_device, id_topic=id_topic, id_device=id_device, passkey=passkey, id_msg=None)
         else:
@@ -115,19 +115,21 @@ class SmacApp(App):
             print("waiting for ack :{}".format(MSG_ID))
             #Clock.schedule_interval( partial(check_for_ack, MSG_ID), INTERVAL )
             asyncio.gather( self.check_for_ack(MSG_ID, 10) )
-            self.open_modal(text="Sending message to the device...")
+            self.open_modal(text="Sending message to the device...")'''
 
 
 
-    def add_topic(self, frm, id_topic, id_device, passkey, id_msg, *args):
-        if passkey == self.PIN_DEVICE:
-            db.add_network_entry(name_topic=id_topic, id_topic=id_topic, id_device=id_device, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
+    def add_topic(self, frm, id_topic, name_home, name_topic, id_device, passkey, *args):
+        if str(passkey) == self.PIN_DEVICE:
+            db.add_network_entry(name_home=name_home,name_topic=name_topic, id_topic=id_topic, id_device=id_device, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
             self.update_config_variable(key='SUB_TOPIC', value=id_topic, arr_op="ADD")
             client.subscribe(id_topic)
             d = {}
             d[ smac_keys["ID_TOPIC"] ] = id_topic
             d[ smac_keys["NAME_DEVICE"]] = self.NAME_DEVICE
             d[ smac_keys["TYPE_DEVICE"]] = self.TYPE_DEVICE
+            d[ smac_keys["NAME_HOME"]] = name_home
+            d[ smac_keys["NAME_TOPIC"]] = name_topic
             client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_ADD_TOPIC"], message=d)
             # sending ACK
             d1 = {}
@@ -136,14 +138,21 @@ class SmacApp(App):
         else:
             d1 = {}
             d1[smac_keys["MESSAGE"]] = "Topic '{}' not subscribed".format(id_topic)
+            d1[smac_keys["ID_DEVICE"]] = id_device
             print("Cannot subscribe to {}. Passkey error.".format(id_topic))
-        # if sent from the same device
-        if self.ID_DEVICE != frm:
-            client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["ACK"], message=d1, msg_id=id_msg, udp=True, tcp=False)
-        else:
-            print( d1[smac_keys["MESSAGE"]] )
+            if self.ID_DEVICE == frm:
+                print("same device")
+            else:
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
 
-    def send_req_delete_topic(self, id_topic, id_device, passkey, *args):
+
+        # if sent from the same device
+        #if self.ID_DEVICE != frm:
+        #    client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["ACK"], message=d1, msg_id=id_msg, udp=True, tcp=False)
+        #else:
+        #    print( d1[smac_keys["MESSAGE"]] )
+
+    '''def send_req_delete_topic(self, id_topic, id_device, passkey, *args):
         if id_device == self.ID_DEVICE:
             self.delete_topic(frm=id_device, id_topic=id_topic, id_device=id_device, passkey=passkey, id_msg=None)
         else:
@@ -152,19 +161,29 @@ class SmacApp(App):
             d[smac_keys["ID_DEVICE"]] = id_device
             d[smac_keys["PASSKEY"]] = passkey
             MSG_ID = (client.MSG_ID +1)
-            client.send_message(frm=self.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_TOPIC"], message=d, udp=True, tcp=False, msg_id=MSG_ID)
-            print("waiting for ack :{}".format(MSG_ID))
-            #Clock.schedule_interval( partial(check_for_ack, MSG_ID), INTERVAL )
-            asyncio.gather( self.check_for_ack(MSG_ID, 10) )
+            client.send_message(frm=self.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_TOPIC"], message=d, udp=True, tcp=False)'''
 
+    def delete_topic_widget(self, id_topic):
+        scr = self.screen_manager.get_screen(name="Screen_network")
+        container = scr.ids["id_network_container"]
+        print(id_topic)
+        print(scr.TOPIC_IDS.get(id_topic, None))
+        if scr.TOPIC_IDS.get(id_topic, None) != None:
+            container.remove_widget(scr.TOPIC_IDS[id_topic])
+            del scr.TOPIC_IDS[id_topic]
 
-
-    def delete_topic(self, frm, id_topic, id_device, passkey, id_msg, *args):
-        if passkey == self.PIN_DEVICE:
+    def delete_topic(self, frm, id_topic, id_device, passkey, *args):
+        print(passkey)
+        print(self.PIN_DEVICE)
+        print(passkey == self.PIN_DEVICE)
+        #print(type(passkey))
+        #print(type(self.PIN_DEVICE))
+        if str(passkey) == self.PIN_DEVICE:
             #db.add_network_entry(name_topic=id_topic, id_topic=id_topic, id_device=id_device, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
             db.delete_network_entry_by_topic(id_topic, id_device)
             self.update_config_variable(key='SUB_TOPIC', value=id_topic, arr_op="REM")
             client.unsubscribe(id_topic)
+            self.delete_topic_widget(id_topic)
             d = {}
             d[ smac_keys["ID_TOPIC"] ] = id_topic
             d[ smac_keys["NAME_DEVICE"]] = self.NAME_DEVICE
@@ -177,12 +196,18 @@ class SmacApp(App):
         else:
             d1 = {}
             d1[smac_keys["MESSAGE"]] = "Topic '{}' not unsubscribed".format(id_topic)
+            d1[smac_keys["ID_DEVICE"]] = id_device
             print("Cannot unsubscribe to {}. Passkey error.".format(id_topic))
+            if self.ID_DEVICE == frm:
+                print("same device")
+            else:
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+
         # if sent from the same device
-        if self.ID_DEVICE != frm:
-            client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["ACK"], message=d1, msg_id=id_msg, udp=True, tcp=False)
-        else:
-            print( d1[smac_keys["MESSAGE"]] )
+        #if self.ID_DEVICE != frm:
+        #    client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["ACK"], message=d1, msg_id=id_msg, udp=True, tcp=False)
+        #else:
+        #    print( d1[smac_keys["MESSAGE"]] )
 
     '''def delete_topic(self, wid, *args):
         db.delete_network_entry_by_topic(id_topic=wid.id_topic, id_device=self.ID_DEVICE)
@@ -206,11 +231,12 @@ class SmacApp(App):
         topics = db.get_topic_list_by_device(id_device=self.ID_DEVICE)
         print("topics" ,topics)
         client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd= smac_keys["CMD_INIT_SEND_INFO"], message={}, udp=True, tcp=False)
-        for id_topic, name_topic in topics:
+        for id_topic, name_home, name_topic in topics:
             if id_topic not in ["#", self.ID_DEVICE]:
                 m = {}
                 m[ smac_keys["ID_TOPIC"] ] = id_topic if(id_topic != None) else ""
                 m[ smac_keys["NAME_TOPIC"] ] = name_topic if(name_topic != None) else ""
+                m[ smac_keys["NAME_HOME"] ] = name_home if(name_home != None) else ""
                 m[ smac_keys["NAME_DEVICE"] ] = self.NAME_DEVICE
                 m[ smac_keys["TYPE_DEVICE"] ] = self.TYPE_DEVICE
                 #print(m)
@@ -327,8 +353,10 @@ class SmacApp(App):
                     if data.get( smac_keys["ID_TOPIC"], None) != None:
                         id_topic = data.get( smac_keys["ID_TOPIC"] )
                         name_device = data.get(smac_keys["NAME_DEVICE"], "")
+                        name_home = data.get(smac_keys["NAME_HOME"], "")
+                        name_topic = data.get(smac_keys["NAME_TOPIC"], "")
                         type_device = data.get(smac_keys["TYPE_DEVICE"], "")
-                        db.add_network_entry(name_topic=id_topic, id_topic=id_topic, id_device=frm, name_device=name_device, type_device=type_device, remove=0)
+                        db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device, type_device=type_device, remove=0)
                         #db.update_delete_by_topic_id(id_device=frm, id_topic=id_topic, value=0)
                         print("new network entry added: {}, {}".format(id_topic, frm))
                     if data.get(smac_keys["ID_PROPERTY"], None) != None:
@@ -350,17 +378,11 @@ class SmacApp(App):
 
                 if cmd == smac_keys["CMD_END_SEND_INFO"]:
                     print("deleting all entries of: {}".format(self.ID_DEVICE))
-                    scr = self.screen_manager.get_screen(name="Screen_network")
+                    #scr = self.screen_manager.get_screen(name="Screen_network")
                     devs = db.get_device_by_delete_field(id_device=frm, value=1)
-                    #print(devs)
-                    container = scr.ids["id_network_container"]
                     for id_topic in devs:
-                        id_topic = id_topic[0]
-                        print(id_topic)
-                        print( scr.TOPIC_IDS.get(id_topic, None) )
-                        if scr.TOPIC_IDS.get(id_topic, None) != None:
-                            container.remove_widget(scr.TOPIC_IDS[id_topic])
-                            del scr.TOPIC_IDS[id_topic]
+                        #id_topic = id_topic[0]
+                        self.delete_topic_widget(id_topic[0])
                     print("z1")
 
                     props = db.get_property_by_delete_field(id_device=frm, value=1)
@@ -401,7 +423,9 @@ class SmacApp(App):
                     id_topic = data.get(smac_keys["ID_TOPIC"])
                     id_device = data.get(smac_keys["ID_DEVICE"])
                     passkey = data.get(smac_keys["PASSKEY"])
-                    self.add_topic(frm, id_topic, id_device, passkey, msg_id)
+                    name_home = data.get(smac_keys["NAME_HOME"])
+                    name_topic = data.get(smac_keys["NAME_TOPIC"])
+                    self.add_topic(frm, id_topic, name_home, name_topic, id_device, passkey, msg_id)
 
                 if cmd == smac_keys["CMD_REMOVE_TOPIC"]:
                     id_topic = data.get(smac_keys["ID_TOPIC"])
@@ -413,8 +437,10 @@ class SmacApp(App):
                 if cmd == smac_keys["CMD_STATUS_ADD_TOPIC"]:
                     id_topic = data.get(smac_keys["ID_TOPIC"])
                     name_device = data.get(smac_keys["NAME_DEVICE"], "")
+                    name_topic = data.get(smac_keys["NAME_TOPIC"], "")
+                    name_home = data.get(smac_keys["NAME_HOME"], "")
                     type_device = data.get(smac_keys["TYPE_DEVICE"], "")
-                    db.add_network_entry(name_topic=id_topic, id_topic=id_topic, id_device=frm, name_device=name_device,
+                    db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device,
                                          type_device=type_device, remove=0)
 
                 if cmd == smac_keys["CMD_STATUS_REMOVE_TOPIC"]:
@@ -551,6 +577,8 @@ class SmacApp(App):
             for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid in db.get_device_list_by_topic(id_topic):
                 if busy_period == int(time.time()):
                     db.update_device_busy(id_device=id_device, is_busy=0, busy_period=0)
+
+            
             await asyncio.sleep(1) # Busy period of device should be > than this interval period
 
     def get_local_ip(self, *args):
@@ -666,6 +694,7 @@ class SmacApp(App):
         self.load_config_variables()
         #topics = [ i[0] for i in  db.get_topic_list()]
         topics = self.SUB_TOPIC
+        print("subscribing to: {}".format(["#", self.ID_DEVICE] + topics))
         client.subscribe( ["#", self.ID_DEVICE] + topics )
         client.process_message = self.on_message
         tps = db.get_topic_list()

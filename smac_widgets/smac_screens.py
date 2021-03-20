@@ -12,7 +12,7 @@ from kivy.metrics import dp
 from kivy.uix.slider import Slider
 
 from smac_client import client
-from smac_device import set_property
+from smac_device import set_property, generate_id_topic
 from smac_device_keys import SMAC_PROPERTY
 from smac_keys import smac_keys
 from smac_widgets.smac_layouts import *
@@ -25,7 +25,7 @@ class Screen_network(Screen):
 	TOPIC_IDS = {}
 	RENDERING = False
 	RENDERING_COUNT = 0
-	IMG = None
+	CLEAR_WIDGETS = 0
 
 	async def add_widgets(self, clear_widgets=False, *args):
 		#print("RENDERING", self.RENDERING)
@@ -35,14 +35,15 @@ class Screen_network(Screen):
 			self.RENDERING_COUNT += 1
 			container = self.ids["id_network_container"]
 			#self.ids["id_btn"].text = str(self.RENDERING_COUNT)
-			if clear_widgets:
+			if clear_widgets or self.CLEAR_WIDGETS:
 				self.TOPIC_IDS = {}
 				container.clear_widgets()
-			for id_topic, name_topic, view_topic  in db.get_topic_list():
+				self.CLEAR_WIDGETS = 0
+			for id_topic, name_home, name_topic, view_topic  in db.get_topic_list_by_name_home(app.APP_DATA["name_home"]):
 				#print("id_topic: {}".format(id_topic))
 				if self.TOPIC_IDS.get(id_topic, None) == None:
 					w = Widget_network(text=name_topic)
-					w.disable_icon2 = True if(id_topic == "") else False
+					w.disable_icon2 = True
 					w.disable_icon1 = True if(id_topic == "") else False
 					w.DEVICE_IDS = {}
 					w.id_topic = id_topic
@@ -233,10 +234,36 @@ class Screen_network(Screen):
 		#print(self.ids)
 		asyncio.gather(self.interval(1))
 
+		for name_home, in db.get_home_list():
+			menu = self.ids["id_menu"]
+			if (name_home not in menu.ids.keys()):
+				if (name_home == "") or (name_home == None):
+					name_home = "Local"
+				print(name_home)
+				wid = Label_menuItem(text=name_home)
+				wid.bind(on_release=self.on_menu_item_release)
+				menu.ids[name_home] = wid
+				menu.add_widget(wid)
+
 	def on_leave(self, *args):
 		#container = self.ids["id_network_container"]
 		#container.clear_widgets()
 		pass
+
+	def open_close_menu(self,  *args):
+		app = App.get_running_app()
+		menu_container = self.ids["id_menu_container"]
+		width = 0 if(menu_container.width > 0) else app.grid_min * 4
+		anim = Animation(width=width, duration=.1)
+		anim.start(menu_container)
+
+
+
+	def on_menu_item_release(self, wid, *args):
+		app = App.get_running_app()
+		app.APP_DATA["name_home"] = "" if(wid.text == "Local") else wid.text
+		self.open_close_menu()
+		self.CLEAR_WIDGETS = 1
 
 	def goto_prop_page(self, wid,  *args):
 		app = App.get_running_app()
@@ -278,6 +305,95 @@ class Screen_network(Screen):
 					w1.add_widget(w2)
 
 class Screen_deviceSetting(Screen):
+
+	def load_widgets(self, clear=True, *args):
+		dd_container = self.ids["id_dropdown_container"]
+		dd = dd_container.ids["id_dropdown"]
+		if clear:
+			dd.clear_widgets()
+		app = App.get_running_app()
+		id_device = app.APP_DATA["id_device"]
+		# get the topic list which are not subscribed and append to the
+		# dropdown list
+		for id_topic, name_home, name_topic in db.get_topic_list_not_by_device(id_device=id_device):
+			print(id_topic)
+			if (id_topic != None) and (id_topic != ""):
+				label = Label_button(text=name_home + "/" + name_topic)
+				label.id_topic = id_topic
+				label.bind(on_release=self.on_dropdown_item_release)
+				dd.add_widget(label)
+
+		# get the topic list which are subscribed by the device
+		# and add it to a list
+		device_container = self.ids["id_device_container"]
+		if clear:
+			device_container.clear_widgets()
+		for id_topic, name_home, name_topic in db.get_topic_list_by_device(id_device=id_device):
+			if (id_topic != None) and (id_topic != ""):
+				label = Widget_block(text=name_home + "/" + name_topic, orientation="horizontal",
+									 bg_color=get_color_from_hex("#e0e0e0"))
+				label.id_topic = id_topic
+				btn = Image_icon(source='icons/CLOSE.png')
+				btn.bind(on_release=self.unsunbscribe_topic)
+				# btn.pos = 0,0
+				label.add_widget(btn)
+				# label.bind(on_release=self.on_dropdown_item_release)
+				device_container.add_widget(label)
+
+	def on_enter(self, *args):
+		self.load_widgets()
+
+	def unsunbscribe_topic(self, wid, *args):
+		app = App.get_running_app()
+		id_device = app.APP_DATA["id_device"]
+		id_topic = wid.parent.id_topic
+		passkey = db.get_pin_device(id_device=id_device)
+		if id_device == app.ID_DEVICE:
+			app.delete_topic(frm=app.ID_DEVICE, id_topic=id_topic, id_device=id_device, passkey=passkey)
+		else:
+			d = {}
+			d[smac_keys["ID_TOPIC"]] = id_topic
+			d[smac_keys["ID_DEVICE"]] = id_device
+			d[smac_keys["PASSKEY"]] = passkey
+			client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_TOPIC"], message=d,
+								udp=True, tcp=False)
+		self.load_widgets()
+
+	def subscribe_topic(self, dropdown_container, *args):
+		app = App.get_running_app()
+		id_device = app.APP_DATA["id_device"]
+		id_topic = dropdown_container.ids["id_dropdown"].id_topic
+		name_home, name_topic = dropdown_container.ids["id_label"].text.split("/")
+		passkey = db.get_pin_device(id_device=id_device)
+		if id_device == app.ID_DEVICE:
+			app.add_topic(frm=app.ID_DEVICE, id_topic=id_topic, name_home=name_home, name_topic=name_topic, id_device=id_device, passkey=passkey)
+		else:
+			d = {}
+			d[smac_keys["ID_TOPIC"]] = id_topic
+			d[smac_keys["ID_DEVICE"]] = id_device
+			d[smac_keys["PASSKEY"]] = passkey
+			d[smac_keys["NAME_HOME"]] = name_home
+			d[smac_keys["NAME_TOPIC"]] = name_topic
+			client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_TOPIC"], message=d, udp=True,
+								tcp=False)
+		self.load_widgets()
+
+	def on_dropdown_item_release(self, wid, *args):
+		#print(wid)
+		#print(wid.parent)
+		print(wid.parent.parent)
+		dropdown = wid.parent.parent
+		dropdown.select(wid.text)
+		dropdown.id_topic = wid.id_topic
+
+	def add_home(self, name_home, name_topic):
+		app = App.get_running_app()
+		id_topic = generate_id_topic(app.ID_DEVICE)
+		app.add_topic(frm=app.ID_DEVICE, id_topic=id_topic, name_home=name_home, name_topic=name_topic, id_device=app.ID_DEVICE, passkey=app.PIN_DEVICE)
+		#db.add_network_entry(id_topic=id_topic, name_home=name_home, name_topic=name_topic, id_device=app.ID_DEVICE, type_device=app.TYPE_DEVICE, name_device=app.NAME_DEVICE, pin_device=app.PIN_DEVICE)
+		#app.update_config_variable(key="SUB_TOPIC", value=id_topic, arr_op="ADD")
+		print("New Home added")
+		self.load_widgets()
 
 	def update_device_pin(self, id_device, passkey):
 		db.update_device_pin(id_device, passkey)

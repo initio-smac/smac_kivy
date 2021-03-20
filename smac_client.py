@@ -111,10 +111,14 @@ class SMACClient():
 
     # send through UDP socket
     def send_udp(self, topic, message, addr="255.255.255.255", broadcast=False ):
-        addr = "255.255.255.255" if broadcast else addr
-        msg = "{} {}".format(topic, message)
-        msg = msg.encode("utf-8")
-        self.udp_sock.sendto(msg, (addr, self.UDP_PORT))
+        try:
+            addr = "255.255.255.255" if broadcast else addr
+            msg = "{} {}".format(topic, message)
+            msg = msg.encode("utf-8")
+            self.udp_sock.sendto(msg, (addr, self.UDP_PORT))
+        except Exception as e:
+            print("UDP message send err: {}".format(e))
+
 
     def send_message(self, frm, to, cmd, message={}, ack=False, msg_id=None, udp=True, tcp=True, *args):
         topic = to
@@ -193,7 +197,7 @@ class SMACClient():
             reader = self.zmq_pub_reader
             while 1 :
                 data = await reader.read(100)
-                print(data)
+                #print(data)
                 if (data.startswith( bytes(smac_zmq.zGreetingSig) )) : #Found zmq Greeting
                     print("Got ZMQ Greeting!")
                     self.zmq_pub_writer.write(smac_zmq.zGreetingVerMajor+smac_zmq.zGreetingVerMinor)

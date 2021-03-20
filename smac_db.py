@@ -125,7 +125,7 @@ class Database():
     def update_pin_valid(self, id_device, pin_device_valid):
         try:
             lock.acquire(True)
-            self.cur.execute('UPDATE smac_network SET pin_device=? WHERE id_device=?',( pin_device_valid, id_device,))
+            self.cur.execute('UPDATE smac_network SET pin_device_valid=? WHERE id_device=?',( pin_device_valid, id_device,))
             self.connection.commit()
         except Exception as e:
             print(e)
@@ -147,7 +147,7 @@ class Database():
     def get_pin_device(self, id_device):
         try:
             lock.acquire(True)
-            r = self.cur.execute('SELECT pin_device FROM smac_network ORDER BY id_device', (id_device,)).fetchone()
+            r = self.cur.execute('SELECT pin_device FROM smac_network WHERE id_device=? ORDER BY id_device', (id_device,)).fetchone()
             if r != None:
                 return r[0]
             #return self.cur.fetchall()
@@ -268,13 +268,45 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_topic, name_topic FROM smac_network WHERE id_device=? ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic FROM smac_network WHERE id_device=? ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
         finally:
             lock.release()
 
+    def get_topic_list_not_by_device(self, id_device, set=0, *args ):
+        set = set * self.ELEMENTS_PER_PAGE
+        try:
+            lock.acquire(True)
+            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic, view_topic FROM smac_network WHERE id_device!=? ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
+            return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def get_topic_list_by_name_home(self, name_home, set=0, *args ):
+        set = set * self.ELEMENTS_PER_PAGE
+        try:
+            lock.acquire(True)
+            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic, view_topic FROM smac_network WHERE name_home=? ORDER BY name_topic DESC LIMIT ?,?', (name_home, set, self.ELEMENTS_PER_PAGE))
+            return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def get_home_list(self, set=0, *args ):
+        set = set * self.ELEMENTS_PER_PAGE
+        try:
+            lock.acquire(True)
+            self.cur.execute('SELECT DISTINCT name_home FROM smac_network ORDER BY name_topic DESC LIMIT ?,?', ( set, self.ELEMENTS_PER_PAGE))
+            return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
 
     def get_property_list_by_device(self, id_device, set=0, *args ):
         set = set * self.ELEMENTS_PER_PAGE
