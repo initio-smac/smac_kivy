@@ -56,6 +56,7 @@ class SmacApp(App):
         "LIMIT_DEVICE": 10,
         "LIMIT_TOPIC": 10
     }
+    STOP_APP = False
 
     SENDING_INFO = 0
     TEST_VAL = 0
@@ -547,7 +548,7 @@ class SmacApp(App):
 
 
     async def UI_loop(self, *args):
-        while 1:
+        while not self.STOP_APP:
             # check for value_temp and update the value of property according to that
             # set_property_of_current_device
             for id_property, property_name, type_property, value_min, value_max, value, value_temp, value_last_updated in db.get_property_list_by_device(self.ID_DEVICE):
@@ -571,7 +572,9 @@ class SmacApp(App):
             await asyncio.sleep(.1)
 
     async def UI_loop2(self, *args):
-        while 1:
+
+        while not self.STOP_APP:
+            print(self.STOP_APP)
             # check for busy period and update the db
             id_topic = ""
             for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid in db.get_device_list_by_topic(id_topic):
@@ -679,8 +682,10 @@ class SmacApp(App):
             self.modal.timer.cancel()
             self.modal.timer = None
 
-    def on_stop(self):
-        loop.close()
+
+    def close_app(self, *args):
+        self.STOP_APP = True
+
 
     def on_resume(self):
         return True
