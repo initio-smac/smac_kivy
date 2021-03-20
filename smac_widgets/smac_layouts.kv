@@ -246,13 +246,19 @@
     size: app.grid_min*4, app.grid_min
 
 <Dropdown_custom>:
+    text: ""
+    size_hint: 1, None
     Label_button:
         id: id_label
-        text: "<Home/Room>"
+        text: root.text
         on_release: id_dropdown.open(self)
+        Image_icon:
+            source: 'icons/BOTTOM.png'
+            pos: id_label.right - app.grid_min, id_label.y
     DropDown:
         id: id_dropdown
         on_pos: self.dismiss()
+        #pos: root.pos
         on_select: id_label.text = '{}'.format(args[1])
 
 <BoxLayout_menu>:

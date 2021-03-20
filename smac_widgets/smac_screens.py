@@ -4,6 +4,7 @@ import random
 from kivy.animation import Animation
 from kivy.graphics.context_instructions import PushMatrix, Rotate, PopMatrix
 from kivy.uix.image import Image
+from kivy.uix.modalview import ModalView
 from kivy.uix.screenmanager import Screen
 from kivy.app import App
 from kivy.clock import Clock
@@ -232,6 +233,7 @@ class Screen_network(Screen):
 		#self.add_widgets()
 		#Clock.schedule_interval(self.add_widgets, 1)
 		#print(self.ids)
+		#db.delete_network_entry(id_topic='')
 		asyncio.gather(self.interval(1))
 
 		for name_home, in db.get_home_list():
@@ -305,12 +307,16 @@ class Screen_network(Screen):
 					w1.add_widget(w2)
 
 class Screen_deviceSetting(Screen):
+	modal = ModalView()
 
 	def load_widgets(self, clear=True, *args):
-		dd_container = self.ids["id_dropdown_container"]
-		dd = dd_container.ids["id_dropdown"]
+		dd_home_container = self.ids["id_dropdown_home_container"]
+		dd_home = dd_home_container.ids["id_dropdown"]
+		dd_room_container = self.ids["id_dropdown_room_container"]
+		dd_room = dd_room_container.ids["id_dropdown"]
 		if clear:
-			dd.clear_widgets()
+			dd_home.clear_widgets()
+			dd_room.clear_widgets()
 		app = App.get_running_app()
 		id_device = app.APP_DATA["id_device"]
 		# get the topic list which are not subscribed and append to the
@@ -318,10 +324,23 @@ class Screen_deviceSetting(Screen):
 		for id_topic, name_home, name_topic in db.get_topic_list_not_by_device(id_device=id_device):
 			print(id_topic)
 			if (id_topic != None) and (id_topic != ""):
-				label = Label_button(text=name_home + "/" + name_topic)
+				label = Label_button(text=name_home)
 				label.id_topic = id_topic
-				label.bind(on_release=self.on_dropdown_item_release)
-				dd.add_widget(label)
+				label.bind(on_release=self.on_dropdown_homeitem_release)
+				dd_home.add_widget(label)
+
+				label = Label_button(text=name_topic)
+				label.id_topic = id_topic
+				label.bind(on_release=self.on_dropdown_roomitem_release)
+				dd_room.add_widget(label)
+
+		label = Label_button(text="Add Home")
+		label.bind(on_release=self.create_home)
+		dd_home.add_widget(label)
+
+		label = Label_button(text="Add Room")
+		label.bind(on_release=self.create_home)
+		dd_room.add_widget(label)
 
 		# get the topic list which are subscribed by the device
 		# and add it to a list
@@ -339,6 +358,11 @@ class Screen_deviceSetting(Screen):
 				label.add_widget(btn)
 				# label.bind(on_release=self.on_dropdown_item_release)
 				device_container.add_widget(label)
+
+	def create_home(self, *args):
+
+		self.modal.add_widget()
+		self.modal.open()
 
 	def on_enter(self, *args):
 		self.load_widgets()
@@ -378,9 +402,13 @@ class Screen_deviceSetting(Screen):
 								tcp=False)
 		self.load_widgets()
 
-	def on_dropdown_item_release(self, wid, *args):
-		#print(wid)
-		#print(wid.parent)
+	def on_dropdown_homeitem_release(self, wid, *args):
+		print(wid.parent.parent)
+		dropdown = wid.parent.parent
+		dropdown.select(wid.text)
+		dropdown.id_topic = wid.id_topic
+
+	def on_dropdown_roomitem_release(self, wid, *args):
 		print(wid.parent.parent)
 		dropdown = wid.parent.parent
 		dropdown.select(wid.text)

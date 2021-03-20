@@ -53,32 +53,44 @@
 				padding: dp(5)
 				Widget_block:
 				    text: "Add device to a Home"
-				    BoxLayout:
-				        size_hint: 1, None
-				        height: app.grid_min
-                        Dropdown_custom:
-                            id: id_dropdown_container
-                        Button_custom1:
-                            text: 'add device'
-                            on_release:
-                                root.subscribe_topic(id_dropdown_container)
-                                #app.send_req_delete_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
-                                #app.send_req_add_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
-                Widget_block:
-				    text: "Create a Home"
-                    BoxLayout:
-				        size_hint: 1, None
-				        height: app.grid_min
-                        TextInput:
-                            hint_text: "Home"
-                            id: id_name_home
-                        TextInput:
-                            hint_text: "Room"
-                            id: id_name_room
-                        Button_custom1:
-                            text: 'add home'
-                            on_release:
-                                root.add_home(id_name_home.text, id_name_room.text)
+				    size_hint_y: None
+				    height: self.minimum_height
+				    orientation: 'vertical'
+				    spacing: dp(2)
+				    #BoxLayout:
+				    #    size_hint: 1, None
+				    #    height: self.minimum_height
+				    #    orientation: 'vertical'
+                    Dropdown_custom:
+                        text: "select Home"
+                        id: id_dropdown_home_container
+                        height: app.grid_min
+                    #Button_custom1:
+                    Dropdown_custom:
+                        text: "select Room"
+                        id: id_dropdown_room_container
+                        height: app.grid_min
+                    Button_custom1:
+                        text: 'add device'
+                        on_release:
+                            root.subscribe_topic(id_dropdown_container)
+                            #app.send_req_delete_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
+                            #app.send_req_add_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
+                #Widget_block:
+				#    text: "Create a Home"
+                #    BoxLayout:
+				#        size_hint: 1, None
+				#        height: app.grid_min
+                #        TextInput:
+                #            hint_text: "Home"
+                #            id: id_name_home
+                #        TextInput:
+                #            hint_text: "Room"
+                #            id: id_name_room
+                #        Button_custom1:
+                #            text: 'add home'
+                #            on_release:
+                #                root.add_home(id_name_home.text, id_name_room.text)
                 Widget_block:
 				    text: "Remove this device from a Home"
                     BoxLayout:
@@ -94,6 +106,7 @@
 				        TextInput:
                             hint_text: "PIN"
                             id: id_passkey
+                            password: True
                         Button_custom1:
                             text: 'update PIN'
                             on_release:

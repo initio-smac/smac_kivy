@@ -38,8 +38,8 @@ class SmacApp(App):
     image_source = ""
     grid_min = dp(50)
     screen_manager = ScreenManager(transition=NoTransition())
-    modal = ModalView(auto_dismiss=False)
-    modal_opened = False
+    modal_info = ModalView(auto_dismiss=False)
+    modal_info_opened = False
     APP_DATA = DictProperty({
         "id_topic": "",
         "name_topic": "",
@@ -56,8 +56,7 @@ class SmacApp(App):
         "LIMIT_DEVICE": 10,
         "LIMIT_TOPIC": 10
     }
-    STOP_APP = False
-
+    TASKS = []
     SENDING_INFO = 0
     TEST_VAL = 0
 
@@ -460,11 +459,11 @@ class SmacApp(App):
     #    client.send_message(frm=frm, to=to, message=message, cmd=cmd)
 
     #def open_add_group_modal(self, *args):
-    #    self.modal.add_widget( BoxLayout_addGroupContent() )
-    #    self.modal.open()
+    #    self.modal_info.add_widget( BoxLayout_addGroupContent() )
+    #    self.modal_info.open()
 
     #def add_group(self, group_name):
-    #    self.modal.dismiss()
+    #    self.modal_info.dismiss()
     #    db.add_group(group_name)
 
     #async def async_test(self):
@@ -516,14 +515,13 @@ class SmacApp(App):
     def t(self, *args):
         async def start_app():
             print("starting app")
-            await self.async_run(async_lib="asyncio") 
-
-        
+            await self.async_run(async_lib="asyncio")
 
         #task1 = asyncio.ensure_future( self.async_test() )
         task2 = asyncio.ensure_future( client.main() )
         task3 = asyncio.ensure_future( self.UI_loop() )
         task4 = asyncio.ensure_future( self.UI_loop2() )
+        self.TASKS = [ task2, task3, task4 ]
         #task3 = asyncio.ensure_future( self.send_test() )
 
         #return asyncio.gather( start_app(),zmq_sub_start, zmq_pub_start, task1, zmq_t1, zmq_t2, udp_t1, udp_t2, test1 )
@@ -548,7 +546,7 @@ class SmacApp(App):
 
 
     async def UI_loop(self, *args):
-        while not self.STOP_APP:
+        while 1:
             # check for value_temp and update the value of property according to that
             # set_property_of_current_device
             for id_property, property_name, type_property, value_min, value_max, value, value_temp, value_last_updated in db.get_property_list_by_device(self.ID_DEVICE):
@@ -572,9 +570,7 @@ class SmacApp(App):
             await asyncio.sleep(.1)
 
     async def UI_loop2(self, *args):
-
-        while not self.STOP_APP:
-            print(self.STOP_APP)
+        while 1:
             # check for busy period and update the db
             id_topic = ""
             for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid in db.get_device_list_by_topic(id_topic):
@@ -666,25 +662,25 @@ class SmacApp(App):
                 f.write( json.dumps(fd) )
 
     def open_modal(self, text, auto_close=False, timeout=3, *args):
-        self.modal.label.text = text
-        if not self.modal_opened:
-            self.modal.open()
-        else:
-            self.modal_opened = True
-        if auto_close:
-            self.modal.timer = Clock.schedule_once(self.close_modal, timeout)
+        self.modal_info.label.text = text
+        if not self.modal_info_opened:
+            self.modal_info.open()
+            self.modal_info_opened = True
+        #if auto_close:
+        #    self.modal_info.timer = Clock.schedule_once(self.close_modal, timeout)
 
     def close_modal(self, *args):
-        self.modal.label.text = ""
-        self.modal.dismiss()
-        self.modal_opened = False
-        if self.modal.timer != None:
-            self.modal.timer.cancel()
-            self.modal.timer = None
+        self.modal_info.label.text = ""
+        self.modal_info.dismiss()
+        self.modal_info_opened = False
+        #if self.modal_info.timer != None:
+        #    self.modal_info.timer.cancel()
+        #    self.modal_info.timer = None
 
 
-    def close_app(self, *args):
-        self.STOP_APP = True
+    def on_stop(self, *args):
+        for task in self.TASKS:
+            task.cancel()
 
 
     def on_resume(self):
@@ -694,8 +690,10 @@ class SmacApp(App):
         print("kivy started")
         print("starting smac_client...")
 
-        self.modal.label = Label(text='')
-        self.modal.add_widget(self.modal.label)
+        self.modal_info.label = Label(text='')
+        self.modal_info.add_widget(self.modal_info.label)
+        #self.modal_info.content = BoxLayout_container()
+        #self.modal_info.add_widget(self.modal_info.content)
         self.load_config_variables()
         #topics = [ i[0] for i in  db.get_topic_list()]
         topics = self.SUB_TOPIC

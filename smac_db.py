@@ -241,6 +241,15 @@ class Database():
         finally:
             lock.release()
 
+    def delete_network_entry(self, id_topic):
+        try:
+            lock.acquire(True)
+            self.cur.execute('DELETE FROM smac_network WHERE id_topic=?', (id_topic,))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
 
     def get_device_list_by_topic(self, id_topic, set=0,  *args ):
         set = set * self.ELEMENTS_PER_PAGE
@@ -279,7 +288,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic, view_topic FROM smac_network WHERE id_device!=? ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic FROM smac_network WHERE id_device!=? ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
