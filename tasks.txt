@@ -5,3 +5,12 @@ Tasks to be completed
 # ,/ add requirements file with module versions
 # ,/ add info about python version
 # ,/ get id_device from server
+
+3/19/2021
+1. db.sqlite3 must be deleted . Create device ID from Smacsystem.com
+2. initiouser2-H81M-S is showing by default. in my LAN view, there is no such device
+3. in device setting, need models for fails cases . Entering text. default have drop down menu
+4. Need Card layout for home screen as well
+5. for PC properties like shutdown/restart. those are event type. no need to show on/off 1/o etc..
+6. while closing the app, thre are erros in the terminal. needs cleanup
+7. is it possible to create 2 mail ids  man@smacsystem.com , som@smacsystem.com 
