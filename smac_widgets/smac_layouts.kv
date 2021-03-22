@@ -1,5 +1,8 @@
 #: import get_color_from_hex kivy.utils.get_color_from_hex
 
+<Screen>:
+    size_hint_max_x: dp(800)
+
 <Label>:
 	color: get_color_from_hex("#a0a0a0")
 
@@ -52,13 +55,14 @@
         Label:
             text: root.text + root.text1
             bold: True
-        Image_icon:
+            color: get_color_from_hex("#404040")
+        Image_iconButton:
             id: id_icon2
             source: root.icon2
             disable: True if root.disable_icon2 else False
             opacity: 0 if root.disable_icon2 else 1
             width: 0 if root.disable_icon2 else app.grid_min
-        Image_icon:
+        Image_iconButton:
             id: id_icon1
             source: root.icon1
             disable: True if root.disable_icon1 else False
@@ -68,16 +72,17 @@
 <Widget_network>:
 	size_hint: 1, None
 	#height: dp(200)
-	spacing: dp(5)
+	spacing: app.grid_min/2
 	height: self.minimum_height
 	font_size: dp(20)
+	padding: dp(10), 0
 	canvas.before:
         Color:
-            rgba: [1,1,1,.5]
+            rgba: get_color_from_hex("#c0c0c0")
         RoundedRectangle:
-            size: self.size
-            pos: self.pos
-            radius: [ app.grid_min/1.5, ]
+            size: self.width, app.grid_min
+            pos: self.x, self.top-app.grid_min
+            radius: [ 0, ]
 
 <Widget_device>:
 	size_hint: 1, None
@@ -95,7 +100,7 @@
         RoundedRectangle:
             size: self.size
             pos: self.pos
-            radius: [ dp(0), ]
+            radius: [ dp(5), ]
 
 
 
@@ -108,7 +113,7 @@
 	source: 'icons/FAN.png'
 	canvas.before:
         Color:
-            rgba: [1,1,1,1]
+            rgba: [1,1,1,0]
         Rectangle:
             size: self.size
             pos: self.pos
@@ -119,13 +124,13 @@
         text: root.text
         color: get_color_from_hex("#505050")
         bold: True
-        padding: dp(2),0
         halign: 'left'
+        padding: dp(10), 0
         text_size: self.size
     BoxLayout:
         size_hint_y: None
         height: app.grid_min
-        Image_icon:
+        Image_iconButton:
             source: root.source
         AnchorLayout:
             anchor_x:'right'
@@ -145,7 +150,7 @@
 
         Label:
             size_hint: None, None
-
+            opacity: 0 if(root.value_min == root.value_max) else 1
             size: app.grid_min*1.5, root.height
             color: get_color_from_hex("#404040")
             font_size: dp(15)
@@ -208,20 +213,30 @@
                 radius: [ self.height/2, ]
 
 
-
 <Image_icon>:
+    size_hint: None, None
+    size: app.grid_min, app.grid_min
+
+<Image_iconButton>:
     size_hint: None, None
     #pos_hint: {'center_x': .5, 'center_y': .5}
     size: app.grid_min, app.grid_min
     #texture_size: app.grid_min, app.grid_min
     #mipmap: True
-    canvas.before:
-        PushMatrix
-        Rotate:
-            angle: self.angle
-            origin: self.center
-    canvas.after:
-        PopMatrix
+
+    Image:
+        size_hint: None, None
+        size: self.parent.width/2, self.parent.height/2
+        allow_stretch: True
+        center: self.parent.center
+        source: root.source
+        canvas.before:
+            PushMatrix
+            Rotate:
+                angle: root.angle
+                origin: root.center
+        canvas.after:
+            PopMatrix
 
 <Widget_block>:
     orientation: 'vertical'
@@ -251,15 +266,23 @@
     Label_button:
         id: id_label
         text: root.text
+        on_parent:
+            id_dropdown.dismiss()
         on_release: id_dropdown.open(self)
         Image_icon:
+            #disabled: True
             source: 'icons/BOTTOM.png'
             pos: id_label.right - app.grid_min, id_label.y
     DropDown:
         id: id_dropdown
-        on_pos: self.dismiss()
+        on_pos:
+            #id_dropdown.pos = self.pos
+            #id_dropdown.open(root)
+
         #pos: root.pos
-        on_select: id_label.text = '{}'.format(args[1])
+        on_select:
+            #id_label.text = '{}'.format(args[1])
+            root.text = '{}'.format(args[1])
 
 <BoxLayout_menu>:
     size_hint_x: None
@@ -285,6 +308,51 @@
         Rectangle:
             size: self.size
             pos: self.pos
+
+<Label_custom>:
+    size_hint: 1, None
+    height: app.grid_min
+    #color: get_color_from_hex("#404040")
+
+<ModalView_custom>:
+
+
+<BoxLayout_addHomeContent>:
+    orientation: 'vertical'
+    size_hint: 1, None
+    height: app.grid_min*2
+    TextInput:
+        id: id_name_home
+        size_hint_y: None
+        height: app.grid_min
+        hint_text: "Home Name"
+        on_text:
+            root.name_home = self.text
+    Button_custom1:
+        id: id_btn
+        size_hint: 1, None
+        height: app.grid_min
+        text: "Add Home"
+
+<BoxLayout_addTopicContent>:
+    orientation: 'vertical'
+    size_hint: 1, None
+    height: app.grid_min*2
+    TextInput:
+        id: id_name_topic
+        hint_text: "Room Name"
+        size_hint_y: None
+        height: app.grid_min
+        on_text:
+            root.name_topic = self.text
+    Button_custom1:
+        id: id_btn
+        size_hint_x: 1
+        size_hint_y: None
+        height: app.grid_min
+        text: "Add Room"
+
+<Widget_menuBG>:
 
 
 

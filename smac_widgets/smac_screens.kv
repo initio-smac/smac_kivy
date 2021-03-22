@@ -1,28 +1,21 @@
 #: import BoxLayout_header smac_widgets.smac_layouts.BoxLayout_header
 #: import BoxLayout_container smac_widgets.smac_layouts.BoxLayout_container
 
+
 <Screen_network>:
-    BoxLayout:
-        ScrollView:
-            size_hint: None, 1
-            width: 0
-            id: id_menu_container
-            #size_hint_y: 1
-            BoxLayout_menu:
-                id: id_menu
-                Label_menuItem:
-                    text: "Menu"
-                    bg_color: get_color_from_hex("#d9d9d9")
+    FloatLayout:
         BoxLayout:
             orientation: "vertical"
             BoxLayout_header:
-                Image_icon:
+                Image_iconButton:
                     source: 'icons/HOME.png'
                     on_release:
                         root.open_close_menu()
                 Label:
                     text: app.APP_DATA["name_home"]
                     color: get_color_from_hex("#202020")
+                    size_hint_y: None
+                    height: app.grid_min
                 #Button:
                 #    id: id_btn
                 #	text: "SEND INFO"
@@ -34,12 +27,50 @@
                 BoxLayout_container:
                     id: id_network_container
                     spacing: dp(10)
+        Widget_menuBG:
+            id: id_menu_bg
+            pos: self.pos
+            size_hint: 0,1
+            opacity:.5
+            on_release:
+                root.open_close_menu()
+            canvas.before:
+                Color:
+                    rgba: 1,1,1,1
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+        ScrollView:
+            size_hint: None, 1
+            width: 0
+            pos: 0,0
+            id: id_menu_container
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex("#c0c0c0")
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            #size_hint_y: 1
+            BoxLayout_menu:
+                id: id_menu
+
+                Label_menuItem:
+                    text: "Menu"
+                    bg_color: get_color_from_hex("#d9d9d9")
+                Label_menuItem:
+                    text: "Local"
+                    bg_color: get_color_from_hex("#ffffff")
+                    on_release:
+                        #self.bg_color: get_color_from_hex("#c9c9c9")
+                        root.on_menu_item_release(self)
+
 
 <Screen_deviceSetting>:
     BoxLayout:
 		orientation: "vertical"
 		BoxLayout_header:
-		    Image_icon:
+		    Image_iconButton:
 		        source: "icons/LEFT.png"
 		        on_release:
 		            app.change_screen("Screen_network")
@@ -51,6 +82,21 @@
 			BoxLayout_container:
 				spacing: dp(5)
 				padding: dp(5)
+				Widget_block:
+				    text: "Device Name"
+                    BoxLayout:
+				        size_hint: 1, None
+				        height: app.grid_min
+				        TextInput:
+                            hint_text: "Device Name"
+                            id: id_name_device
+                            text: app.APP_DATA["name_device"]
+                            disabled: 1 if(app.APP_DATA["id_device"] != app.ID_DEVICE) else 0
+                        Button_custom1:
+                            text: 'Update Name'
+                            disabled: 1 if(app.APP_DATA["id_device"] != app.ID_DEVICE) else 0
+                            on_release:
+                                root.update_device_name(app.APP_DATA["id_device"], id_name_device.text)
 				Widget_block:
 				    text: "Add device to a Home"
 				    size_hint_y: None
@@ -73,7 +119,7 @@
                     Button_custom1:
                         text: 'add device'
                         on_release:
-                            root.subscribe_topic(id_dropdown_container)
+                            root.subscribe_topic(id_dropdown_home_container, id_dropdown_room_container)
                             #app.send_req_delete_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
                             #app.send_req_add_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
                 #Widget_block:

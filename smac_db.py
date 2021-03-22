@@ -156,6 +156,28 @@ class Database():
         finally:
             lock.release()
 
+    def update_device_name(self, id_device, name_device):
+        try:
+            lock.acquire(True)
+            self.cur.execute('UPDATE smac_network SET name_device=? WHERE id_device=?',( name_device, id_device,))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def get_device_name(self, id_device):
+        try:
+            lock.acquire(True)
+            r = self.cur.execute('SELECT name_device FROM smac_network WHERE id_device=?', (id_device,)).fetchone()
+            if r != None:
+                return r[0]
+            #return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
     def set_device_view(self, id_topic, id_device, view_device):
         try:
             lock.acquire(True)

@@ -14,3 +14,4 @@ Tasks to be completed
 5. for PC properties like shutdown/restart. those are event type. no need to show on/off 1/o etc..
 6. while closing the app, thre are erros in the terminal. needs cleanup
 7. is it possible to create 2 mail ids  man@smacsystem.com , som@smacsystem.com 
+8.
