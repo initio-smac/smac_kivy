@@ -155,12 +155,13 @@ class SmacApp(App):
             d1 = {}
             d1[smac_keys["MESSAGE"]] = "Topic '{}' not subscribed".format(id_topic)
             d1[smac_keys["ID_DEVICE"]] = id_device
+            d1[smac_keys["ID_TOPIC"]] = id_topic
             print("Cannot subscribe to {}. Passkey error.".format(id_topic))
             if self.ID_DEVICE == frm:
                 print("same device")
             else:
-                #client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
-                client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+                #client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
 
 
         # if sent from the same device
@@ -214,12 +215,13 @@ class SmacApp(App):
             d1 = {}
             d1[smac_keys["MESSAGE"]] = "Topic '{}' not unsubscribed".format(id_topic)
             d1[smac_keys["ID_DEVICE"]] = id_device
+            d1[smac_keys["ID_TOPIC"]] = id_topic
             print("Cannot unsubscribe to {}. Passkey error.".format(id_topic))
             if self.ID_DEVICE == frm:
                 print("same device")
             else:
-                #client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
-                client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+                #client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
 
         # if sent from the same device
         #if self.ID_DEVICE != frm:
@@ -322,12 +324,13 @@ class SmacApp(App):
 
                 if cmd == smac_keys["CMD_INVALID_PIN"]:
                     id_device = data.get(smac_keys["ID_DEVICE"])
+                    id_topic = data.get(smac_keys["ID_TOPIC"])
                     #value = data.get(smac_keys["VALUE"])
                     db.update_pin_valid(id_device=id_device, pin_device_valid=0 )
                     ##Clock.schedule_once(partial(db.update_device_busy, id_device, 0), 5)
                     print("id_device: {} pin is invalid".format(id_device))
                     #self.ACKS.append("{}:{}:{}".format(topic, id_device, smac_keys["CMD_INVALID_PIN"]))
-                    db.add_command_status(id_topic=topic, id_device=id_device, cmd=cmd)
+                    db.add_command_status(id_topic=id_topic, id_device=id_device, cmd=cmd)
 
                 if cmd == smac_keys["CMD_SET_PROPERTY"]:
                     id_prop = data.get(smac_keys["ID_PROPERTY"])
