@@ -8,6 +8,7 @@ from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.uix.popup import Popup
 from kivy.uix.slider import Slider
+from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivy.properties import StringProperty, ColorProperty, NumericProperty, BooleanProperty
 from kivy.utils import get_color_from_hex
@@ -155,6 +156,15 @@ class Image_iconButton(ButtonBehavior, Widget):
         if self.angle == -360:
             self.angle = 0
 
+    def start_animation(self, duration=1, *args):
+        # anim = Animation(size=[dp(60), dp(60)], duration=.1)
+        # anim += Animation(size=[dp(50), dp(50)], duration=.5)\
+        anim = Animation(angle=-360, duration=duration)
+        anim += Animation(angle=-360, duration=duration)
+        anim.repeat = True
+        anim.start(self)
+        #anim.on_start = self.on_anim_start
+
 # box container
 class BoxLayout_container( BoxLayout):
     pass
@@ -194,4 +204,11 @@ class BoxLayout_addTopicContent(BoxLayout):
     name_topic = StringProperty("")
 
 class Widget_menuBG(ButtonBehavior, Widget):
+    pass
+
+class BoxLayout_loader(BoxLayout):
+    icon = StringProperty("icons/RESTART.png")
+    text = StringProperty("Loading...")
+
+class TextInput_custom(TextInput):
     pass

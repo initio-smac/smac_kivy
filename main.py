@@ -6,7 +6,7 @@ from kivy.utils import get_color_from_hex, platform
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from kivy.core.window import Window
 
-from smac_device import set_property, get_device_property, get_property_value
+from smac_device import set_property, get_device_property, get_property_value, property_listener
 
 Window.clearcolor = get_color_from_hex("#e0e0e0")
 
@@ -38,6 +38,7 @@ class SmacApp(App):
     grid_min = dp(50)
     screen_manager = ScreenManager(transition=NoTransition())
     modal = ModalView_custom(size_hint_x=.9, size_hint_max_x=dp(400), size_hint_y=None, height=dp(400))
+    is_modal_open = False
     APP_DATA = DictProperty({
         "id_topic": "",
         "name_topic": "",
@@ -55,9 +56,19 @@ class SmacApp(App):
         "LIMIT_DEVICE": 10,
         "LIMIT_TOPIC": 10
     }
-    TASKS = []
+    _TASKS = [] # ID: (task_function, args )
+    TASKS = {}
+    TASK_ID = 0
     SENDING_INFO = 0
     TEST_VAL = 0
+
+    def add_task(self,  func, args):
+        self.TASKS[ str(self.TASK_ID) ] = (func, args)
+        self.TASK_ID += 1
+
+    def remove_task(self, task_id):
+        if str(task_id) in self.TASKS.keys():
+            del self.TASKS[task_id]
 
     def build(self):
         self.screen_manager.add_widget(Screen_network(name='Screen_network'))
@@ -69,19 +80,21 @@ class SmacApp(App):
     def change_screen(self, screen, *args):
         self.screen_manager.current = screen
 
-    def open_modal(self, content, title="Info"):
+    def open_modal(self, content, title="Info", auto_dismiss=True):
         if content != None:
             self.modal.content = content
             self.modal.title = title
             self.modal.content.parent.parent.parent.height = content.height + dp(70)
-            self.modal.open()
+            self.modal.open(auto_dismiss=auto_dismiss)
+            self.is_modal_open = True
 
     def close_modal(self, *args):
-        self.modal.content = None
+        #self.modal.content = None
         self.modal.title = ""
         self.modal.dismiss()
+        self.is_modal_open = False
 
-    def open_modalInfo(self, title="Info", text=""):
+    def open_modalInfo(self, title="Info", text="", auto_dismiss=True):
         print("text", text)
         label = Label(text=text, color=[1, 1, 1, 1])
         label.text = text
@@ -89,7 +102,8 @@ class SmacApp(App):
         self.modal.title = title
         self.modal.content = label
         self.modal.height = dp(400)
-        self.modal.open()
+        self.modal.open(auto_dismiss=auto_dismiss)
+        self.is_modal_open = True
 
     def close_modalInfo(self, *args):
         self.close_modal()
@@ -112,11 +126,17 @@ class SmacApp(App):
             print(text)
             #self.open_modal(text=text, auto_close=True, timeout=2)
 
-
+    def get_command_status_text(self, cmd):
+        if cmd == smac_keys["CMD_STATUS_ADD_TOPIC"]:
+            return "Subscribed to Home."
+        elif cmd == smac_keys["CMD_STATUS_REMOVE_TOPIC"]:
+            return "Unsubscribed to Home."
+        elif cmd == smac_keys["CMD_INVALID_PIN"]:
+            return "Invalid PIN. Update the PIN."
 
 
     def add_topic(self, frm, id_topic, name_home, name_topic, id_device, passkey, *args):
-        if str(passkey) == self.PIN_DEVICE:
+        if str(passkey) == str(self.PIN_DEVICE):
             db.add_network_entry(name_home=name_home,name_topic=name_topic, id_topic=id_topic, id_device=id_device, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
             self.update_config_variable(key='SUB_TOPIC', value=id_topic, arr_op="ADD")
             client.subscribe(id_topic)
@@ -139,7 +159,8 @@ class SmacApp(App):
             if self.ID_DEVICE == frm:
                 print("same device")
             else:
-                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+                #client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+                client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
 
 
         # if sent from the same device
@@ -174,7 +195,7 @@ class SmacApp(App):
         print(passkey == self.PIN_DEVICE)
         #print(type(passkey))
         #print(type(self.PIN_DEVICE))
-        if str(passkey) == self.PIN_DEVICE:
+        if str(passkey) == str(self.PIN_DEVICE):
             #db.add_network_entry(name_topic=id_topic, id_topic=id_topic, id_device=id_device, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
             db.delete_network_entry_by_topic(id_topic, id_device)
             self.update_config_variable(key='SUB_TOPIC', value=id_topic, arr_op="REM")
@@ -197,7 +218,8 @@ class SmacApp(App):
             if self.ID_DEVICE == frm:
                 print("same device")
             else:
-                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+                #client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+                client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
 
         # if sent from the same device
         #if self.ID_DEVICE != frm:
@@ -304,7 +326,8 @@ class SmacApp(App):
                     db.update_pin_valid(id_device=id_device, pin_device_valid=0 )
                     ##Clock.schedule_once(partial(db.update_device_busy, id_device, 0), 5)
                     print("id_device: {} pin is invalid".format(id_device))
-                    self.ACKS.append("{}:{}:{}".format(topic, id_device, smac_keys["CMD_INVALID_PIN"]))
+                    #self.ACKS.append("{}:{}:{}".format(topic, id_device, smac_keys["CMD_INVALID_PIN"]))
+                    db.add_command_status(id_topic=topic, id_device=id_device, cmd=cmd)
 
                 if cmd == smac_keys["CMD_SET_PROPERTY"]:
                     id_prop = data.get(smac_keys["ID_PROPERTY"])
@@ -441,19 +464,19 @@ class SmacApp(App):
                     type_device = data.get(smac_keys["TYPE_DEVICE"], "")
                     db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device,
                                          type_device=type_device, remove=0)
-                    self.ACKS.append( "{}:{}:{}".format(id_topic, id_device, smac_keys["CMD_STATUS_ADD_TOPIC"]) )
+                    #self.ACKS.append( "{}:{}:{}".format(id_topic, id_device, smac_keys["CMD_STATUS_ADD_TOPIC"]) )
+                    db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
 
 
                 if cmd == smac_keys["CMD_STATUS_REMOVE_TOPIC"]:
                     id_topic = data.get(smac_keys["ID_TOPIC"])
                     db.delete_network_entry_by_topic(id_topic=id_topic, id_device=frm)
+                    db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
                     scr = self.screen_manager.get_screen(name="Screen_network")
                     container = scr.ids["id_network_container"]
                     container.remove_widget(scr.TOPIC_IDS[id_topic])
                     del scr.TOPIC_IDS[id_topic]
-                    self.ACKS.append( "{}:{}:{}".format(id_topic, id_device, smac_keys["CMD_STATUS_REMOVE_TOPIC"]) )
-
-
+                    #self.ACKS.append( "{}:{}:{}".format(id_topic, id_device, smac_keys["CMD_STATUS_REMOVE_TOPIC"]) )
 
         #except Exception as e:
         #    print("Exception while decoding message: {}".format(e) )
@@ -524,7 +547,7 @@ class SmacApp(App):
         task2 = asyncio.ensure_future( client.main() )
         task3 = asyncio.ensure_future( self.UI_loop() )
         task4 = asyncio.ensure_future( self.UI_loop2() )
-        self.TASKS = [ task2, task3, task4 ]
+        self._TASKS = [ task2, task3, task4 ]
         #task3 = asyncio.ensure_future( self.send_test() )
 
         #return asyncio.gather( start_app(),zmq_sub_start, zmq_pub_start, task1, zmq_t1, zmq_t2, udp_t1, udp_t2, test1 )
@@ -573,6 +596,7 @@ class SmacApp(App):
             await asyncio.sleep(.1)
 
     async def UI_loop2(self, *args):
+        TASK_COUNT = {}
         while 1:
             # check for busy period and update the db
             id_topic = ""
@@ -580,8 +604,71 @@ class SmacApp(App):
                 if busy_period == int(time.time()):
                     db.update_device_busy(id_device=id_device, is_busy=0, busy_period=0)
 
-            
+            #await property_listener(self.ID_DEVICE)
+
+            for t_id in list(self.TASKS):
+                print(t_id)
+                task = self.TASKS[t_id]
+                func = task[0]
+                args = task[1]
+                if func == db.get_command_status:
+                    if TASK_COUNT.get(t_id, None) == None:
+                        TASK_COUNT[t_id] = 0
+                    id_topic = args[0]
+                    id_device = args[1]
+                    cmd = args[2]
+                    st = db.get_command_status(id_topic=id_topic, id_device=id_device, id_property="")
+                    print("st", st)
+                    if st != None:
+                        tim = st[5]
+                        cmd1 = st[4]
+                        t_diff = int(time.time()) - tim
+                        print("t_diff", t_diff)
+                        if t_diff < 15:
+                            if cmd1 in cmd:
+                                text = self.get_command_status_text(cmd=cmd1)
+                                if self.is_modal_open:
+                                    self.close_modal()
+                                    await asyncio.sleep(.5)
+                                self.open_modalInfo(title="Info", text=text)
+                                self.remove_task(t_id)
+                                for c in cmd:
+                                    db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c)
+                    TASK_COUNT[t_id] += 1
+                    if TASK_COUNT[t_id] == 10:
+                        self.remove_task(task_id=t_id)
+                        for c in cmd:
+                            db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c)
+                        text = "Timeout: No response from the device"
+                        if self.is_modal_open:
+                            self.close_modal()
+                            await asyncio.sleep(.5)
+                        self.open_modalInfo(title="Info", text=text)
+
+
             await asyncio.sleep(1) # Busy period of device should be > than this interval period
+
+    async def check_for_command_status(self, id_topic, id_device, id_property="", cmd=[], COUNT=10):
+        while COUNT:
+            st = db.get_command_status(id_topic=id_topic, id_device=id_device, id_property=id_property)
+            print("st", st)
+            if st != None:
+                tim = st[5]
+                cmd1 = st[4]
+                t_diff = int(time.time()) - tim
+                if t_diff < 30:
+                    if cmd1 in cmd:
+                        text = self.get_command_status_text(cmd=cmd1)
+                        if self.is_modal_open:
+                            self.close_modal()
+                        self.open_modalInfo(title="Info", text=text)
+            COUNT -= 1
+        else:
+            text = "Timeout: No response from the device"
+            print(text)
+            if self.is_modal_open:
+                self.close_modal()
+            self.open_modalInfo(title="Info", text=text)
 
     def get_local_ip(self, *args):
         try:
@@ -668,7 +755,7 @@ class SmacApp(App):
 
 
     def on_stop(self, *args):
-        for task in self.TASKS:
+        for task in self._TASKS:
             task.cancel()
 
 
@@ -686,6 +773,7 @@ class SmacApp(App):
         client.subscribe( ["#", self.ID_DEVICE] + topics )
         client.process_message = self.on_message
         db.delete_network_entry(id_topic='')
+        db.remove_command_status_all()
         tps = db.get_device_list_by_topic(id_topic='')
         if len(tps) < 1:
             db.add_network_entry(name_topic="", id_topic="", id_device=self.ID_DEVICE, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)

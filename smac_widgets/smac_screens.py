@@ -227,6 +227,8 @@ class Screen_network(Screen):
 		#Clock.schedule_interval(self.add_widgets, 1)
 		#print(self.ids)
 		#db.delete_network_entry(id_topic='')
+		#app = App.get_running_app()
+		#self.center_x = app.screen_manager.center_x
 		asyncio.gather(self.interval(1))
 
 		for name_home, in db.get_home_list():
@@ -421,6 +423,9 @@ class Screen_deviceSetting(Screen):
 			d[smac_keys["PASSKEY"]] = passkey
 			client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_TOPIC"], message=d,
 								udp=True, tcp=False)
+			app.add_task(db.get_command_status,
+						 (id_topic, id_device, [smac_keys["CMD_STATUS_REMOVE_TOPIC"], smac_keys["CMD_INVALID_PIN"]]))
+			app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 		self.load_widgets()
 
 	def subscribe_topic(self, home_dropdown_container, topic_dropdown_container, *args):
@@ -442,6 +447,8 @@ class Screen_deviceSetting(Screen):
 			d[smac_keys["NAME_TOPIC"]] = name_topic
 			client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_TOPIC"], message=d, udp=True,
 								tcp=False)
+			app.add_task(db.get_command_status, (id_topic, id_device, [ smac_keys["CMD_STATUS_ADD_TOPIC"], smac_keys["CMD_INVALID_PIN"]]) )
+			app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 		self.load_widgets()
 
 
@@ -470,9 +477,12 @@ class Screen_deviceSetting(Screen):
 		self.load_widgets()
 
 	def update_device_pin(self, id_device, passkey):
-		db.update_device_pin(id_device, passkey)
-		print("Pin updated")
 		app = App.get_running_app()
+		db.update_device_pin(id_device, passkey)
+		if app.APP_DATA["id_device"] == app.ID_DEVICE:
+			app.update_config_variable(key="pin_device", value=passkey)
+			app.PIN_DEVICE = passkey
+		print("Pin updated")
 		app.open_modalInfo(text="PIN updated")
 
 	def update_device_name(self, id_device, name_device):

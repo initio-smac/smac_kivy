@@ -87,7 +87,7 @@
                     BoxLayout:
 				        size_hint: 1, None
 				        height: app.grid_min
-				        TextInput:
+				        TextInput_custom:
                             hint_text: "Device Name"
                             id: id_name_device
                             text: app.APP_DATA["name_device"]
@@ -127,10 +127,10 @@
                 #    BoxLayout:
 				#        size_hint: 1, None
 				#        height: app.grid_min
-                #        TextInput:
+                #        TextInput_custom:
                 #            hint_text: "Home"
                 #            id: id_name_home
-                #        TextInput:
+                #        TextInput_custom:
                 #            hint_text: "Room"
                 #            id: id_name_room
                 #        Button_custom1:
@@ -149,7 +149,7 @@
                     BoxLayout:
 				        size_hint: 1, None
 				        height: app.grid_min
-				        TextInput:
+				        TextInput_custom:
                             hint_text: "PIN"
                             id: id_passkey
                             password: True

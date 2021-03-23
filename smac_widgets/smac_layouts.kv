@@ -1,7 +1,17 @@
 #: import get_color_from_hex kivy.utils.get_color_from_hex
+#: import Window kivy.core.window.Window
 
 <Screen>:
     size_hint_max_x: dp(800)
+    #on_children:
+    center_x : app.screen_manager.center_x
+    #on_enter:
+    #    self.center_x = app.screen_manager.center_x
+    on_pos:
+        self.center_x = app.screen_manager.center_x
+    on_size:
+        self.center_x = app.screen_manager.center_x
+
 
 <Label>:
 	color: get_color_from_hex("#a0a0a0")
@@ -34,7 +44,7 @@
     spacing: dp(10)
 
 <BoxLayout_addGroupContent>:
-	TextInput:
+	TextInput_custom:
 		text: ""
 		hint_text: "Group Name"
 		id: id_group_name
@@ -321,7 +331,7 @@
     orientation: 'vertical'
     size_hint: 1, None
     height: app.grid_min*2
-    TextInput:
+    TextInput_custom:
         id: id_name_home
         size_hint_y: None
         height: app.grid_min
@@ -338,7 +348,7 @@
     orientation: 'vertical'
     size_hint: 1, None
     height: app.grid_min*2
-    TextInput:
+    TextInput_custom:
         id: id_name_topic
         hint_text: "Room Name"
         size_hint_y: None
@@ -353,6 +363,48 @@
         text: "Add Room"
 
 <Widget_menuBG>:
+
+<BoxLayout_loader>:
+    size_hint_y: None
+    height: app.grid_min*8
+    orientation: 'vertical'
+    Widget:
+        size_hint: 1, None
+        height: app.grid_min*3
+        Image_iconButton:
+            source: root.icon
+            center: self.parent.center_x, self.parent.y
+            on_parent:
+                self.start_animation()
+    Label_custom:
+        text: root.text
+        size_hint: 1, None
+        height: app.grid_min*3
+        valign: 'top'
+        height: app.grid_min
+    Widget:
+
+
+<TextInput_custom>:
+    #foreground_color: [0,1,0,1]
+    multiline: False
+    background_color: get_color_from_hex("#f0f0f0")
+    padding_y: self.line_height
+    #line_spacing: dp(10)
+    background_normal: ''
+    background_disabled_normal: ''
+    background_active: ''
+    background_disabled_active: ''
+    opacity: .75 if self.disabled else 1
+    on_focus:
+        print(args[1])
+    canvas.after:
+        Color:
+            rgba: [0,1,0,1]
+        Rectangle:
+            pos: self.pos
+            size: (self.width if self.focus else 0), dp(3)
+
 
 
 

@@ -55,7 +55,7 @@ def get_property_min_max(prop):
 
 
 
-def get_device_property(id_device):
+def get_device_property(id_device=None):
     props = []
     arr = []
     if platform == "android":
@@ -85,13 +85,31 @@ def get_property_value(type_property, id_property=None):
         except:
             return 0
     elif type_property == SMAC_PROPERTY["BRIGHTNESS"]:
-        #if check_permission(Permission.WRITE_SETTINGS):
-        return brightness.current_level()
-        #return 0
+        try:
+            return brightness.current_level()
+        except:
+            return 0
+        return 0
     elif type_property == SMAC_PROPERTY["FLASH"]:
         return 0
     else:
         return 0
+
+
+async def property_listener(id_device):
+    for ent in db.get_property_list_by_device(id_device):
+        id_property = ent[0]
+        name_property = ent[1]
+        type_property = ent[2]
+        db_value = ent[5] if(type(ent[5])==int) else int(ent[5])
+        value = get_property_value(type_property=type_property, id_property=id_property)
+        value = value if(type(value) == int) else int(value)
+        if name_property == "BLUETOOTH":
+            print(ent[1])
+            print("db_value", db_value)
+            print("value", value)
+        if value != db_value:
+            send_status(id_property=id_property, value=value)
 
 def set_property(type_property, value, id_property=None):
     if type_property == SMAC_PROPERTY["BLUETOOTH"]:

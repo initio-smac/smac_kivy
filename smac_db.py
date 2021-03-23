@@ -22,7 +22,7 @@ class Database():
         # new table
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_network(id INTEGER PRIMARY KEY AUTOINCREMENT,  name_home STR, name_topic STR, id_topic STR, id_device STR, name_device STR, type_device STR, remove INT, view_topic INT, view_device INT, is_busy INT, busy_period INT, pin_device STR, pin_device_valid INT   )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_property(id INTEGER PRIMARY KEY AUTOINCREMENT, id_device STR, id_property STR, type_property STR, name_property STR, value STR, value_min STR, value_max STR, value_step STR, value_unit STR , remove INT, value_temp STR, value_last_updated STR)")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS smac_appdata(id INTEGER PRIMARY KEY AUTOINCREMENT, key STR, value STR)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS smac_command_status(id INTEGER PRIMARY KEY AUTOINCREMENT, id_topic STR, id_device STR, id_property STR, cmd STR, time INT)")
 
     def create_indexes(self, *args):
         try:
@@ -35,10 +35,55 @@ class Database():
         except Exception as e:
             print(e)
 
+        #try:
+        #    self.cur.execute("CREATE UNIQUE INDEX appdata_index ON smac_appdata(key);")
+        #except Exception as e:
+        #    print(e)
+
+    #
+    def add_command_status(self, id_topic, id_device, cmd, id_property="", ):
         try:
-            self.cur.execute("CREATE UNIQUE INDEX appdata_index ON smac_appdata(key);")
+            lock.acquire(True)
+            t =  int( time.time() )
+            self.cur.execute(
+                'REPLACE INTO smac_command_status ( id_topic, id_device, cmd, id_property, time) VALUES (?, ?, ?, ?, ?)', (id_topic, id_device, cmd, id_property, t))
+            self.connection.commit()
+        except Exception as e:
+            print("eg: {}".format(e))
+        finally:
+            lock.release()
+
+    def get_command_status(self, id_topic, id_device, id_property=""):
+        try:
+            lock.acquire(True)
+            r = self.cur.execute('SELECT * FROM smac_command_status WHERE id_topic=? AND id_device=? AND id_property=? ORDER BY time', (id_topic, id_device, id_property)).fetchone()
+            if r != None:
+                return r
+            # return self.cur.fetchall()
         except Exception as e:
             print(e)
+        finally:
+            lock.release()
+
+    def remove_command_status(self, id_topic, id_device, cmd, id_property=""):
+        try:
+            lock.acquire(True)
+            self.cur.execute('DELETE FROM smac_command_status WHERE id_topic=? AND id_device=? AND id_property=? AND cmd=?', (id_topic, id_device, id_property, cmd))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def remove_command_status_all(self):
+        try:
+            lock.acquire(True)
+            self.cur.execute('DELETE FROM smac_command_status')
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
 
 
     # change to topic
@@ -87,28 +132,6 @@ class Database():
             print(e)
         finally:
             lock.release()
-
-    '''def update_device_busy_period(self, id_device, busy_period=0, *args):
-        try:
-            lock.acquire(True)
-            self.cur.execute('UPDATE smac_network SET busy_period=? WHERE id_device=?',( busy_period, id_device))
-            self.connection.commit()
-        except Exception as e:
-            print(e)
-        finally:
-            lock.release()
-
-    def get_device_busy_period(self, id_device):
-        try:
-            lock.acquire(True)
-            r = self.cur.execute('SELECT busy_period FROM smac_network ORDER BY id_device', (id_device,)).fetchone()
-            if r != None:
-                return r[0]
-            #return self.cur.fetchall()
-        except Exception as e:
-            print(e)
-        finally:
-            lock.release()'''
 
     def get_pin_valid_by_device(self, id_device):
         try:
