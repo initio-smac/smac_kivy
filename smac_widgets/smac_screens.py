@@ -315,11 +315,12 @@ class Screen_deviceSetting(Screen):
 		dd_room_container = self.ids["id_dropdown_room_container"]
 		dd_room = dd_room_container.ids["id_dropdown"]
 		if clear:
-			try:
-				dd_home.clear_widgets()
-				dd_room.clear_widgets()
-			except:
-				pass
+			dd_home.clear_widgets()
+			dd_room.clear_widgets()
+			#for child in dd_home.children:
+			#	dd_home.remove(child)
+			#for child in dd_room.children:
+			#	dd_room.remove(child)
 		app = App.get_running_app()
 		id_device = app.APP_DATA["id_device"]
 		# get the topic list which are not subscribed and append to the
@@ -431,7 +432,12 @@ class Screen_deviceSetting(Screen):
 	def subscribe_topic(self, home_dropdown_container, topic_dropdown_container, *args):
 		app = App.get_running_app()
 		id_device = app.APP_DATA["id_device"]
-		id_topic = topic_dropdown_container.ids["id_dropdown"].id_topic
+		try:
+			id_topic = topic_dropdown_container.ids["id_dropdown"].id_topic
+		except Exception as e:
+			print(e)
+			app.open_modalInfo(title="Info", text="Please Select a Home to continue.")
+			return
 		name_home = home_dropdown_container.text
 		name_topic = topic_dropdown_container.text
 		passkey = db.get_pin_device(id_device=id_device)
@@ -464,7 +470,7 @@ class Screen_deviceSetting(Screen):
 		dropdown.select(wid.text)
 		dropdown.id_topic = wid.id_topic
 
-	def add_home(self, name_home, name_topic, show_popup=False, *args):
+	'''def add_home(self, name_home, name_topic, show_popup=False, *args):
 		app = App.get_running_app()
 		id_topic = generate_id_topic(app.ID_DEVICE)
 		app.add_topic(frm=app.ID_DEVICE, id_topic=id_topic, name_home=name_home, name_topic=name_topic, id_device=app.ID_DEVICE, passkey=app.PIN_DEVICE)
@@ -474,10 +480,13 @@ class Screen_deviceSetting(Screen):
 		if show_popup:
 			app.open_modalInfo(text="New Home added")
 
-		self.load_widgets()
+		self.load_widgets()'''
 
 	def update_device_pin(self, id_device, passkey):
 		app = App.get_running_app()
+		if (passkey == "") or (passkey == None):
+			app.open_modalInfo(title="Info", text="PIN cannot be empty.")
+			return
 		db.update_device_pin(id_device, passkey)
 		if app.APP_DATA["id_device"] == app.ID_DEVICE:
 			app.update_config_variable(key="pin_device", value=passkey)
@@ -486,7 +495,10 @@ class Screen_deviceSetting(Screen):
 		app.open_modalInfo(text="PIN updated")
 
 	def update_device_name(self, id_device, name_device):
+		app = App.get_running_app()
+		if (name_device == "") or (name_device == None):
+			app.open_modalInfo(title="Info", text="Device Name cannot be empty.")
+			return
 		db.update_device_name(id_device, name_device)
 		print("Device Name updated")
-		app = App.get_running_app()
 		app.open_modalInfo(text="Device Name Updated")

@@ -43,17 +43,17 @@
     padding: dp(1), dp(1)
     spacing: dp(10)
 
-<BoxLayout_addGroupContent>:
-	TextInput_custom:
-		text: ""
-		hint_text: "Group Name"
-		id: id_group_name
-		size_hint_y: None
-	Button:
-		text: "add"
-		size_hint_y: None
-		on_release:
-			app.add_group( id_group_name.text)
+#<BoxLayout_addGroupContent>:
+#	TextInput_custom:
+#		text: ""
+#		hint_text: "Group Name"
+#		id: id_group_name
+#		size_hint_y: None
+#	Button:
+#		text: "add"
+#		size_hint_y: None
+#		on_release:
+#			app.add_group( id_group_name.text)
 
 <Widget_base>:
 	height: self.minimum_height
@@ -106,7 +106,7 @@
 	#height: 0 if self.hide else self.minimum_height
 	canvas.before:
         Color:
-            rgba: 1,1,1,.75
+            rgba: 1,1,1,1
         RoundedRectangle:
             size: self.size
             pos: self.pos
@@ -268,11 +268,14 @@
 
 <Button_custom1>:
     size_hint: None, None
-    size: app.grid_min*4, app.grid_min
+    size: app.grid_min*2, app.grid_min
+    font_size: app.grid_min/4
+    color: get_color_from_hex("#fefefe")
 
 <Dropdown_custom>:
     text: ""
     size_hint: 1, None
+    id_dropdown: id_dropdown.__self__ # weak_reference err: ref: https://github.com/kivy/kivy/issues/4929
     Label_button:
         id: id_label
         text: root.text

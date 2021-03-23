@@ -117,7 +117,7 @@
                         id: id_dropdown_room_container
                         height: app.grid_min
                     Button_custom1:
-                        text: 'add device'
+                        text: 'Add Device'
                         on_release:
                             root.subscribe_topic(id_dropdown_home_container, id_dropdown_room_container)
                             #app.send_req_delete_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
@@ -154,7 +154,7 @@
                             id: id_passkey
                             password: True
                         Button_custom1:
-                            text: 'update PIN'
+                            text: 'Update PIN'
                             on_release:
                                 root.update_device_pin(app.APP_DATA["id_device"], id_passkey.text)
 

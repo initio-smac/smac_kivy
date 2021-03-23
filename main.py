@@ -458,7 +458,6 @@ class SmacApp(App):
                     passkey = data.get(smac_keys["PASSKEY"])
                     self.delete_topic(frm, id_topic, id_device, passkey, msg_id)
 
-
                 if cmd == smac_keys["CMD_STATUS_ADD_TOPIC"]:
                     id_topic = data.get(smac_keys["ID_TOPIC"])
                     name_device = data.get(smac_keys["NAME_DEVICE"], "")
