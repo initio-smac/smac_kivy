@@ -8,12 +8,12 @@
             orientation: "vertical"
             BoxLayout_header:
                 Image_iconButton:
-                    source: 'icons/HOME.png'
+                    source: app.source_icon + 'HOME.png'
                     on_release:
                         root.open_close_menu()
                 Label:
                     text: app.APP_DATA["name_home"]
-                    color: get_color_from_hex("#202020")
+                    color: app.colors["COLOR_TEXT"]
                     size_hint_y: None
                     height: app.grid_min
                 #Button:
@@ -36,7 +36,7 @@
                 root.open_close_menu()
             canvas.before:
                 Color:
-                    rgba: 1,1,1,1
+                    rgba: app.colors["COLOR_MENU_BG"]
                 Rectangle:
                     size: self.size
                     pos: self.pos
@@ -47,7 +47,7 @@
             id: id_menu_container
             canvas.before:
                 Color:
-                    rgba: get_color_from_hex("#c0c0c0")
+                    rgba: app.colors["COLOR_THEME_BASIC"]
                 Rectangle:
                     size: self.size
                     pos: self.pos
@@ -57,13 +57,28 @@
 
                 Label_menuItem:
                     text: "Menu"
-                    bg_color: get_color_from_hex("#d9d9d9")
+                    bg_color: app.colors["COLOR_THEME_BASIC_2"]
+                    Widget_switch:
+                        pos: self.parent.right - self.width - dp(10), self.parent.y
+                        on_value:
+                            app.theme = "LIGHT" if(app.theme=="DARK") else "DARK"
+                #Widget:
+                #    size_hint: 1, None
+                #    height: app.grid_min
+                    #pos: root.pos
+                #    Label_custom:
+                #        text: "Theme"
+                #        pos: self.parent.pos
+                #        id: id_theme
+                #        color: app.colors["COLOR_TEXT"]
+
                 Label_menuItem:
                     text: "Local"
-                    bg_color: get_color_from_hex("#ffffff")
+                    bg_color: app.colors["COLOR_THEME_BASIC_2"]
                     on_release:
                         #self.bg_color: get_color_from_hex("#c9c9c9")
                         root.on_menu_item_release(self)
+
 
 
 <Screen_deviceSetting>:
@@ -71,12 +86,12 @@
 		orientation: "vertical"
 		BoxLayout_header:
 		    Image_iconButton:
-		        source: "icons/LEFT.png"
+		        source: app.source_icon + "LEFT.png"
 		        on_release:
 		            app.change_screen("Screen_network")
 			Label:
 				text: root.name
-				color: get_color_from_hex("#202020")
+				color: app.colors["COLOR_TEXT"]
 		ScrollView:
 			size_hint_y: 1
 			BoxLayout_container:

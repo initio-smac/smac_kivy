@@ -49,7 +49,7 @@ class Screen_network(Screen):
 					w = self.TOPIC_IDS[id_topic]
 				w.name_topic= name_topic
 				w.view_topic = view_topic
-				w.icon1 = 'icons/BOTTOM.png' if view_topic else 'icons/TOP.png'
+				w.icon1 = app.source_icon + 'BOTTOM.png' if view_topic else app.source_icon + 'TOP.png'
 
 				#w.bind( on_release=self.goto_prop_page )
 				for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid in db.get_device_list_by_topic(id_topic):
@@ -60,7 +60,7 @@ class Screen_network(Screen):
 						w1.PROP_IDS = {}
 						w1.id_device = id_device
 						w1.ids["id_icon1"].bind(on_release=self.change_device_view)
-						w1.icon2 = 'icons/SETTING.png'
+						w1.icon2 = app.source_icon + 'SETTING.png'
 						w1.ids["id_icon2"].bind(on_release=self.goto_setting_page)
 						w.DEVICE_IDS[id_device] = w1
 						w.add_widget(w1)
@@ -72,7 +72,7 @@ class Screen_network(Screen):
 						#	w.add_widget(button)
 
 						'''if id_device == app.ID_DEVICE:
-							img = Image_iconButton(source='icons/FAN.png')
+							img = Image_iconButton(source=app.source_icon + 'FAN.png')
 							w1.add_widget(img)
 							sp = random.randint(1, 3)
 							sp = 5
@@ -83,7 +83,7 @@ class Screen_network(Screen):
 					w1.name_device= name_device
 					w1.id_topic = id_topic
 					w1.view_device = view_device
-					w1.icon1 =  'icons/BOTTOM.png' if view_device else 'icons/TOP.png'
+					w1.icon1 =  app.source_icon + 'BOTTOM.png' if view_device else app.source_icon + 'TOP.png'
 					w1.hide = view_topic
 					w1.pin_device_valid = pin_device_valid
 
@@ -117,7 +117,7 @@ class Screen_network(Screen):
 								slider.bind(value_copy=self.change_value)
 								if w2.type_property in [ SMAC_PROPERTY["BATTERY"] ]:
 									slider.disabled = True
-									slider.cursor_image = 'icons/TRANSPARENT.png'
+									slider.cursor_image = app.source_icon + 'TRANSPARENT.png'
 								slider_container.add_widget(slider)
 						else:
 							w2 = w1.PROP_IDS[id_property]
@@ -161,37 +161,40 @@ class Screen_network(Screen):
 			wid_prop.MSG_COUNTER = MSG_ID
 
 	def get_icon(self, type_property, *args):
+		app = App.get_running_app()
 		if type_property == SMAC_PROPERTY["BATTERY"]:
-			return 'icons/BATTERY.png'
+			return app.source_icon + 'BATTERY.png'
 		elif type_property == SMAC_PROPERTY["BLUETOOTH"]:
-			return 'icons/BLUETOOTH.png'
+			return app.source_icon + 'BLUETOOTH.png'
 		elif type_property == SMAC_PROPERTY["FLASH"]:
-			return 'icons/FLASH.png'
+			return app.source_icon + 'FLASH.png'
 		elif type_property == SMAC_PROPERTY["BRIGHTNESS"]:
-			return 'icons/BRIGHTNESS.png'
+			return app.source_icon + 'BRIGHTNESS.png'
 		elif type_property == SMAC_PROPERTY["SHUTDOWN"]:
-			return 'icons/SHUTDOWN.png'
+			return app.source_icon + 'SHUTDOWN.png'
 		elif type_property == SMAC_PROPERTY["RESTART"]:
-			return 'icons/RESTART.png'
+			return app.source_icon + 'RESTART.png'
 		else:
 			return ''
 
 
 	def change_topic_view(self, icon, *args):
+		app = App.get_running_app()
 		wid = icon.parent.parent
 		wid.view_topic = (1-wid.view_topic)
 		view = wid.view_topic
-		wid.icon1 = 'icons/BOTTOM.png' if view else 'icons/TOP.png'
+		wid.icon1 = app.source_icon + 'BOTTOM.png' if view else app.source_icon + 'TOP.png'
 		for i in wid.children:
 			i.hide = view
 		#print( type(wid.view_topic) )
 		db.set_topic_view(id_topic=wid.id_topic, view_topic=view)
 
 	def change_device_view(self, icon, *args):
+		app = App.get_running_app()
 		wid = icon.parent.parent
 		wid.view_device = (1 - wid.view_device)
 		view = wid.view_device
-		wid.icon1 = 'icons/BOTTOM.png' if view else 'icons/TOP.png'
+		wid.icon1 = app.source_icon + 'BOTTOM.png' if view else app.source_icon + 'TOP.png'
 		#print( type(wid.view_device) )
 		for i in wid.children:
 			i.hide = view
@@ -327,21 +330,21 @@ class Screen_deviceSetting(Screen):
 		for id_topic, name_home, name_topic in db.get_topic_list_not_by_device(id_device=id_device):
 			print(id_topic)
 			if (id_topic != None) and (id_topic != ""):
-				label = Label_button(text=name_home)
+				label = Label_dropDown(text=name_home)
 				label.id_topic = id_topic
 				label.bind(on_release=self.on_dropdown_homeitem_release)
 				dd_home.add_widget(label)
 
-				label = Label_button(text=name_topic)
+				label = Label_dropDown(text=name_topic)
 				label.id_topic = id_topic
 				label.bind(on_release=self.on_dropdown_roomitem_release)
 				dd_room.add_widget(label)
 
-		label = Label_button(text="Add Home", bg_color=get_color_from_hex("#f0f0f0"))
+		label = Label_button(text="Add Home")
 		label.bind(on_release=self.create_home)
 		dd_home.add_widget(label)
 
-		label = Label_button(text="Add Room", bg_color=[1,1,1,1])
+		label = Label_button(text="Add Room")
 		label.bind(on_release=self.create_room)
 		dd_room.add_widget(label)
 
@@ -353,9 +356,9 @@ class Screen_deviceSetting(Screen):
 		for id_topic, name_home, name_topic in db.get_topic_list_by_device(id_device=id_device):
 			if (id_topic != None) and (id_topic != ""):
 				label = Widget_block(text=name_home + "/" + name_topic, orientation="horizontal",
-									 bg_color=get_color_from_hex("#e0e0e0"))
+									 bg_color=app.colors["COLOR_THEME_BASIC"])
 				label.id_topic = id_topic
-				btn = Image_iconButton(source='icons/CLOSE.png')
+				btn = Image_iconButton(source=app.source_icon + 'CLOSE.png')
 				btn.bind(on_release=self.unsunbscribe_topic)
 				# btn.pos = 0,0
 				label.add_widget(btn)

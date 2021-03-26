@@ -1,4 +1,5 @@
 from kivy.animation import Animation
+from kivy.app import App
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.behaviors import ButtonBehavior
@@ -61,9 +62,11 @@ class Widget_switch(ButtonBehavior, Widget):
     margin = NumericProperty(0)
 
     def on_value(self, *args):
+        app = App.get_running_app()
         ball = self.ids["id_ball"]
         x = (self.x + ball.width +dp(7.5)) if self.value else (self.x + dp(2.5) )
-        color_bg = get_color_from_hex("#4a8111") if self.value else get_color_from_hex("#c0c0c0")
+        #color_bg = get_color_from_hex("#4a8111") if self.value else get_color_from_hex("#c0c0c0")
+        color_bg = app.colors["COLOR_THEME_HIGHLIGHT"] if self.value else app.colors["COLOR_THEME_BASIC"]
         #self.start_animation(ball, x, color_bg)
         ball.x = x
         ball.parent.color_bg = color_bg
@@ -176,6 +179,9 @@ class Button_custom1(Button):
 class Label_button(ButtonBehavior, Label):
     bg_color = ColorProperty([1,1,1,1])
 
+class Label_dropDown(Label_button):
+    pass
+
 class Dropdown_custom(BoxLayout):
     orientation = 'vertical'
     value = StringProperty("")
@@ -192,7 +198,7 @@ class Label_custom(Label):
 class ModalView_custom(Popup):
     text = StringProperty("hello")
     separator_height = dp(2)
-    separator_color = get_color_from_hex("#4af343")
+    #separator_color = get_color_from_hex("#4af343")
 
 class Image_icon(Image):
     pass
@@ -207,7 +213,7 @@ class Widget_menuBG(ButtonBehavior, Widget):
     pass
 
 class BoxLayout_loader(BoxLayout):
-    icon = StringProperty("icons/RESTART.png")
+    icon = StringProperty("")
     text = StringProperty("Loading...")
 
 class TextInput_custom(TextInput):

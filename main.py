@@ -7,6 +7,7 @@ from kivy.uix.screenmanager import ScreenManager, NoTransition
 from kivy.core.window import Window
 
 from smac_device import set_property, get_device_property, get_property_value, property_listener
+from smac_theme_colors import THEME_LIGHT, THEME_DARK
 
 Window.clearcolor = get_color_from_hex("#e0e0e0")
 
@@ -18,8 +19,7 @@ from smac_widgets.smac_layouts import *
 from smac_db import db
 
 from kivy.lang import Builder
-Builder.load_file('smac_widgets/smac_screens.kv')
-Builder.load_file('smac_widgets/smac_layouts.kv')
+
 
 
 
@@ -61,6 +61,19 @@ class SmacApp(App):
     TASK_ID = 0
     SENDING_INFO = 0
     TEST_VAL = 0
+    theme = OptionProperty("LIGHT", options=["LIGHT", "DARK"])
+    colors = DictProperty(THEME_LIGHT)
+    source_icon = StringProperty("icons/LIGHT/")
+
+    def on_theme(self, *args):
+        if self.theme == "DARK":
+            self.colors = THEME_DARK
+            self.source_icon = "icons/DARK/"
+            self.update_config_variable(key="theme", value="DARK")
+        else:
+            self.colors = THEME_LIGHT
+            self.source_icon = "icons/LIGHT/"
+            self.update_config_variable(key="theme", value="LIGHT")
 
     def add_task(self,  func, args):
         self.TASKS[ str(self.TASK_ID) ] = (func, args)
@@ -71,6 +84,8 @@ class SmacApp(App):
             del self.TASKS[task_id]
 
     def build(self):
+        Builder.load_file('smac_widgets/smac_screens.kv')
+        Builder.load_file('smac_widgets/smac_layouts.kv')
         self.screen_manager.add_widget(Screen_network(name='Screen_network'))
         self.screen_manager.add_widget(Screen_deviceSetting(name='Screen_deviceSetting'))
         #self.screen_manager.add_widget(Screen_devices(name='Screen_devices'))
@@ -747,6 +762,7 @@ class SmacApp(App):
                 self.LIMITS["LIMIT_DEVICE"] = fd["LIMIT_DEVICE"]
             if fd.get("LIMIT_TOPICS") != None:
                 self.LIMITS["LIMIT_TOPIC"] = fd["LIMIT_TOPIC"]
+            self.theme = fd.get("theme", "LIGHT")
             f.close()
 
         print("fd", fd)
