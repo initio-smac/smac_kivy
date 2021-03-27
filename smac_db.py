@@ -20,7 +20,7 @@ class Database():
 
     def create_tables(self, *args):
         # new table
-        self.cur.execute("CREATE TABLE IF NOT EXISTS smac_network(id INTEGER PRIMARY KEY AUTOINCREMENT,  name_home STR, name_topic STR, id_topic STR, id_device STR, name_device STR, type_device STR, remove INT, view_topic INT, view_device INT, is_busy INT, busy_period INT, pin_device STR, pin_device_valid INT   )")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS smac_network(id INTEGER PRIMARY KEY AUTOINCREMENT,  name_home STR, name_topic STR, id_topic STR, id_device STR, name_device STR, type_device STR, remove INT, view_topic INT, view_device INT, is_busy INT, busy_period INT, pin_device STR, pin_device_valid INT, last_updated INT, interval_online INT   )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_property(id INTEGER PRIMARY KEY AUTOINCREMENT, id_device STR, id_property STR, type_property STR, name_property STR, value STR, value_min STR, value_max STR, value_step STR, value_unit STR , remove INT, value_temp STR, value_last_updated STR)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_command_status(id INTEGER PRIMARY KEY AUTOINCREMENT, id_topic STR, id_device STR, id_property STR, cmd STR, time INT)")
 
@@ -87,12 +87,13 @@ class Database():
 
 
     # change to topic
-    def add_network_entry(self, id_topic, id_device, name_device, type_device, name_home="", name_topic="", remove=0, view_topic=0, view_device=0, is_busy=0, busy_period=0, pin_device="1234", pin_device_valid=1):
+    def add_network_entry(self, id_topic, id_device, name_device, type_device, name_home="", name_topic="", remove=0, view_topic=0, view_device=0, is_busy=0, busy_period=0, pin_device="1234", pin_device_valid=1, interval_online=10):
         try:
+            last_updated = int(time.time())
             lock.acquire(True)
             self.cur.execute(
-                'REPLACE INTO smac_network ( name_home, name_topic, id_topic, id_device, name_device, type_device,  remove, view_topic, view_device, is_busy, busy_period, pin_device, pin_device_valid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', \
-                (name_home, name_topic, id_topic, id_device, name_device, type_device, remove, view_topic, view_device, is_busy, busy_period, pin_device, pin_device_valid))
+                'REPLACE INTO smac_network ( name_home, name_topic, id_topic, id_device, name_device, type_device,  remove, view_topic, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', \
+                (name_home, name_topic, id_topic, id_device, name_device, type_device, remove, view_topic, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated))
             self.connection.commit()
         except Exception as e:
             print("eg: {}".format(e) )
@@ -113,7 +114,8 @@ class Database():
         try:
             lock.acquire(True)
             print("3a")
-            self.cur.execute('UPDATE smac_network SET is_busy=?, busy_period=? WHERE id_device=?', (is_busy, busy_period, id_device))
+            last_updated = int(time.time())
+            self.cur.execute('UPDATE smac_network SET last_updated=?, is_busy=?, busy_period=? WHERE id_device=?', (last_updated, is_busy, busy_period, id_device))
             self.connection.commit()
             print("4a")
         except Exception as e:
@@ -160,7 +162,7 @@ class Database():
     def update_device_pin(self, id_device, pin_device):
         try:
             lock.acquire(True)
-            self.cur.execute('UPDATE smac_network SET pin_device=? WHERE id_device=?',( pin_device, id_device,))
+            self.cur.execute('UPDATE smac_network SET last_updated=?, pin_device=? WHERE id_device=?',( int(time.time()), pin_device, id_device,))
             self.connection.commit()
         except Exception as e:
             print(e)
@@ -182,7 +184,7 @@ class Database():
     def update_device_name(self, id_device, name_device):
         try:
             lock.acquire(True)
-            self.cur.execute('UPDATE smac_network SET name_device=? WHERE id_device=?',( name_device, id_device,))
+            self.cur.execute('UPDATE smac_network SET last_updated=?, name_device=? WHERE id_device=?',( int(time.time()), name_device, id_device,))
             self.connection.commit()
         except Exception as e:
             print(e)
@@ -300,7 +302,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid FROM smac_network WHERE id_topic=? ORDER BY name_device DESC LIMIT ?,?', (id_topic, set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated FROM smac_network WHERE id_topic=? ORDER BY name_device DESC LIMIT ?,?', (id_topic, set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -412,10 +414,46 @@ class Database():
     def update_value_temp_by_dev_id(self, id_device, id_property, value):
         try:
             lock.acquire(True)
-            last_updated = time.time()
+            last_updated = int(time.time())
             self.cur.execute(
                 'UPDATE smac_property SET value_temp=?, value_last_updated=? WHERE id_device=? AND id_property=?',(value, last_updated, id_device, id_property))
+            self.cur.execute('UPDATE smac_network SET last_updated=? WHERE id_device=?', (last_updated, id_device))
             self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def update_device_interval_online(self, id_device, interval):
+        try:
+            lock.acquire(True)
+            last_updated = int(time.time())
+            self.cur.execute('UPDATE smac_network SET interval_online=?, last_updated=? WHERE id_device=?', (interval, last_updated, id_device))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def update_device_last_updated(self, id_device):
+        try:
+            lock.acquire(True)
+            last_updated = int(time.time())
+            self.cur.execute('UPDATE smac_network SET last_updated=? WHERE id_device=?',
+                             (last_updated, id_device))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def get_device_interval_online(self, id_device):
+        try:
+            lock.acquire(True)
+            r = self.cur.execute('SELECT interval_online FROM smac_network WHERE id_device=?', (id_device,)).fetchone()
+            if r != None:
+                return r[0]
+            #return self.cur.fetchall()
         except Exception as e:
             print(e)
         finally:

@@ -52,83 +52,91 @@ class Screen_network(Screen):
 				w.icon1 = app.source_icon + 'BOTTOM.png' if view_topic else app.source_icon + 'TOP.png'
 
 				#w.bind( on_release=self.goto_prop_page )
-				for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid in db.get_device_list_by_topic(id_topic):
+				for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated in db.get_device_list_by_topic(id_topic):
 					#print("id_device: {}".format(id_device))
-					if w.DEVICE_IDS.get(id_device, None) == None:
-						w1 = Widget_device(text=name_device)
-						w1.disable_icon2 = True if (id_topic == None) else False
-						w1.PROP_IDS = {}
-						w1.id_device = id_device
-						w1.ids["id_icon1"].bind(on_release=self.change_device_view)
-						w1.icon2 = app.source_icon + 'SETTING.png'
-						w1.ids["id_icon2"].bind(on_release=self.goto_setting_page)
-						w.DEVICE_IDS[id_device] = w1
-						w.add_widget(w1)
 
-						#if id_device == app.ID_DEVICE:
-						#	button = Button(text="delete", size_hint=(None, None), size=(dp(100), dp(50)))
-						#	button.bind(on_release=app.delete_topic)
-						#	button.id_topic = id_topic
-						#	w.add_widget(button)
-
-						'''if id_device == app.ID_DEVICE:
-							img = Image_iconButton(source=app.source_icon + 'FAN.png')
-							w1.add_widget(img)
-							sp = random.randint(1, 3)
-							sp = 5
-							print(sp)
-							self.start_animation(img, duration=sp)'''
+					if id_device == app.ID_DEVICE:
+						online = True
 					else:
-						w1 = w.DEVICE_IDS[id_device]
-					w1.name_device= name_device
-					w1.id_topic = id_topic
-					w1.view_device = view_device
-					w1.icon1 =  app.source_icon + 'BOTTOM.png' if view_device else app.source_icon + 'TOP.png'
-					w1.hide = view_topic
-					w1.pin_device_valid = pin_device_valid
+						t_diff = int(time.time()) - last_updated
+						online =  True if(t_diff <= interval_online) else False
+					if online:
+						if( w.DEVICE_IDS.get(id_device, None) == None):
+							w1 = Widget_device(text=name_device)
+							w1.disable_icon2 = True if (id_topic == None) else False
+							w1.PROP_IDS = {}
+							w1.id_device = id_device
+							w1.ids["id_icon1"].bind(on_release=self.change_device_view)
+							w1.icon2 = app.source_icon + 'SETTING.png'
+							w1.ids["id_icon2"].bind(on_release=self.goto_setting_page)
+							w.DEVICE_IDS[id_device] = w1
+							w.add_widget(w1)
 
-					#print("is_busy", is_busy)
-					for id_property, property_name, type_property, value_min, value_max, value, value_temp, value_last_updated in db.get_property_list_by_device(id_device):
-						#print("id_property: {}".format(id_property))
-						#print("value", value)
-						#print(type(value))
-						type_property = str(type_property)
-						if w1.PROP_IDS.get(id_property, None) == None:
-							w2 = Widget_property(text="{}:{}".format(property_name, value) )
-							w2.id_property = id_property
-							w2.id_device = id_device
-							w2.value = 0 if(value == None) else int(value)
-							w2.value_max = value_max
-							w2.value_min = value_min
-							w2.type_property = str(type_property)
-							w2.source = self.get_icon(type_property=w2.type_property)
-							w1.PROP_IDS[id_property] = w2
-							w1.add_widget(w2)
-							slider_container = w2.ids["id_slider_container"]
-							if value_max == 1:
-								slider = Widget_switch()
-								w2.ids["id_slider"] = slider
-								slider.value = w2.value
-								slider.bind(on_release=self.change_value)
-								slider_container.add_widget(slider)
-							elif value_max > 1:
-								slider = Widget_slider(value=w2.value, value_max=value_max, value_min=value_min, step=1)
-								w2.ids["id_slider"] = slider
-								slider.bind(value_copy=self.change_value)
-								if w2.type_property in [ SMAC_PROPERTY["BATTERY"] ]:
-									slider.disabled = True
-									slider.cursor_image = app.source_icon + 'TRANSPARENT.png'
-								slider_container.add_widget(slider)
+							'''if id_device == app.ID_DEVICE:
+								img = Image_iconButton(source=app.source_icon + 'FAN.png')
+								w1.add_widget(img)
+								sp = random.randint(1, 3)
+								sp = 5
+								print(sp)
+								self.start_animation(img, duration=sp)'''
 						else:
-							w2 = w1.PROP_IDS[id_property]
+							w1 = w.DEVICE_IDS[id_device]
 
-						#if property_name == "BRIGHTNESS":
-						#	print("is_busy", is_busy)
-						w2.text = property_name
-						w2.value = int(value)
-						w2.is_busy = is_busy
-						# hide for hiding the widget based on the Expand or Collapse icon on the Parent Widget
-						w2.hide = view_device
+						w1.name_device= name_device
+						w1.id_topic = id_topic
+						w1.view_device = view_device
+						w1.icon1 =  app.source_icon + 'BOTTOM.png' if view_device else app.source_icon + 'TOP.png'
+						w1.hide = view_topic
+						w1.pin_device_valid = pin_device_valid
+						w1.interval_online = interval_online
+
+						#print("is_busy", is_busy)
+						for id_property, property_name, type_property, value_min, value_max, value, value_temp, value_last_updated in db.get_property_list_by_device(id_device):
+							#print("id_property: {}".format(id_property))
+							#print("value", value)
+							#print(type(value))
+							type_property = str(type_property)
+							if w1.PROP_IDS.get(id_property, None) == None:
+								w2 = Widget_property(text="{}:{}".format(property_name, value) )
+								w2.id_property = id_property
+								w2.id_device = id_device
+								w2.value = 0 if(value == None) else int(value)
+								w2.value_max = value_max
+								w2.value_min = value_min
+								w2.type_property = str(type_property)
+								w2.source = self.get_icon(type_property=w2.type_property)
+								w1.PROP_IDS[id_property] = w2
+								w1.add_widget(w2)
+								slider_container = w2.ids["id_slider_container"]
+								if value_max == 1:
+									slider = Widget_switch()
+									w2.ids["id_slider"] = slider
+									slider.value = w2.value
+									slider.bind(on_release=self.change_value)
+									slider_container.add_widget(slider)
+								elif value_max > 1:
+									slider = Widget_slider(value=w2.value, value_max=value_max, value_min=value_min, step=1)
+									w2.ids["id_slider"] = slider
+									slider.bind(value_copy=self.change_value)
+									if w2.type_property in [ SMAC_PROPERTY["BATTERY"] ]:
+										slider.disabled = True
+										slider.cursor_image = app.source_icon + 'TRANSPARENT.png'
+									slider_container.add_widget(slider)
+							else:
+								w2 = w1.PROP_IDS[id_property]
+
+							#if property_name == "BRIGHTNESS":
+							#	print("is_busy", is_busy)
+							w2.text = property_name
+							w2.value = int(value)
+							w2.is_busy = is_busy
+							w1.text1 = " ( DEVICE BUSY ) " if is_busy else ""
+							# hide for hiding the widget based on the Expand or Collapse icon on the Parent Widget
+							w2.hide = view_device
+					else:
+						if w.DEVICE_IDS.get(id_device, None) != None:
+							w.remove_widget( w.DEVICE_IDS.get(id_device) )
+							del w.DEVICE_IDS[id_device]
 
 				#print("\n")
 			self.RENDERING = False
@@ -232,18 +240,20 @@ class Screen_network(Screen):
 		#db.delete_network_entry(id_topic='')
 		#app = App.get_running_app()
 		#self.center_x = app.screen_manager.center_x
-		asyncio.gather(self.interval(1))
-
+		app = App.get_running_app()
 		for name_home, in db.get_home_list():
 			menu = self.ids["id_menu"]
 			if (name_home not in menu.ids.keys()):
 				if (name_home != "") and (name_home != None):
 					#name_home = "Local"
-					print(name_home)
+					print("name_home", name_home)
 					wid = Label_menuItem(text=name_home)
+					wid.bg_color = app.colors["COLOR_THEME_BASIC_2"]
 					wid.bind(on_release=self.on_menu_item_release)
 					menu.ids[name_home] = wid
 					menu.add_widget(wid)
+
+		asyncio.gather(self.interval(1))
 
 	def on_leave(self, *args):
 		#container = self.ids["id_network_container"]
@@ -341,11 +351,11 @@ class Screen_deviceSetting(Screen):
 				label.bind(on_release=self.on_dropdown_roomitem_release)
 				dd_room.add_widget(label)
 
-		label = Label_button(text="Add Home")
+		label = Label_dropDown(text="Add Home")
 		label.bind(on_release=self.create_home)
 		dd_home.add_widget(label)
 
-		label = Label_button(text="Add Room")
+		label = Label_dropDown(text="Add Room")
 		label.bind(on_release=self.create_room)
 		dd_room.add_widget(label)
 

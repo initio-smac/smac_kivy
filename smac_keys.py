@@ -79,5 +79,13 @@ smac_keys={
     'CMD_INVALID_PIN'            :'b',
     'b'                          :'CMD_INVALID_PIN',
     'NAME_HOME'                  :'c',
-    'c'                          :'NAME_HOME'
+    'c'                          :'NAME_HOME',
+    'CMD_UPDATE_WIFI_CONFIG'     :'d',
+    'd'                          :'CMD_UPDATE_WIFI_CONFIG',
+    'SSID'                       :'e',
+    'e'                          :'SSID',
+    'PASSWORD'                   :'f',
+    'f'                          :'PASSWORD',
+    'CMD_ONLINE'                 :'g',
+    'g'                          :'CMD_ONLINE'
     }

@@ -200,8 +200,8 @@ class ModalView_custom(Popup):
     separator_height = dp(2)
     #separator_color = get_color_from_hex("#4af343")
 
-class Image_icon(Image):
-    pass
+class Image_icon(Widget):
+    source = StringProperty("")
 
 class BoxLayout_addHomeContent(BoxLayout):
     name_home = StringProperty("")

@@ -54,10 +54,11 @@
             #size_hint_y: 1
             BoxLayout_menu:
                 id: id_menu
-
+                padding: dp(2)
+                spacing: dp(2)
                 Label_menuItem:
-                    text: "Menu"
-                    bg_color: app.colors["COLOR_THEME_BASIC_2"]
+                    text: "Select Home"
+                    bg_color: app.colors["COLOR_THEME"]
                     Widget_switch:
                         pos: self.parent.right - self.width - dp(10), self.parent.y
                         on_value:

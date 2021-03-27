@@ -495,6 +495,10 @@ class SmacApp(App):
                     del scr.TOPIC_IDS[id_topic]
                     #self.ACKS.append( "{}:{}:{}".format(id_topic, id_device, smac_keys["CMD_STATUS_REMOVE_TOPIC"]) )
 
+                if cmd == smac_keys["CMD_ONLINE"]:
+                    db.update_device_last_updated(id_device=frm)
+
+
         #except Exception as e:
         #    print("Exception while decoding message: {}".format(e) )
 
@@ -595,7 +599,7 @@ class SmacApp(App):
             for id_property, property_name, type_property, value_min, value_max, value, value_temp, value_last_updated in db.get_property_list_by_device(self.ID_DEVICE):
                 type_property = str(type_property)
                 t_diff = time.time() - int(value_last_updated)
-                DIFF = .5       # ensure property is stable for .5 secs
+                DIFF = .3       # ensure property is stable for .5 secs
                 if (type_property not in [SMAC_PROPERTY["BATTERY"]]) and (value != value_temp):
                     print(SMAC_PROPERTY[type_property])
                     print("t_diff", t_diff)
@@ -614,15 +618,30 @@ class SmacApp(App):
 
     async def UI_loop2(self, *args):
         TASK_COUNT = {}
+        interval_online = db.get_device_interval_online(id_device=self.ID_DEVICE)
+        COUNTER = 0
         while 1:
             # check for busy period and update the db
             id_topic = ""
-            for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid in db.get_device_list_by_topic(id_topic):
+            for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated  in db.get_device_list_by_topic(id_topic):
                 if busy_period == int(time.time()):
                     db.update_device_busy(id_device=id_device, is_busy=0, busy_period=0)
 
             #await property_listener(self.ID_DEVICE)
+            #print("interval", interval_online)
+            #print("COUNTER", COUNTER)
+            if COUNTER == interval_online:
+                COUNTER = 0
+                print("Sending CMD_ONLINE")
+                client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_ONLINE"], message={}, udp=True, tcp=False)
+            else:
+                COUNTER += 1
 
+
+
+            #check for tasks and print the POPUP message
+            # ex: wait for reply from device for commands like:
+            # CMD_ADD_TOPIC, CMD_REMOVE_TOPIC etc
             for t_id in list(self.TASKS):
                 print(t_id)
                 task = self.TASKS[t_id]

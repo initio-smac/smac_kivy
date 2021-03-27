@@ -37,12 +37,11 @@
             size: self.size
             pos: self.pos
             radius: [ dp(5), ]
-    canvas.after:
         Color:
             rgba: app.colors["COLOR_THEME_HIGHLIGHT"]
-        Rectangle:
-            size: self.width, dp(5)
-            pos: self.pos
+        Line:
+            width: dp(1)
+            points: [ root.x, root.y+root.height,  root.x, root.y, root.x+root.width, root.y, root.x+root.width, root.y+root.height,  root.x, root.y+root.height ]
 
 
 <BoxLayout_header>:
@@ -101,14 +100,16 @@
 	spacing: app.grid_min/2
 	height: self.minimum_height
 	font_size: dp(20)
-	padding: dp(10), 0
+	padding: dp(10), dp(10)
 	canvas.before:
         Color:
             rgba: app.colors["COLOR_THEME_BASIC"]
         RoundedRectangle:
-            size: self.width, app.grid_min
-            pos: self.x, self.top-app.grid_min
-            radius: [ 0, ]
+            #size: self.width, app.grid_min
+            #pos: self.x, self.top-app.grid_min
+            size: self.size
+            pos: self.pos
+            radius: [ dp(5), ]
 
 <Widget_device>:
 	size_hint: 1, None
@@ -122,11 +123,7 @@
 	#height: 0 if self.hide else self.minimum_height
 	canvas.before:
         Color:
-<<<<<<< HEAD
             rgba: app.colors["COLOR_THEME_BASIC_3"]
-=======
-            rgba: 1,1,1,1
->>>>>>> 685e901339f2f09c0201e2e135ad8268f7efbf67
         RoundedRectangle:
             size: self.size
             pos: self.pos
@@ -246,6 +243,12 @@
 <Image_icon>:
     size_hint: None, None
     size: app.grid_min, app.grid_min
+    Image:
+        size_hint: None, None
+        size: self.parent.width/2, self.parent.height/2
+        allow_stretch: True
+        center: self.parent.center
+        source: root.source
 
 <Image_iconButton>:
     size_hint: None, None
@@ -253,7 +256,6 @@
     size: app.grid_min, app.grid_min
     #texture_size: app.grid_min, app.grid_min
     #mipmap: True
-
     Image:
         size_hint: None, None
         size: self.parent.width/2, self.parent.height/2
@@ -302,13 +304,18 @@
         text: root.text
         on_parent:
             id_dropdown.dismiss()
-        on_release: id_dropdown.open(self)
+        on_release:
+            id_dropdown.open(self)
+            id_img.source = app.source_icon+'TOP.png'
         Image_icon:
             #disabled: True
+            id: id_img
             source: app.source_icon + 'BOTTOM.png'
             pos: id_label.right - app.grid_min, id_label.y
     DropDown:
         id: id_dropdown
+        on_dismiss:
+            id_img.source = app.source_icon+'BOTTOM.png'
         on_pos:
             #id_dropdown.pos = self.pos
             #id_dropdown.open(root)
@@ -317,6 +324,7 @@
         on_select:
             #id_label.text = '{}'.format(args[1])
             root.text = '{}'.format(args[1])
+            id_img.source = app.source_icon + 'BOTTOM.png'
 
 <BoxLayout_menu>:
     size_hint_x: None
@@ -334,9 +342,14 @@
 
 <Label_menuItem>:
     color: app.colors["COLOR_TEXT"]
-    bg_color: app.colors["COLOR_THEME_BASIC_3"]
+    bg_color: app.colors["COLOR_THEME_BASIC_2"]
     size_hint: 1, None
     height: app.grid_min
+    text_size:  self.width, app.grid_min
+    bold: True
+    padding: dp(10), dp(15)
+    #line_height: self.height/10
+    halign: 'left'
     canvas.before:
         Color:
             rgba: self.bg_color
@@ -426,7 +439,7 @@
         print(args[1])
     canvas.after:
         Color:
-            rgba: [0,1,0,1]
+            rgba: app.colors["COLOR_THEME_HIGHLIGHT"]
         Rectangle:
             pos: self.pos
             size: (self.width if self.focus else 0), dp(3)
