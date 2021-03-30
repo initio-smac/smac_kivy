@@ -14,6 +14,8 @@ from kivy.uix.widget import Widget
 from kivy.properties import StringProperty, ColorProperty, NumericProperty, BooleanProperty
 from kivy.utils import get_color_from_hex
 
+from smac_behaviors import SelectBehavior
+
 
 class Widget_base( ButtonBehavior, BoxLayout ):
     orientation = "vertical"
@@ -34,12 +36,13 @@ class Widget_base( ButtonBehavior, BoxLayout ):
 class Widget_network( Widget_base ):
     pass
 
-class Widget_slider(Slider):
+class Widget_slider(SelectBehavior, Slider):
     value_min = NumericProperty(0)
     value_max = NumericProperty(1)
     value_copy = NumericProperty(0)
 
     def on_touch_up(self, touch):
+        #super(SelectBehavior, self).on_touch_up(touch)
         release = super(Widget_slider, self).on_touch_up(touch)
         if release:
             self.value_copy = self.value
@@ -53,7 +56,7 @@ class Widget_slider(Slider):
         self.max = self.value_max
 
 
-class Widget_switch(ButtonBehavior, Widget):
+class Widget_switch(SelectBehavior, ButtonBehavior, Widget):
     value = NumericProperty(0)
     value_min = 0
     value_max = 1
@@ -145,13 +148,13 @@ class Widget_block(BoxLayout):
     bg_color = ColorProperty([1,1,1,1])
 
 
-class Widget_block2(BoxLayout):
+class Widget_block2( BoxLayout):
     text = StringProperty("")
 
 class BoxLayout_header(BoxLayout):
     pass
 
-class Image_iconButton(ButtonBehavior, Widget):
+class Image_iconButton(SelectBehavior, ButtonBehavior, Widget):
     angle = NumericProperty(0)
     source = StringProperty("")
 
@@ -173,23 +176,23 @@ class BoxLayout_container( BoxLayout):
     pass
 
 
-class Button_custom1(Button):
+class Button_custom1(SelectBehavior, Button):
     pass
 
-class Label_button(ButtonBehavior, Label):
+class Label_button(SelectBehavior, ButtonBehavior, Label):
     bg_color = ColorProperty([1,1,1,1])
 
 class Label_dropDown(Label_button):
     pass
 
-class Dropdown_custom(BoxLayout):
+class Dropdown_custom(SelectBehavior, BoxLayout):
     orientation = 'vertical'
     value = StringProperty("")
 
 class BoxLayout_menu(BoxLayout):
     orientation = "vertical"
 
-class Label_menuItem(ButtonBehavior, Label):
+class Label_menuItem(SelectBehavior, ButtonBehavior, Label):
     bg_color = ColorProperty([1, 1, 1, 1])
 
 class Label_custom(Label):
@@ -209,6 +212,9 @@ class BoxLayout_addHomeContent(BoxLayout):
 class BoxLayout_addTopicContent(BoxLayout):
     name_topic = StringProperty("")
 
+class BoxLayout_updatePropNameContent(BoxLayout):
+    name_property = StringProperty("")
+
 class Widget_menuBG(ButtonBehavior, Widget):
     pass
 
@@ -216,5 +222,5 @@ class BoxLayout_loader(BoxLayout):
     icon = StringProperty("")
     text = StringProperty("Loading...")
 
-class TextInput_custom(TextInput):
+class TextInput_custom(SelectBehavior, TextInput):
     pass

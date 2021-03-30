@@ -76,18 +76,23 @@ def get_device_property(id_device=None):
     return props
 
 def get_property_value(type_property, id_property=None):
+    type_property = str(type_property)
     if type_property == SMAC_PROPERTY["BATTERY"]:
-        return str(battery.status['percentage'])
+        return int(battery.status['percentage'])
     elif type_property == SMAC_PROPERTY["BLUETOOTH"]:
         #return  1 if(bluetooth.info=="on") else 0
         try:
+            mBluetoothAdapter = bt.getDefaultAdapter();
             return 1 if mBluetoothAdapter.isEnabled() else 0
-        except:
+        except Exception as e:
+            print("BT access error, {}".format(e))
             return 0
     elif type_property == SMAC_PROPERTY["BRIGHTNESS"]:
         try:
-            return brightness.current_level()
-        except:
+            #print("bright", brightness.current_level())
+            return int(brightness.current_level())
+        except Exception as e:
+            print("Brightness access error, {}".format(e))
             return 0
         return 0
     elif type_property == SMAC_PROPERTY["FLASH"]:
@@ -101,13 +106,15 @@ async def property_listener(id_device):
         id_property = ent[0]
         name_property = ent[1]
         type_property = ent[2]
-        db_value = ent[5] if(type(ent[5])==int) else int(ent[5])
+        db_value = ent[5]
         value = get_property_value(type_property=type_property, id_property=id_property)
-        value = value if(type(value) == int) else int(value)
-        if name_property == "BLUETOOTH":
+        #value = value if(type(value) == int) else int(value)
+        '''if name_property == "BLUETOOTH":
             print(ent[1])
             print("db_value", db_value)
+            print(type(db_value))
             print("value", value)
+            print(type(value))'''
         if value != db_value:
             send_status(id_property=id_property, value=value)
 

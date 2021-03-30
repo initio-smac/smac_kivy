@@ -30,6 +30,7 @@
             radius: [ dp(5), ]
 
 <Label_dropDown>:
+    bg_color: app.colors["COLOR_THEME_BASIC"]
     canvas.before:
         Color:
             rgba: self.bg_color
@@ -144,7 +145,9 @@
         Rectangle:
             size: self.size
             pos: self.pos
-    Label:
+    Label_button:
+        id: id_property_name
+        bg_color: app.colors["COLOR_THEME_BASIC_3"]
         size_hint_y: None
         height: dp(20)
         font_size: dp(15)
@@ -364,6 +367,23 @@
 
 <ModalView_custom>:
     separator_color: app.colors["COLOR_THEME_HIGHLIGHT"]
+
+<BoxLayout_updatePropNameContent>:
+    orientation: 'vertical'
+    size_hint: 1, None
+    height: app.grid_min*2
+    TextInput_custom:
+        id: id_name_property
+        size_hint_y: None
+        height: app.grid_min
+        hint_text: "Property Name"
+        on_text:
+            root.name_property = self.text
+    Button_custom1:
+        id: id_btn
+        size_hint: 1, None
+        height: app.grid_min
+        text: "Update Property"
 
 <BoxLayout_addHomeContent>:
     orientation: 'vertical'

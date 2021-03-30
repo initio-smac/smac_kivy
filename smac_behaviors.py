@@ -19,11 +19,14 @@ class SelectBehavior(object):
     border_options = StringProperty("all")
     max_border_width = NumericProperty(2)
     min_border_width = NumericProperty(0.01)
-    border_width = NumericProperty(0.1)
+    border_width = NumericProperty(1)
     anime_duration = 0.4
 
     def __init__(self, **kwargs):
         super(SelectBehavior, self).__init__(**kwargs)
+        app = App.get_running_app()
+        self.padding = (0, 0)
+        self.border_color = app.colors["COLOR_THEME_HIGHLIGHT"]
 
     def _border(self, *args):
         w = round(self.border_line.width, 1)
@@ -68,10 +71,10 @@ class SelectBehavior(object):
         super(SelectBehavior, self).on_touch_up(touch)
         if not self.collide_point(*touch.pos):
             self.select = False
-            return
+            return True
         if self.mask_select or (not self.disabled and self.is_selectable and ('button' not in touch.profile or not touch.button.startswith('scroll'))):
             self.select = True
-        return
+        return True
 
     def get_points(self):
         node = self
@@ -115,6 +118,8 @@ class SelectBehavior(object):
 
     def on_select(self, node, value, *args):
         group = "border_group"
+        print(self)
+        print(value)
         if value:
             self.stop_border_animation()
             self.show_border( )

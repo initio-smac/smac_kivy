@@ -44,7 +44,8 @@ class SmacApp(App):
         "name_topic": "",
         "name_home": "Local",
         "id_device": "",
-        "name_device": ""
+        "name_device": "",
+        "type_device": ""
     })
     ID_DEVICE = ""
     NAME_DEVICE = ""
@@ -61,6 +62,7 @@ class SmacApp(App):
     TASK_ID = 0
     SENDING_INFO = 0
     TEST_VAL = 0
+    INTERVAL_ONLINE = 30
     theme = OptionProperty("LIGHT", options=["LIGHT", "DARK"])
     colors = DictProperty(THEME_LIGHT)
     source_icon = StringProperty("icons/LIGHT/")
@@ -148,42 +150,63 @@ class SmacApp(App):
             return "Unsubscribed to Home."
         elif cmd == smac_keys["CMD_INVALID_PIN"]:
             return "Invalid PIN. Update the PIN."
+        elif cmd == smac_keys["CMD_STATUS_UPDATE_NAME_PROPERTY"]:
+            return "Property Name Updated"
+        elif cmd == smac_keys["CMD_STATUS_UPDATE_NAME_DEVICE"]:
+            return "Device Name Updated"
+        elif cmd == smac_keys["CMD_STATUS_UPDATE_INTERVAL_ONLINE"]:
+            return "Device Online Interval Updated"
+        elif cmd == smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"]:
+            return "Home Limit for the Device is Exceeded"
+        else:
+            return smac_keys[cmd]
 
 
     def add_topic(self, frm, id_topic, name_home, name_topic, id_device, passkey, *args):
-        if str(passkey) == str(self.PIN_DEVICE):
-            db.add_network_entry(name_home=name_home,name_topic=name_topic, id_topic=id_topic, id_device=id_device, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
-            self.update_config_variable(key='SUB_TOPIC', value=id_topic, arr_op="ADD")
-            client.subscribe(id_topic)
-            d = {}
-            d[ smac_keys["ID_TOPIC"] ] = id_topic
-            d[ smac_keys["NAME_DEVICE"]] = self.NAME_DEVICE
-            d[ smac_keys["TYPE_DEVICE"]] = self.TYPE_DEVICE
-            d[ smac_keys["NAME_HOME"]] = name_home
-            d[ smac_keys["NAME_TOPIC"]] = name_topic
-            client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_ADD_TOPIC"], message=d)
-            # sending ACK
-            d1 = {}
-            d1[ smac_keys["MESSAGE"] ] = "Topic subscribed successfylly"
-            print("subscribed topic: {}".format(id_topic))
+        #topics = self.SUB_TOPIC
+        #topics.remove("#")
+        #topics.remove(self.ID_DEVICE)
+        # self.SUB_TOPIC - 2 is because the device is subscribed to "#" and itself ie self.ID_DEVICE
+        if len(self.SUB_TOPIC)-2 >= self.LIMITS["LIMIT_TOPIC"]:
+
+            if str(passkey) == str(self.PIN_DEVICE):
+                db.add_network_entry(name_home=name_home,name_topic=name_topic, id_topic=id_topic, id_device=id_device, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
+                self.update_config_variable(key='SUB_TOPIC', value=id_topic, arr_op="ADD")
+                client.subscribe(id_topic)
+                d = {}
+                d[ smac_keys["ID_TOPIC"] ] = id_topic
+                d[ smac_keys["NAME_DEVICE"]] = self.NAME_DEVICE
+                d[ smac_keys["TYPE_DEVICE"]] = self.TYPE_DEVICE
+                d[ smac_keys["NAME_HOME"]] = name_home
+                d[ smac_keys["NAME_TOPIC"]] = name_topic
+                client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_ADD_TOPIC"], message=d)
+                # sending ACK
+                d1 = {}
+                d1[ smac_keys["MESSAGE"] ] = "Topic subscribed successfylly"
+                print("subscribed topic: {}".format(id_topic))
+            else:
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Topic '{}' not subscribed".format(id_topic)
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                d1[smac_keys["ID_TOPIC"]] = id_topic
+                print("Cannot subscribe to {}. Passkey error.".format(id_topic))
+                if self.ID_DEVICE == frm:
+                    print("same device")
+                else:
+                    client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+                    #client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+
         else:
             d1 = {}
-            d1[smac_keys["MESSAGE"]] = "Topic '{}' not subscribed".format(id_topic)
+            d1[smac_keys["MESSAGE"]] = "Topic '{}/{}' not subscribed. Topic Limit Reached.".format(name_home, name_topic)
             d1[smac_keys["ID_DEVICE"]] = id_device
             d1[smac_keys["ID_TOPIC"]] = id_topic
-            print("Cannot subscribe to {}. Passkey error.".format(id_topic))
+            print("Cannot subscribe to {}. Topic Limit Reached.".format(id_topic))
             if self.ID_DEVICE == frm:
                 print("same device")
             else:
-                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
-                #client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
-
-
-        # if sent from the same device
-        #if self.ID_DEVICE != frm:
-        #    client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["ACK"], message=d1, msg_id=id_msg, udp=True, tcp=False)
-        #else:
-        #    print( d1[smac_keys["MESSAGE"]] )
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"], message=d1)
+                # client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_INVALID_PIN"], messa
 
     '''def send_req_delete_topic(self, id_topic, id_device, passkey, *args):
         if id_device == self.ID_DEVICE:
@@ -309,8 +332,8 @@ class SmacApp(App):
                 client.send_message(frm=self.ID_DEVICE, to=id_topic, message=d, cmd=smac_keys["CMD_STATUS_SET_PROPERTY"])
 
     def on_message(self, topic, message, protocol,  *args):
-            #print( "{}, {}, {}".format(topic, message, protocol) )
-        #try:
+        print( "{}, {}, {}".format(topic, message, protocol) )
+        try:
             msg = json.loads(message)
             #print("1")
             frm = msg.get( smac_keys["FROM"] , None)
@@ -318,6 +341,9 @@ class SmacApp(App):
             cmd = msg.get( smac_keys["COMMAND"], None )
             ack = msg.get( smac_keys["ACK"], None )
             msg_id = msg.get( smac_keys["ID_MESSAGE"], None )
+            print(cmd == smac_keys["CMD_UPDATE_NAME_PROPERTY"])
+            print(frm)
+            print(self.ID_DEVICE)
             #data = msg.get( smac_keys["MESSAGE"], None )
             data = msg
             #print("2")
@@ -339,13 +365,14 @@ class SmacApp(App):
 
                 if cmd == smac_keys["CMD_INVALID_PIN"]:
                     id_device = data.get(smac_keys["ID_DEVICE"])
-                    id_topic = data.get(smac_keys["ID_TOPIC"])
+                    id_topic = data.get(smac_keys["ID_TOPIC"], "")
+                    id_property = data.get(smac_keys["ID_PROPERTY"], "")
                     #value = data.get(smac_keys["VALUE"])
                     db.update_pin_valid(id_device=id_device, pin_device_valid=0 )
                     ##Clock.schedule_once(partial(db.update_device_busy, id_device, 0), 5)
                     print("id_device: {} pin is invalid".format(id_device))
                     #self.ACKS.append("{}:{}:{}".format(topic, id_device, smac_keys["CMD_INVALID_PIN"]))
-                    db.add_command_status(id_topic=id_topic, id_device=id_device, cmd=cmd)
+                    db.add_command_status(id_topic=id_topic, id_device=id_device, cmd=cmd, id_property=id_property)
 
                 if cmd == smac_keys["CMD_SET_PROPERTY"]:
                     id_prop = data.get(smac_keys["ID_PROPERTY"])
@@ -498,26 +525,131 @@ class SmacApp(App):
                 if cmd == smac_keys["CMD_ONLINE"]:
                     db.update_device_last_updated(id_device=frm)
 
+                if cmd == smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"]:
+                    id_topic = data.get(smac_keys["ID_TOPIC"])
+                    db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
 
-        #except Exception as e:
-        #    print("Exception while decoding message: {}".format(e) )
+                if cmd == smac_keys["CMD_UPDATE_NAME_DEVICE"]:
+                    id_device = data.get(smac_keys["ID_DEVICE"])
+                    name_device = data.get(smac_keys["NAME_DEVICE"])
+                    passkey = data.get( smac_keys["PASSKEY"] )
+                    self.update_name_device(frm, id_device, name_device, passkey)
 
-    #def change_property(self, frm, to, cmd, message, *args):
-    #    client.send_message(frm=frm, to=to, message=message, cmd=cmd)
+                if cmd == smac_keys["CMD_STATUS_UPDATE_NAME_DEVICE"]:
+                    id_topic = ""
+                    id_device = data.get(smac_keys["ID_DEVICE"])
+                    name_device = data.get(smac_keys["NAME_DEVICE"])
+                    db.update_device_name(id_device, name_device)
+                    #id_device = id_device
+                    db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
 
-    #def open_add_group_modal(self, *args):
-    #    self.modal_info.add_widget( BoxLayout_addGroupContent() )
-    #    self.modal_info.open()
+                if cmd == smac_keys["CMD_UPDATE_NAME_PROPERTY"]:
+                    #print("111")
+                    id_device = data.get(smac_keys["ID_DEVICE"])
+                    #print("112")
+                    id_property = data.get(smac_keys["ID_PROPERTY"])
+                    #print("113")
+                    name_property = data.get(smac_keys["NAME_PROPERTY"])
+                    #print("114")
+                    passkey = data.get( smac_keys["PASSKEY"] )
+                    #print("id_prop", id_property)
+                    #print("id_device", id_device)
+                    #print("name_prop", name_property)
+                    self.update_name_property(frm, id_device, name_property, id_property, passkey)
 
-    #def add_group(self, group_name):
-    #    self.modal_info.dismiss()
-    #    db.add_group(group_name)
+                if cmd == smac_keys["CMD_STATUS_UPDATE_NAME_PROPERTY"]:
+                    id_topic = ""
+                    id_device = data.get(smac_keys["ID_DEVICE"])
+                    id_property = data.get(smac_keys["ID_PROPERTY"])
+                    name_property = data.get(smac_keys["NAME_PROPERTY"])
+                    db.update_name_property(id_device, id_property, name_property)
+                    db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd, id_property=id_property)
 
-    #async def async_test(self):
-    #    await asyncio.sleep(1)
-    #    while 1:
-    #        self.text1 = "message: {}".format(int(time.time()))
-    #        await asyncio.sleep(1)
+                if cmd == smac_keys["CMD_UPDATE_INTERVAL_ONLINE"]:
+                    id_device = data.get(smac_keys["ID_DEVICE"])
+                    interval_online = data.get(smac_keys["INTERVAL"])
+                    passkey = data.get( smac_keys["PASSKEY"] )
+                    self.update_interval_online(frm, id_device, interval_online, passkey)
+
+                if cmd == smac_keys["CMD_STATUS_UPDATE_INTERVAL_ONLINE"]:
+                    id_topic = ""
+                    id_device = data.get(smac_keys["ID_DEVICE"])
+                    interval_online = data.get(smac_keys["INTERVAL"])
+                    db.update_device_interval_online(id_device, interval_online)
+                    db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
+
+                if cmd == smac_keys["CMD_STATUS_UPDATE_WIFI_CONFIG"]:
+                    id_topic = ""
+                    db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
+
+
+
+
+        except Exception as e:
+            print("Exception while decoding message: {}".format(e) )
+
+    def update_interval_online(self, frm, id_device, interval_online, passkey):
+        if id_device == self.ID_DEVICE:
+            passkey = str(passkey)
+            if passkey == self.PIN_DEVICE:
+                db.update_device_interval_online(id_device, interval_online)
+                self.update_config_variable(key="INTERVAL_ONLINE", value=interval_online)
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Device Online Interval updated"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                d1[smac_keys["INTERVAL"]] = interval_online
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_UPDATE_INTERVAL_ONLINE"], message=d1)
+            else:
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Device Online Interval not updated. Passkey Error"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+
+
+
+    def update_name_property(self, frm, id_device, name_property, id_property, passkey):
+        print(id_device)
+        print(self.ID_DEVICE)
+        if id_device == self.ID_DEVICE:
+            passkey = str(passkey)
+            if passkey == self.PIN_DEVICE:
+                db.update_name_property(id_device, id_property, name_property)
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Property Name updated"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                d1[smac_keys["ID_PROPERTY"]] = id_property
+                d1[smac_keys["NAME_PROPERTY"]] = name_property
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_UPDATE_NAME_PROPERTY"], message=d1)
+            else:
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "PROPERTY Name not updated. Passkey Error"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                d1[smac_keys["ID_PROPERTY"]] = id_property
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+
+
+    def update_name_device(self, frm, id_device, name_device, passkey):
+        if id_device == self.ID_DEVICE:
+            passkey = str(passkey)
+            if passkey == self.PIN_DEVICE:
+                db.update_device_name(id_device, name_device)
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Device Name updated"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                d1[smac_keys["NAME_DEVICE"]] = name_device
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_UPDATE_NAME_DEVICE"], message=d1)
+            else:
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Device Name not updated. Passkey Error"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+
 
     def update_slider_ui_val(self, id_device, id_property, value ):
         try:
@@ -618,24 +750,26 @@ class SmacApp(App):
 
     async def UI_loop2(self, *args):
         TASK_COUNT = {}
-        interval_online = db.get_device_interval_online(id_device=self.ID_DEVICE)
+        #interval_online = db.get_device_interval_online(id_device=self.ID_DEVICE)
         COUNTER = 0
         while 1:
             # check for busy period and update the db
             id_topic = ""
-            for id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated  in db.get_device_list_by_topic(id_topic):
+            for id_device, name_device, type_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated  in db.get_device_list_by_topic(id_topic):
                 if busy_period == int(time.time()):
                     db.update_device_busy(id_device=id_device, is_busy=0, busy_period=0)
 
-            #await property_listener(self.ID_DEVICE)
+            if(platform == "android") and ((COUNTER % 5) == 0):
+                await property_listener(self.ID_DEVICE)
             #print("interval", interval_online)
             #print("COUNTER", COUNTER)
-            if COUNTER == interval_online:
-                COUNTER = 0
+            if (COUNTER % self.INTERVAL_ONLINE) == 0:
+                #COUNTER = 0
+                print("Sending CMD_ONLINE")
                 print("Sending CMD_ONLINE")
                 client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_ONLINE"], message={}, udp=True, tcp=False)
-            else:
-                COUNTER += 1
+
+            COUNTER += 1
 
 
 
@@ -647,13 +781,18 @@ class SmacApp(App):
                 task = self.TASKS[t_id]
                 func = task[0]
                 args = task[1]
+                print("args", args)
                 if func == db.get_command_status:
                     if TASK_COUNT.get(t_id, None) == None:
                         TASK_COUNT[t_id] = 0
                     id_topic = args[0]
                     id_device = args[1]
                     cmd = args[2]
-                    st = db.get_command_status(id_topic=id_topic, id_device=id_device, id_property="")
+                    if len(args) > 3:
+                        id_property = args[3]
+                    else:
+                        id_property = ""
+                    st = db.get_command_status(id_topic=id_topic, id_device=id_device, id_property=id_property)
                     print("st", st)
                     if st != None:
                         tim = st[5]
@@ -747,6 +886,7 @@ class SmacApp(App):
             d["SUB_TOPIC"] = ["#"]
             d["LIMIT_TOPIC"] = 10
             d["LIMIT_DEVICE"] = 10
+            d["INTERVAL_ONLINE"] = 30
             f.write(json.dumps(d))
             f.close()
 
@@ -780,6 +920,8 @@ class SmacApp(App):
                 self.LIMITS["LIMIT_DEVICE"] = fd["LIMIT_DEVICE"]
             if fd.get("LIMIT_TOPICS") != None:
                 self.LIMITS["LIMIT_TOPIC"] = fd["LIMIT_TOPIC"]
+            if fd.get("INTERVAL_ONLINE", None) != None:
+                self.INTERVAL_ONLINE = fd["INTERVAL_ONLINE"]
             self.theme = fd.get("theme", "LIGHT")
             f.close()
 

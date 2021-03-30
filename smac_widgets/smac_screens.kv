@@ -1,5 +1,6 @@
 #: import BoxLayout_header smac_widgets.smac_layouts.BoxLayout_header
 #: import BoxLayout_container smac_widgets.smac_layouts.BoxLayout_container
+#: import SMAC_DEVICES smac_device_keys.SMAC_DEVICES
 
 
 <Screen_network>:
@@ -107,10 +108,10 @@
                             hint_text: "Device Name"
                             id: id_name_device
                             text: app.APP_DATA["name_device"]
-                            disabled: 1 if(app.APP_DATA["id_device"] != app.ID_DEVICE) else 0
+                            #disabled: 1 if(app.APP_DATA["id_device"] != app.ID_DEVICE) else 0
                         Button_custom1:
                             text: 'Update Name'
-                            disabled: 1 if(app.APP_DATA["id_device"] != app.ID_DEVICE) else 0
+                            #disabled: 1 if(app.APP_DATA["id_device"] != app.ID_DEVICE) else 0
                             on_release:
                                 root.update_device_name(app.APP_DATA["id_device"], id_name_device.text)
 				Widget_block:
@@ -173,7 +174,61 @@
                             text: 'Update PIN'
                             on_release:
                                 root.update_device_pin(app.APP_DATA["id_device"], id_passkey.text)
+                Widget_block:
+				    text: "Update Online Interval of the device"
+                    BoxLayout:
+				        size_hint: 1, None
+				        height: app.grid_min
+				        TextInput_custom:
+                            hint_text: "Interval"
+                            id: id_interval_online
+                            text: str(root.data["interval_online"])
+                            #password: True
+                        Button_custom1:
+                            text: 'Update Interval'
+                            on_release:
+                                root.update_device_interval_online(app.APP_DATA["id_device"], id_interval_online.text)
 
 
+                Widget_block:
+				    text: "Update Wifi Config"
+				    disabled: 0 if(app.APP_DATA["type_device"] == SMAC_DEVICES["ESP"]) else 1
+				    #opacity: 1 - self.disabled
+				    height:  self.minimum_height
+                    BoxLayout:
+                        orientation: 'vertical'
+				        size_hint: 1, None
+				        height: self.minimum_height
+				        TextInput_custom:
+                            hint_text: "SSID"
+                            id: id_ssid
+                            size_hint_y: None
+                            height: app.grid_min
+                        TextInput_custom:
+                            hint_text: "Password"
+                            id: id_password
+                            size_hint_y: None
+                            height: app.grid_min
+                        Button_custom1:
+                            text: 'Update Wifi Config'
+                            width: app.grid_min*3
+                            #height: 0 if root.disabled else  app.grid_min
+                            on_release:
+                                root.update_device_wifi_config(app.APP_DATA["id_device"], id_ssid.text, id_password.text)
+
+                Widget_block:
+				    text: "Device Updates and Downloads"
+				    disabled: 0 if(app.APP_DATA["type_device"] == SMAC_DEVICES["ESP"]) else 1
+				    #opacity: 1 - self.disabled
+				    #height: 0 if self.disabled else self.minimum_height
+                    BoxLayout:
+                        orientation: 'vertical'
+				        size_hint: 1, None
+				        height: self.minimum_height
+                        Button_custom1:
+                            text: 'Check for Updates and Download'
+                            #height: 0 if root.disabled else app.grid_min
+                            on_release:
+                                root.update_software(app.APP_DATA["id_device"])
 
 

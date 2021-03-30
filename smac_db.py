@@ -87,7 +87,7 @@ class Database():
 
 
     # change to topic
-    def add_network_entry(self, id_topic, id_device, name_device, type_device, name_home="", name_topic="", remove=0, view_topic=0, view_device=0, is_busy=0, busy_period=0, pin_device="1234", pin_device_valid=1, interval_online=10):
+    def add_network_entry(self, id_topic, id_device, name_device, type_device, name_home="", name_topic="", remove=0, view_topic=0, view_device=0, is_busy=0, busy_period=0, pin_device="1234", pin_device_valid=1, interval_online=30):
         try:
             last_updated = int(time.time())
             lock.acquire(True)
@@ -302,7 +302,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_device, name_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated FROM smac_network WHERE id_topic=? ORDER BY name_device DESC LIMIT ?,?', (id_topic, set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_device, name_device, type_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated FROM smac_network WHERE id_topic=? ORDER BY name_device DESC LIMIT ?,?', (id_topic, set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -405,6 +405,17 @@ class Database():
             lock.acquire(True)
             self.cur.execute(
                 'UPDATE smac_property SET value=? WHERE id_device=? AND id_property=?', (value, id_device, id_property))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def update_name_property(self, id_device, id_property, name_property):
+        try:
+            lock.acquire(True)
+            self.cur.execute(
+                'UPDATE smac_property SET name_property=? WHERE id_device=? AND id_property=?', (name_property, id_device, id_property))
             self.connection.commit()
         except Exception as e:
             print(e)
