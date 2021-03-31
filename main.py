@@ -158,6 +158,8 @@ class SmacApp(App):
             return "Device Online Interval Updated"
         elif cmd == smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"]:
             return "Home Limit for the Device is Exceeded"
+        elif cmd == smac_keys["CMD_STATUS_UPDATE_WIFI_CONFIG"]:
+            return "Wifi Config Updated"
         else:
             return smac_keys[cmd]
 
@@ -582,6 +584,11 @@ class SmacApp(App):
                     id_topic = ""
                     db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
 
+                if cmd == smac_keys["CMD_STATUS_UPDATE_SOFTWARE"]:
+                    m = data.get(smac_keys["MESSAGE"], "")
+                    if m != "":
+                        self.open_modalInfo(text=m , title="Info")
+
 
 
 
@@ -921,7 +928,7 @@ class SmacApp(App):
             if fd.get("LIMIT_TOPICS") != None:
                 self.LIMITS["LIMIT_TOPIC"] = fd["LIMIT_TOPIC"]
             if fd.get("INTERVAL_ONLINE", None) != None:
-                self.INTERVAL_ONLINE = fd["INTERVAL_ONLINE"]
+                self.INTERVAL_ONLINE = int(fd["INTERVAL_ONLINE"])
             self.theme = fd.get("theme", "LIGHT")
             f.close()
 

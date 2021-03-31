@@ -108,6 +108,6 @@ smac_keys={
     'p'                                 :'CMD_STATUS_UPDATE_NAME_PROPERTY',
     'CMD_TOPIC_LIMIT_EXCEEDED'          :'q',
     'q'                                 :'CMD_TOPIC_LIMIT_EXCEEDED',
-    'CMD_TOPIC_LIMIT_REACHED'           :'r',
-    'r'                                 :'CMD_TOPIC_LIMIT_REACHED'
+    'CMD_STATUS_UPDATE_SOFTWARE'        : 'r',
+    'r'                                 : 'CMD_STATUS_UPDATE_SOFTWARE'
     }

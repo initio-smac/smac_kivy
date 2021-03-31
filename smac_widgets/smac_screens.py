@@ -7,7 +7,7 @@ from kivy.app import App
 
 from smac_client import client
 from smac_device import set_property, generate_id_topic
-from smac_device_keys import SMAC_PROPERTY
+from smac_device_keys import SMAC_PROPERTY, SMAC_DEVICES
 from smac_keys import smac_keys
 from smac_widgets.smac_layouts import *
 
@@ -157,6 +157,7 @@ class Screen_network(SelectClass):
                             w1 = w.DEVICE_IDS[id_device]
 
                         w1.name_device= name_device
+                        w1.text = name_device
                         w1.id_topic = id_topic
                         w1.view_device = view_device
                         w1.icon1 =  app.source_icon + 'BOTTOM.png' if view_device else app.source_icon + 'TOP.png'
@@ -202,7 +203,8 @@ class Screen_network(SelectClass):
                             #if property_name == "BRIGHTNESS":
                             #	print("is_busy", is_busy)
                             w2.text = property_name
-                            w2.value = int(value)
+                            if value != None:
+                                w2.value = int(value)
                             w2.ids["id_property_name"].bind(on_release=self.on_prop_name_release)
                             w2.is_busy = is_busy
                             w1.text1 = " ( DEVICE BUSY ) " if is_busy else ""
@@ -557,6 +559,11 @@ class Screen_deviceSetting(SelectClass):
         interval = db.get_device_interval_online(id_device=app.APP_DATA["id_device"])
         self.data["interval_online"] = interval
         print(self.data)
+        print(app.APP_DATA["type_device"])
+        print( type(app.APP_DATA["type_device"]) )
+        print(SMAC_DEVICES["ESP"])
+        print( type(SMAC_DEVICES["ESP"]))
+        print(app.APP_DATA["type_device"] == SMAC_DEVICES["ESP"])
 
     def on_leave(self, *args):
         super().on_leave()

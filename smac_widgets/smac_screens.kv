@@ -192,7 +192,7 @@
 
                 Widget_block:
 				    text: "Update Wifi Config"
-				    disabled: 0 if(app.APP_DATA["type_device"] == SMAC_DEVICES["ESP"]) else 1
+				    disabled: 0 if(str(app.APP_DATA["type_device"]) == SMAC_DEVICES["ESP"]) else 1
 				    #opacity: 1 - self.disabled
 				    height:  self.minimum_height
                     BoxLayout:
@@ -218,9 +218,13 @@
 
                 Widget_block:
 				    text: "Device Updates and Downloads"
-				    disabled: 0 if(app.APP_DATA["type_device"] == SMAC_DEVICES["ESP"]) else 1
+				    disabled: 0 if( str(app.APP_DATA["type_device"]) == SMAC_DEVICES["ESP"]) else 1
 				    #opacity: 1 - self.disabled
 				    #height: 0 if self.disabled else self.minimum_height
+				    on_parent:
+				        print("on child")
+				        print(app.APP_DATA['type_device'])
+				        print(SMAC_DEVICES["ESP"])
                     BoxLayout:
                         orientation: 'vertical'
 				        size_hint: 1, None
