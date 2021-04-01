@@ -169,7 +169,9 @@ class SmacApp(App):
         #topics.remove("#")
         #topics.remove(self.ID_DEVICE)
         # self.SUB_TOPIC - 2 is because the device is subscribed to "#" and itself ie self.ID_DEVICE
-        if len(self.SUB_TOPIC)-2 >= self.LIMITS["LIMIT_TOPIC"]:
+        print("len SUB_TOPIC", len(self.SUB_TOPIC))
+        print("limit topic", self.LIMITS["LIMIT_TOPIC"])
+        if len(self.SUB_TOPIC) <= self.LIMITS["LIMIT_TOPIC"]:
 
             if str(passkey) == str(self.PIN_DEVICE):
                 db.add_network_entry(name_home=name_home,name_topic=name_topic, id_topic=id_topic, id_device=id_device, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
@@ -281,7 +283,7 @@ class SmacApp(App):
         client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_REMOVE_TOPIC"], message=d, udp=True,tcp=False)
         print("unsubscribed topic: {}".format(wid.id_topic))'''
 
-    def send_device_info(self, dest_topic, *args):
+    def send_device_info(self, dest_topic, udp=True, tcp=False, *args):
         self.SENDING_INFO = 1
         #topics = client.SUB_TOPIC
         #print(topics)
@@ -300,7 +302,7 @@ class SmacApp(App):
                 m[ smac_keys["NAME_DEVICE"] ] = self.NAME_DEVICE
                 m[ smac_keys["TYPE_DEVICE"] ] = self.TYPE_DEVICE
                 #print(m)
-                client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=m, udp=True, tcp=False)
+                client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=m, udp=udp, tcp=tcp)
                 print("sent {}".format(id_topic))
         print("send topics")
 
@@ -331,7 +333,7 @@ class SmacApp(App):
             d[ smac_keys["VALUE"] ] = value
             topics = db.get_topic_list_by_device(id_device=wid.id_device)
             for id_topic, name_topic in topics:
-                client.send_message(frm=self.ID_DEVICE, to=id_topic, message=d, cmd=smac_keys["CMD_STATUS_SET_PROPERTY"])
+                client.send_message(frm=self.ID_DEVICE, to=id_topic, message=d, cmd=smac_keys["CMD_STATUS_SET_PROPERTY"], udp=True, tcp=False)
 
     def on_message(self, topic, message, protocol,  *args):
         print( "{}, {}, {}".format(topic, message, protocol) )
@@ -413,7 +415,10 @@ class SmacApp(App):
 
                 if cmd == smac_keys["CMD_REQ_SEND_INFO"]:
                     if not self.SENDING_INFO:
-                        self.send_device_info( dest_topic="#")
+                        if protocol == "UDP":
+                            self.send_device_info( dest_topic="#", udp=True)
+                        elif protocol == "ZMQ":
+                            self.send_device_info(dest_topic="#", tcp=False)
 
 
                 if cmd == smac_keys["CMD_SEND_INFO"]:
@@ -606,7 +611,7 @@ class SmacApp(App):
                 d1[smac_keys["ID_DEVICE"]] = id_device
                 d1[smac_keys["INTERVAL"]] = interval_online
                 print(d1[smac_keys["MESSAGE"]])
-                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_UPDATE_INTERVAL_ONLINE"], message=d1)
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_UPDATE_INTERVAL_ONLINE"], message=d1, udp=True, tcp=False)
             else:
                 d1 = {}
                 d1[smac_keys["MESSAGE"]] = "Device Online Interval not updated. Passkey Error"
@@ -725,8 +730,8 @@ class SmacApp(App):
 
     def send_info(self, *args):
         #Clock.schedule_once(partial(client.send_message, self.ID_DEVICE, "#", smac_keys["CMD_REQ_SEND_INFO"] , {}, False, None, True, False), 5)
-        client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_REQ_SEND_INFO"], message={}, udp=True, tcp=True)
-        self.send_device_info(dest_topic="#")
+        client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_REQ_SEND_INFO"], message={}, udp=True, tcp=False)
+        self.send_device_info(dest_topic="#", udp=True)
         #Clock.schedule_interval(self.test_send_status, 0)
         #Clock.schedule_interval(self.check_for_new_value, 0)
 
@@ -899,9 +904,13 @@ class SmacApp(App):
 
         with open('config.json', 'r') as f:
             fd = json.load(f)
+            print("fd", fd)
             if fd["ID_DEVICE"] == "":
-                d_id = self.get_local_ip()
+                #d_id = self.get_local_ip()
                 #d_id = req_get_device_id()
+                from smac_device import get_id_device
+                d_id = get_id_device()
+                print("d_id", d_id)
                 if (d_id != "") and (d_id != None):
                     fd["ID_DEVICE"] = d_id
                 changed = True
@@ -948,6 +957,11 @@ class SmacApp(App):
     def on_resume(self):
         return True
 
+    def on_tcp_start(self, *args):
+        print("TCP services started")
+        print(args)
+        self.send_device_info(dest_topic="#", tcp=False)
+
     def on_start(self):
         print("kivy started")
         print("starting smac_client...")
@@ -958,6 +972,7 @@ class SmacApp(App):
         print("subscribing to: {}".format(["#", self.ID_DEVICE] + topics))
         client.subscribe( ["#", self.ID_DEVICE] + topics )
         client.process_message = self.on_message
+        client.on_start = self.on_tcp_start
         db.delete_network_entry(id_topic='')
         db.remove_command_status_all()
         tps = db.get_device_list_by_topic(id_topic='')

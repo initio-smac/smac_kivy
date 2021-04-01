@@ -12,6 +12,7 @@ from smac_platform import SMAC_PLATFORM
 
 from plyer import battery, brightness, flash
 from plyer import bluetooth
+from plyer import uniqueid
 
 if platform == "android":
     from android.permissions import check_permission, Permission
@@ -19,6 +20,10 @@ if platform == "android":
 
     bt = autoclass('android.bluetooth.BluetoothAdapter')
     mBluetoothAdapter = bt.getDefaultAdapter();
+
+def get_id_device():
+    print("uid", uniqueid.id)
+    return uniqueid.id
 
 def generate_id_topic(id_device):
     return id_device+".T{}".format( int(time.time()) )
@@ -173,6 +178,6 @@ def send_status(id_property, value, update_ui=True):
     app.update_slider_ui_val(app.ID_DEVICE, id_property, value)
 
     #for id_topic in app.SUB_TOPIC:
-    client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_SET_PROPERTY"], message=d, udp=True, tcp=False)
+    client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_SET_PROPERTY"], message=d, udp=True, tcp=True)
 
 

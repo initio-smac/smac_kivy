@@ -131,7 +131,7 @@ class Screen_network(SelectClass):
                         online = True
                     else:
                         t_diff = int(time.time()) - last_updated
-                        online =  True if(t_diff <= interval_online) else False
+                        online =  True if(t_diff <= interval_online+5) else False
                     if online:
                         if( w.DEVICE_IDS.get(id_device, None) == None):
                             w1 = Widget_device(text=name_device)
@@ -254,7 +254,7 @@ class Screen_network(SelectClass):
             d[smac_keys["ID_PROPERTY"]] = id_property
             client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_UPDATE_NAME_PROPERTY"], message=d,
                                 udp=True,
-                                tcp=False)
+                                tcp=True)
             app.add_task(db.get_command_status, (
             "", id_device, [smac_keys["CMD_STATUS_UPDATE_NAME_PROPERTY"], smac_keys["CMD_INVALID_PIN"]], id_property))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
@@ -282,7 +282,7 @@ class Screen_network(SelectClass):
             MSG_ID = (client.MSG_ID + 1)
             #asyncio.gather(app.check_for_ack(MSG_ID, 10))
             #app.open_modal(text="Sending message to the device...", auto_close=True, timeout=10)
-            client.send_message(frm=app.ID_DEVICE, to=wid_prop.id_device, cmd=smac_keys["CMD_SET_PROPERTY"], message=d, udp=True, tcp=False)
+            client.send_message(frm=app.ID_DEVICE, to=wid_prop.id_device, cmd=smac_keys["CMD_SET_PROPERTY"], message=d, udp=True, tcp=True)
             wid_prop.MSG_COUNTER = MSG_ID
 
     def get_icon(self, type_property, *args):
@@ -581,7 +581,7 @@ class Screen_deviceSetting(SelectClass):
             d[smac_keys["ID_DEVICE"]] = id_device
             d[smac_keys["PASSKEY"]] = passkey
             client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_TOPIC"], message=d,
-                                udp=True, tcp=False)
+                                udp=True, tcp=True)
             app.add_task(db.get_command_status,
                          (id_topic, id_device, [smac_keys["CMD_STATUS_REMOVE_TOPIC"], smac_keys["CMD_INVALID_PIN"]]))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
@@ -610,7 +610,7 @@ class Screen_deviceSetting(SelectClass):
             d[smac_keys["NAME_HOME"]] = name_home
             d[smac_keys["NAME_TOPIC"]] = name_topic
             client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_TOPIC"], message=d, udp=True,
-                                tcp=False)
+                                tcp=True)
             app.add_task(db.get_command_status, (id_topic, id_device, [ smac_keys["CMD_STATUS_ADD_TOPIC"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"] ]) )
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         self.load_widgets()
@@ -668,7 +668,7 @@ class Screen_deviceSetting(SelectClass):
             d[smac_keys["PASSKEY"]] = passkey
             d[smac_keys["NAME_DEVICE"]] = name_device
             client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_UPDATE_NAME_DEVICE"], message=d, udp=True,
-                                tcp=False)
+                                tcp=True)
             app.add_task(db.get_command_status, ("", id_device,[smac_keys["CMD_STATUS_UPDATE_NAME_DEVICE"], smac_keys["CMD_INVALID_PIN"]]))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
@@ -688,7 +688,7 @@ class Screen_deviceSetting(SelectClass):
             d[smac_keys["PASSKEY"]] = passkey
             d[smac_keys["INTERVAL"]] = interval_online
             client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_UPDATE_INTERVAL_ONLINE"], message=d, udp=True,
-                                tcp=False)
+                                tcp=True)
             app.add_task(db.get_command_status, ("", id_device,[smac_keys["CMD_STATUS_UPDATE_INTERVAL_ONLINE"], smac_keys["CMD_INVALID_PIN"]]))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
@@ -708,7 +708,7 @@ class Screen_deviceSetting(SelectClass):
         d[smac_keys["SSID"]] = ssid
         d[smac_keys["PASSWORD"]] = password
         client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_UPDATE_WIFI_CONFIG"], message=d, udp=True,
-                            tcp=False)
+                            tcp=True)
         app.add_task(db.get_command_status, ("", id_device,[smac_keys["CMD_STATUS_UPDATE_WIFI_CONFIG"], smac_keys["CMD_INVALID_PIN"]]))
         app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
@@ -719,7 +719,7 @@ class Screen_deviceSetting(SelectClass):
         d[smac_keys["ID_DEVICE"]] = id_device
         d[smac_keys["PASSKEY"]] = passkey
         client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_UPDATE_SOFTWARE"], message=d, udp=True,
-                            tcp=False)
+                            tcp=True)
         #app.add_task(db.get_command_status, ("", id_device,[smac_keys["CMD_STATUS_UPDATE_WIFI_CONFIG"], smac_keys["CMD_INVALID_PIN"]]))
         #app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         app.open_modalInfo(text="Request sending to check for Updates...")

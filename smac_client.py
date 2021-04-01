@@ -161,9 +161,10 @@ class SMACClient():
             try:
                 self.zmq_pub_writer.write(  ba1 + self.smac_bytearray(msg) )
                 await self.zmq_pub_writer.drain()
-                print("message sent")
+                print(message)
+                print("ZMQ message sent")
             except Exception as e:
-                print("Message not sent: {}".format(e))
+                print("ZMQ Message not sent: {}".format(e))
                 self.ZMQ_PUB_CONNECTED = False
                 self.ZMQ_SUB_CONNECTED = False
                 #await asyncio.sleep(2)
@@ -266,19 +267,22 @@ class SMACClient():
             return 0
 
     async def initialize_zmq_connections(self, *args):
-        pub = await self._initialize_zmq_publish()
-        print("pub", pub)
-        while not pub:
-            await asyncio.sleep(self.ZMQ_RECONNECT_INTERVAL)
-            pub = await self._initialize_zmq_publish()  
-            print("pub", pub)  
+        if not self.ZMQ_PUB_CONNECTED:
+            pub = await self._initialize_zmq_publish()
+            print("pub", pub)
+            while not pub:
+                await asyncio.sleep(self.ZMQ_RECONNECT_INTERVAL)
+                pub = await self._initialize_zmq_publish()
+                print("pub", pub)
 
-        sub = await self._initialize_zmq_subscribe()
-        print("sub", sub)
-        while not sub:
-            await asyncio.sleep(self.ZMQ_RECONNECT_INTERVAL)
-            sub = await self._initialize_zmq_subscribe()  
-            print("sub", sub)     
+        if not self.ZMQ_SUB_CONNECTED:
+            sub = await self._initialize_zmq_subscribe()
+            print("sub", sub)
+            while not sub:
+                await asyncio.sleep(self.ZMQ_RECONNECT_INTERVAL)
+                sub = await self._initialize_zmq_subscribe()
+                print("sub", sub)
+        self.on_start(self.ZMQ_PUB_CONNECTED, self.ZMQ_SUB_CONNECTED)
 
 
     # handle messages appended on self.UDP_REQ
@@ -415,7 +419,7 @@ class SMACClient():
         print("main")
         #zmq_pub_start = asyncio.create_task( self.initialize_zmq_publish() )
         #zmq_sub_start = asyncio.create_task( self.initialize_zmq_subscribe() )
-        zmq_con = asyncio.create_task( self.initialize_zmq_connections() )
+        '''zmq_con = asyncio.create_task( self.initialize_zmq_connections() )
         
 
         zmq_t1 = asyncio.create_task(self.listen_zmq())
@@ -428,12 +432,10 @@ class SMACClient():
         await udp_t2
 
         await zmq_con
-        #await zmq_pub_start
-        #await zmq_sub_start
-        #await test1
         await zmq_t1
-        await zmq_t2
-        
+        await zmq_t2'''
+        await asyncio.gather(self.listen_udp(), self.on_message_udp(),  self.initialize_zmq_connections(), self.listen_zmq(), self.on_message_zmq() )
+
         print("task created")
     
 
