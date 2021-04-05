@@ -2,9 +2,11 @@
 """
     ZMQ PUB simulation with pure Python sockets
 """
+import json
 import socket
 import time
 import asyncio
+import binascii
 #--------------------------------------------------------------------------------
 # Cast bytes to bytearray     0   1   2   3   4   5   6   7   8   9   
 zGreetingSig = bytearray(b'\xFF\x00\x00\x00\x00\x00\x00\x00\x01\x7F')
@@ -24,43 +26,73 @@ zSubStart = bytearray(b'\x00\x01\x01')
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+
+SERVER = "127.0.0.1"
+SERVER = "smacsystem.com"
+
+import struct
 async def test2():
-    #try:
-        reader, writer = await asyncio.open_connection("smacsystem.com", 5559)
-        print("writing")
+    try:
+        reader, writer = await asyncio.open_connection(SERVER, 5556)
         writer.write(zGreetingSig)
         await writer.drain()
-        print("writing done")
         #await writer.drain()
         #while True:
         
         while 1:
             data = await reader.read(16)
-            print(data)
+            #print("data", data)
             if (data.startswith(zGreetingSig)) :
                 print("Got ZMQ Greeting!")
-                writer.write(zGreetingSig)
+                writer.write(zGreetingVerMajor+zGreetingVerMinor)
                 await writer.drain()
                 print("ZMQ Ver/Mech")  
                 writer.write(zGreetingMech+zGreetingEnd)  
-                await writer.drain()            
+                await writer.drain()
+                print("a1")
                 writer.write(zHandshake1+zHandshake2+zHandshake3)
                 await writer.drain()
+                print("a2")
             if (b"READY" in data):
                 print("READY")
-                while 1: 
-                    writer.write( ba1 + bytearray(msg, encoding="utf-8")    )  
+                while 1:
+                    d = {}
+                    d["name"]= "sfasdfasfdssdffffffffffffffvvfffffffffffddfffvvvvvvvvvvvvvvvvvvvvvvvvffffffggggggggfffffffffffffffffffd"
+                    d["age"] = " fsadfdsadfsd dfdfdgdtedgdgdfgdrtsdfrfvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvfrfrvffffffffffffffffrgrgrfrfrfrgf222"
+                    d["test"] = "asfwefsfksjfnsdfjsogosjlklsdkosdjfojjsofsmofjsdojlsnfklndkgnslogldnvkdnrfgoerogsodngsldglsdgln"
+                    d["E"] = "D_cf"
+                    d["e"]= 0
+                    msg = json.dumps(d)
+                    msg = '{"F": "Dcf", "K": "P0", "L": 8, "M": "SHUTDOWN_1", "N": 0, "O": 0, "P": 0, "5": "D_cf", "6": "T1", "7": "4", "9": 91}'
+                    l = len(msg)
+                    l1 = str(hex(l))[2:]
+                    print(l)
+                    #print(len(bytes(msg, encoding="utf-8")))
+                    print(l1)
+                    print(str(l1).encode("utf-8"))
+                    print(bytes( chr(l) , encoding="utf-8") )
+                    print( chr(129) )
+                    print( binascii.hexlify( b'81' ) )
+                    #print( bytes(0, encoding="utf-8").decode("utf-8") )
+                    #print( bytes(chr(31), encoding="utf-8") )
+                    ba0 = bytearray("\x00", encoding="utf-8")
+                    ba1 = bytearray("{}".format(l1), encoding="utf-8")
+                    # refer encoding section
+                    # https://stackoverflow.com/questions/7585435/best-way-to-convert-string-to-bytes-in-python-3
+                    writer.write(  bytearray("\x00\x75{}".format(msg ), encoding="raw_unicode_escape")   )
+                    #writer.write(  chr(00) + chr(129) +      )
                     await writer.drain()
+                    print(msg)
                     time.sleep(1)
-            if data:
+            '''if data:
                 d = ''.join(chr(i) for i in data)
                 print(d)
             else:
                 #print ("<END Connection>")
                 #break 
-                pass
-    #except Exception as e:
-    #    print(e)
+                pass'''
+    except Exception as e:
+        print(e)
         
         
         
@@ -75,7 +107,7 @@ async def test():
         sock.send(zGreetingSig)
         while True:
             data = sock.recv(16)
-            print("data", data)
+            #print("data", data)
             if (data.startswith(zGreetingSig)) : #Found zmq Greeting
                 print("Got ZMQ Greeting!")
                 sock.send(zGreetingVerMajor+zGreetingVerMinor)
@@ -112,8 +144,8 @@ async def test():
         sock.close()
 
 
-#async def main():
-#    await test2()
+async def main():
+    await test2()
 
 
-#asyncio.run(main())
+asyncio.run(main())
