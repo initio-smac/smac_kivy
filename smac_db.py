@@ -268,6 +268,17 @@ class Database():
         finally:
             lock.release()
 
+    def update_delete_all(self, this_device, value=0, ):
+        try:
+            lock.acquire(True)
+            self.cur.execute('UPDATE smac_network SET remove=? WHERE id_device!=?', (value, this_device))
+            self.cur.execute('UPDATE smac_property SET remove=? WHERE id_device!=?', (value, this_device))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
     def update_delete_by_prop_id(self, id_device, id_property,  value=0):
         try:
             lock.acquire(True)
