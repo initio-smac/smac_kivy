@@ -67,14 +67,14 @@ class SelectBehavior(object):
             #self.border_line = None
             self.hide_border()
 
-    def on_touch_up(self, touch):
+    '''def on_touch_up(self, touch):
         super(SelectBehavior, self).on_touch_up(touch)
         if not self.collide_point(*touch.pos):
             self.select = False
             return True
         if self.mask_select or (not self.disabled and self.is_selectable and ('button' not in touch.profile or not touch.button.startswith('scroll'))):
             self.select = True
-        return True
+        return True'''
 
     def get_points(self):
         node = self

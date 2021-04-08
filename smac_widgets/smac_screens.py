@@ -1,5 +1,6 @@
 import asyncio
 
+from kivy import platform
 from kivy.core.window import Window
 from kivy.properties import DictProperty
 from kivy.uix.screenmanager import Screen
@@ -37,12 +38,12 @@ class SelectClass(Screen):
 
 
     def on_enter(self, *args):
-        #if platform != "android":
-        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
-        #self._keyboard.release()
+        if platform != "android":
+            self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
+            self._keyboard.bind(on_key_down=self._on_keyboard_down)
+            #self._keyboard.release()
 
-        self.get_selectable_nodes()
+            self.get_selectable_nodes()
 
 
 
@@ -350,6 +351,21 @@ class Screen_network(SelectClass):
             await self.add_widgets()
             await asyncio.sleep(timeout)
 
+    def add_menu_widgets(self, *args):
+        app = App.get_running_app()
+        menu = self.ids["id_menu"]
+        #menu.clear_widgets()
+        for name_home, in db.get_home_list():
+            if (name_home not in menu.ids.keys()):
+                if (name_home != "") and (name_home != None):
+                    # name_home = "Local"
+                    print("name_home", name_home)
+                    wid = Label_menuItem(text=name_home)
+                    wid.bg_color = app.colors["COLOR_THEME_BASIC_2"]
+                    wid.bind(on_release=self.on_menu_item_release)
+                    menu.ids[name_home] = wid
+                    menu.add_widget(wid)
+
     def on_enter(self, *args):
 
         #self.add_widgets()
@@ -358,19 +374,8 @@ class Screen_network(SelectClass):
         #db.delete_network_entry(id_topic='')
         #app = App.get_running_app()
         #self.center_x = app.screen_manager.center_x
-        app = App.get_running_app()
-        for name_home, in db.get_home_list():
-            menu = self.ids["id_menu"]
-            if (name_home not in menu.ids.keys()):
-                if (name_home != "") and (name_home != None):
-                    #name_home = "Local"
-                    print("name_home", name_home)
-                    wid = Label_menuItem(text=name_home)
-                    wid.bg_color = app.colors["COLOR_THEME_BASIC_2"]
-                    wid.bind(on_release=self.on_menu_item_release)
-                    menu.ids[name_home] = wid
-                    menu.add_widget(wid)
 
+        self.add_menu_widgets()
         asyncio.gather(self.interval(1))
         super().on_enter()
 
