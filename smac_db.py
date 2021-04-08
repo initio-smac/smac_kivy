@@ -313,7 +313,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_device, name_device, type_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated FROM smac_network WHERE id_topic=? ORDER BY name_device DESC LIMIT ?,?', (id_topic, set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_device, name_device, type_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated FROM smac_network WHERE id_topic=? AND remove=0 ORDER BY name_device DESC LIMIT ?,?', (id_topic, set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -324,7 +324,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_topic, name_topic, view_topic FROM smac_network ORDER BY name_topic DESC LIMIT ?,?', (set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_topic, name_topic, view_topic FROM smac_network WHERE remove=0 ORDER BY name_topic DESC LIMIT ?,?', (set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -335,7 +335,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic FROM smac_network WHERE id_device=? ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic FROM smac_network WHERE id_device=? AND remove=0 ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -346,7 +346,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic FROM smac_network WHERE id_device!=? ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic FROM smac_network WHERE id_device!=? AND remove=0 ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -357,7 +357,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic, view_topic FROM smac_network WHERE name_home=? ORDER BY name_topic DESC LIMIT ?,?', (name_home, set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic, view_topic FROM smac_network WHERE name_home=? AND remove=0 ORDER BY name_topic DESC LIMIT ?,?', (name_home, set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -368,7 +368,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT name_home FROM smac_network ORDER BY name_topic DESC LIMIT ?,?', ( set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT name_home FROM smac_network WHERE remove=0 ORDER BY name_topic DESC LIMIT ?,?', ( set, self.ELEMENTS_PER_PAGE))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -379,7 +379,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_property, name_property, type_property, value_min, value_max, value, value_temp, value_last_updated FROM smac_property WHERE id_device=? LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT id_property, name_property, type_property, value_min, value_max, value, value_temp, value_last_updated FROM smac_property WHERE id_device=? AND remove=0 LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
             #print(a)
             return self.cur.fetchall()
         except Exception as e:

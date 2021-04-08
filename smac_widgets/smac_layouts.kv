@@ -1,6 +1,9 @@
 #: import get_color_from_hex kivy.utils.get_color_from_hex
 #: import Window kivy.core.window.Window
 
+<ScreenManager>:
+
+
 <Screen>:
     size_hint_max_x: dp(800)
     #on_children:
@@ -11,6 +14,12 @@
         self.center_x = app.screen_manager.center_x
     on_size:
         self.center_x = app.screen_manager.center_x
+    canvas.before:
+        Color:
+            rgba: app.colors["COLOR_THEME"]
+        Rectangle:
+            size: self.size
+            pos: self.pos
 
 
 <Label>:
@@ -73,8 +82,8 @@
 
 <Widget_base>:
 	height: self.minimum_height
-	icon1: app.source_icon + "TOP.png"
-	icon2: app.source_icon + "CLOSE.png"
+	icon1:  "TOP.png"
+	icon2:  "SETTING.png"
 	BoxLayout:
         size_hint_y: None
         height: app.grid_min
@@ -84,13 +93,13 @@
             color: app.colors["COLOR_TEXT"]
         Image_iconButton:
             id: id_icon2
-            source: root.icon2
+            source: app.source_icon + root.icon2
             disable: True if root.disable_icon2 else False
             opacity: 0 if root.disable_icon2 else 1
             width: 0 if root.disable_icon2 else app.grid_min
         Image_iconButton:
             id: id_icon1
-            source: root.icon1
+            source: app.source_icon + root.icon1
             disable: True if root.disable_icon1 else False
             opacity: 0 if root.disable_icon1 else 1
             width: 0 if root.disable_icon1 else app.grid_min
@@ -138,7 +147,7 @@
 	height: dp(70)
 	orientation: 'vertical'
 	disable: self.hide
-	source: app.source_icon + 'FAN.png'
+	source:  'TRANSPARENT.png'
 	canvas.before:
         Color:
             rgba: [1,1,1,0]
@@ -161,7 +170,7 @@
         size_hint_y: None
         height: app.grid_min
         Image_iconButton:
-            source: root.source
+            source: app.source_icon + root.source
         AnchorLayout:
             anchor_x:'right'
             anchor_y:'center'
@@ -218,6 +227,8 @@
     value: 0
     disabled: 0
     opacity: 0.8 if self.disabled else 1
+    color_ball: app.colors["COLOR_TEXTINPUT"]
+    color_bg: app.colors["COLOR_THEME_BASIC"]
     on_press:
         #print(self.last_touch)
         self.value  = 1-self.value
@@ -338,7 +349,7 @@
     #size: self.parent.size
     canvas.before:
         Color:
-            rgba: app.colors["COLOR_THEME_BASIC_2"]
+            rgba: app.colors["COLOR_THEME_BASIC_3"]
         Rectangle:
             size: self.size
             pos: self.pos
@@ -363,6 +374,7 @@
 <Label_custom>:
     size_hint: 1, None
     height: app.grid_min
+    color: app.colors["COLOR_TEXT"]
     #color: get_color_from_hex("#404040")
 
 <ModalView_custom>:

@@ -9,7 +9,7 @@ from kivy.core.window import Window
 from smac_device import set_property, get_device_property, get_property_value, property_listener
 from smac_theme_colors import THEME_LIGHT, THEME_DARK
 
-Window.clearcolor = get_color_from_hex("#e0e0e0")
+#Window.clearcolor = get_color_from_hex("#e0e0e0")
 
 import json
 
@@ -441,8 +441,9 @@ class SmacApp(App):
                         type_device = data.get(smac_keys["TYPE_DEVICE"], "")
                         if (protocol == "UDP") or ((protocol == "TCP") and (id_topic != '') and  (id_topic in self.SUB_TOPIC)):
                             db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device, type_device=type_device, remove=0)
-                        #db.update_delete_by_topic_id(id_device=frm, id_topic=id_topic, value=0)
-                        print("new network entry added: {}, {}".format(id_topic, frm))
+                            #db.update_delete_by_topic_id(id_device=frm, id_topic=id_topic, value=0)
+                            print("new network entry added: {}, {}".format(id_topic, frm))
+                        print("12")
                     if data.get(smac_keys["ID_PROPERTY"], None) != None:
                         id_device = data.get(smac_keys["ID_DEVICE"])
                         id_prop = data.get(smac_keys["ID_PROPERTY"])
@@ -453,8 +454,9 @@ class SmacApp(App):
                         value_max = data.get(smac_keys["VALUE_MAX"], 1)
                         if (protocol == "UDP") or ((protocol == "TCP") and  len(db.get_property_list_by_device(id_device)) >0):
                             db.add_property(id_device=id_device, id_property=id_prop, type_property=type_prop, name_property=name_prop, value=value, value_min=value_min, value_max=value_max, remove=0)
-                        #db.update_delete_by_prop_id(id_device=frm, id_property=id_prop, value=0)
-                        print("new property entry added: {}".format(name_prop) )
+                            #db.update_delete_by_prop_id(id_device=frm, id_property=id_prop, value=0)
+                            print("new property entry added: {}".format(name_prop) )
+                        print("13")
 
                 if cmd == smac_keys["CMD_INIT_SEND_INFO"]:
                     print("updating DELETE field of entries: {}".format(frm))

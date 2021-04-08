@@ -29,7 +29,7 @@ class SelectClass(Screen):
             try:
                 #print(wid.__class__.__bases__)
                 #print(SelectBehavior in wid.__class__.__bases__)
-                if not wid.disabled:
+                if(not wid.disabled) and (wid.width != 0) and (wid.height != 0):
                     if SelectBehavior in wid.__class__.__bases__:
                         self.nodes.append(wid)
             except Exception as e:
@@ -122,7 +122,7 @@ class Screen_network(SelectClass):
                     w = self.TOPIC_IDS[id_topic]
                 w.name_topic= name_topic
                 w.view_topic = view_topic
-                w.icon1 = app.source_icon + 'BOTTOM.png' if view_topic else app.source_icon + 'TOP.png'
+                w.icon1 = 'BOTTOM.png' if view_topic else  'TOP.png'
 
                 #w.bind( on_release=self.goto_prop_page )
                 for id_device, name_device, type_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated in db.get_device_list_by_topic(id_topic):
@@ -142,7 +142,7 @@ class Screen_network(SelectClass):
                             w1.name_device = name_device
                             w1.type_device = type_device
                             w1.ids["id_icon1"].bind(on_release=self.change_device_view)
-                            w1.icon2 = app.source_icon + 'SETTING.png'
+                            w1.icon2 = 'SETTING.png'
                             w1.ids["id_icon2"].bind(on_release=self.goto_setting_page)
                             w.DEVICE_IDS[id_device] = w1
                             w.add_widget(w1)
@@ -161,7 +161,7 @@ class Screen_network(SelectClass):
                         w1.text = name_device
                         w1.id_topic = id_topic
                         w1.view_device = view_device
-                        w1.icon1 =  app.source_icon + 'BOTTOM.png' if view_device else app.source_icon + 'TOP.png'
+                        w1.icon1 =  'BOTTOM.png' if view_device else 'TOP.png'
                         w1.hide = view_topic
                         w1.pin_device_valid = pin_device_valid
                         w1.interval_online = interval_online
@@ -289,17 +289,17 @@ class Screen_network(SelectClass):
     def get_icon(self, type_property, *args):
         app = App.get_running_app()
         if type_property == SMAC_PROPERTY["BATTERY"]:
-            return app.source_icon + 'BATTERY.png'
+            return 'BATTERY.png'
         elif type_property == SMAC_PROPERTY["BLUETOOTH"]:
-            return app.source_icon + 'BLUETOOTH.png'
+            return  'BLUETOOTH.png'
         elif type_property == SMAC_PROPERTY["FLASH"]:
-            return app.source_icon + 'FLASH.png'
+            return 'FLASH.png'
         elif type_property == SMAC_PROPERTY["BRIGHTNESS"]:
-            return app.source_icon + 'BRIGHTNESS.png'
+            return 'BRIGHTNESS.png'
         elif type_property == SMAC_PROPERTY["SHUTDOWN"]:
-            return app.source_icon + 'SHUTDOWN.png'
+            return 'SHUTDOWN.png'
         elif type_property == SMAC_PROPERTY["RESTART"]:
-            return app.source_icon + 'RESTART.png'
+            return 'RESTART.png'
         else:
             return ''
 
@@ -309,7 +309,7 @@ class Screen_network(SelectClass):
         wid = icon.parent.parent
         wid.view_topic = (1-wid.view_topic)
         view = wid.view_topic
-        wid.icon1 = app.source_icon + 'BOTTOM.png' if view else app.source_icon + 'TOP.png'
+        wid.icon1 = 'BOTTOM.png' if view else 'TOP.png'
         for i in wid.children:
             i.hide = view
         #print( type(wid.view_topic) )
@@ -320,7 +320,7 @@ class Screen_network(SelectClass):
         wid = icon.parent.parent
         wid.view_device = (1 - wid.view_device)
         view = wid.view_device
-        wid.icon1 = app.source_icon + 'BOTTOM.png' if view else app.source_icon + 'TOP.png'
+        wid.icon1 = 'BOTTOM.png' if view else  'TOP.png'
         #print( type(wid.view_device) )
         for i in wid.children:
             i.hide = view
@@ -361,7 +361,8 @@ class Screen_network(SelectClass):
                     # name_home = "Local"
                     print("name_home", name_home)
                     wid = Label_menuItem(text=name_home)
-                    wid.bg_color = app.colors["COLOR_THEME_BASIC_2"]
+                    wid.padding = ( dp(10), dp(15))
+                    wid.bg_color = app.colors["COLOR_THEME"]
                     wid.bind(on_release=self.on_menu_item_release)
                     menu.ids[name_home] = wid
                     menu.add_widget(wid)
@@ -494,17 +495,22 @@ class Screen_deviceSetting(SelectClass):
         device_container = self.ids["id_device_container"]
         if clear:
             device_container.clear_widgets()
-        for id_topic, name_home, name_topic in db.get_topic_list_by_device(id_device=id_device):
-            if (id_topic != None) and (id_topic != ""):
-                label = Widget_block(text=name_home + "/" + name_topic, orientation="horizontal",
-                                     bg_color=app.colors["COLOR_THEME_BASIC"])
-                label.id_topic = id_topic
-                btn = Image_iconButton(source=app.source_icon + 'CLOSE.png')
-                btn.bind(on_release=self.unsunbscribe_topic)
-                # btn.pos = 0,0
-                label.add_widget(btn)
-                # label.bind(on_release=self.on_dropdown_item_release)
-                device_container.add_widget(label)
+        devs = db.get_topic_list_by_device(id_device=id_device)
+        if len(devs) > 0:
+            for id_topic, name_home, name_topic in devs:
+                if (id_topic != None) and (id_topic != ""):
+                    label = Widget_block(text=name_home + "/" + name_topic, orientation="horizontal",
+                                         bg_color=app.colors["COLOR_THEME_BASIC"])
+                    label.id_topic = id_topic
+                    btn = Image_iconButton(source=app.source_icon + 'CLOSE.png')
+                    btn.bind(on_release=self.unsunbscribe_topic)
+                    # btn.pos = 0,0
+                    label.add_widget(btn)
+                    # label.bind(on_release=self.on_dropdown_item_release)
+                    device_container.add_widget(label)
+        else:
+            label = Label_custom(text="No Homes")
+            device_container.add_widget(label)
 
     def get_device_interval(self, id_device):
         interval = db.get_device_interval_online(id_device)

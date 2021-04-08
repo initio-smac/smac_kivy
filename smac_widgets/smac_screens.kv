@@ -58,12 +58,17 @@
                 padding: dp(2)
                 spacing: dp(2)
                 Label_menuItem:
-                    text: "Select Home"
-                    bg_color: app.colors["COLOR_THEME"]
+                    text: "Theme"
+                    bg_color: app.colors["COLOR_THEME_BASIC_2"]
                     Widget_switch:
                         pos: self.parent.right - self.width - dp(10), self.parent.y
+                        #value: 1 if(app.theme == "DARK") else 0
                         on_value:
                             app.theme = "LIGHT" if(app.theme=="DARK") else "DARK"
+                Label_menuItem:
+                    text: "Select Home"
+                    bg_color: app.colors["COLOR_THEME"]
+
                 #Widget:
                 #    size_hint: 1, None
                 #    height: app.grid_min
@@ -76,7 +81,7 @@
 
                 Label_menuItem:
                     text: "Local"
-                    bg_color: app.colors["COLOR_THEME_BASIC_2"]
+                    #bg_color: app.colors["COLOR_THEME"]
                     on_release:
                         #self.bg_color: get_color_from_hex("#c9c9c9")
                         root.on_menu_item_release(self)
@@ -183,6 +188,7 @@
                             hint_text: "Interval"
                             id: id_interval_online
                             text: str(root.data["interval_online"])
+                            #cursor: 0,0
                             #password: True
                         Button_custom1:
                             text: 'Update Interval'
@@ -231,6 +237,7 @@
 				        height: self.minimum_height
                         Button_custom1:
                             text: 'Check for Updates and Download'
+                            width: '200dp'
                             #height: 0 if root.disabled else app.grid_min
                             on_release:
                                 root.update_software(app.APP_DATA["id_device"])

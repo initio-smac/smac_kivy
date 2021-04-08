@@ -25,7 +25,8 @@ class SelectBehavior(object):
     def __init__(self, **kwargs):
         super(SelectBehavior, self).__init__(**kwargs)
         app = App.get_running_app()
-        self.padding = (0, 0)
+        self.padding = (5, 5)
+        #self.width = self.width + self.border_width*4
         self.border_color = app.colors["COLOR_THEME_HIGHLIGHT"]
 
     def _border(self, *args):
@@ -87,11 +88,11 @@ class SelectBehavior(object):
         elif self.border_options == "bottom":
             points = [node.x, node.y, node.x + node.width, node.y]
         else:
-            points = [node.x + self.max_border_width, node.y + self.max_border_width,
-                      node.x + self.max_border_width, node.top - self.max_border_width,
-                      node.x + node.width, node.top - self.max_border_width,
-                      node.x + node.width, node.y + self.max_border_width,
-                      node.x + self.max_border_width, node.y + self.max_border_width]
+            points = [node.x + self.max_border_width, node.y + self.max_border_width*2,
+                      node.x + self.max_border_width, node.top - self.max_border_width*2,
+                      node.x + node.width, node.top - self.max_border_width*2,
+                      node.x + node.width, node.y + self.max_border_width*2,
+                      node.x + self.max_border_width, node.y + self.max_border_width*2]
         return points
 
     def show_border(self,  group="border_group",  *args):
@@ -110,7 +111,7 @@ class SelectBehavior(object):
     def update_points(self):
         if self.border_line != None:
             self.border_line.points = self.get_points()
-            self.canvas.ask_update()
+            #self.canvas.ask_update()
 
     def hide_border(self, node=None, *args):
         if self.border_line != None:

@@ -28,10 +28,10 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
 SERVER = "127.0.0.1"
-SERVER = "smacsystem.com"
+#SERVER = "smacsystem.com"
 
 import struct
-async def test2():
+async def test2(long_frame=True):
     try:
         reader, writer = await asyncio.open_connection(SERVER, 5556)
         writer.write(zGreetingSig)
@@ -63,23 +63,21 @@ async def test2():
                     d["E"] = "D_cf"
                     d["e"]= 0
                     msg = json.dumps(d)
-                    msg = '{"F": "Dcf", "K": "P0", "L": 8, "M": "SHUTDOWN_1", "N": 0, "O": 0, "P": 0, "5": "D_cf", "6": "T1", "7": "4", "9": 91}'
-                    l = len(msg)
-                    l1 = str(hex(l))[2:]
-                    print(l)
-                    #print(len(bytes(msg, encoding="utf-8")))
-                    print(l1)
-                    print(str(l1).encode("utf-8"))
-                    print(bytes( chr(l) , encoding="utf-8") )
-                    print( chr(129) )
-                    print( binascii.hexlify( b'81' ) )
-                    #print( bytes(0, encoding="utf-8").decode("utf-8") )
-                    #print( bytes(chr(31), encoding="utf-8") )
-                    ba0 = bytearray("\x00", encoding="utf-8")
-                    ba1 = bytearray("{}".format(l1), encoding="utf-8")
+                    #msg = '{"F": "Dcf", "K": "P0", "L": 8, "M": "SHUTDOWN_1", "N": 0, "O": 0, "P": 0, "5": "D_cf", "6": "T1", "7": "4", "9": 91}'
                     # refer encoding section
                     # https://stackoverflow.com/questions/7585435/best-way-to-convert-string-to-bytes-in-python-3
-                    writer.write(  bytearray("\x00\x75{}".format(msg ), encoding="raw_unicode_escape")   )
+                    print(len(msg))
+                    print( chr(len(msg)) )
+                    if long_frame:
+                        l = str(hex(len(msg) + 1))[2:]
+                        l = l.zfill(16)
+                        N = 2
+                        l = "".join([chr(int(l[i:i + N], 16)) for i in range(0, len(l), N)])
+                        m = bytearray("\x02{}{}\n".format(l, msg), encoding="raw_unicode_escape")
+                        writer.write(  m  )
+                    else:
+                        writer.write( bytearray('\x00{}{}'.format(chr(len(msg)), msg), encoding="raw_unicode_escape") )
+
                     #writer.write(  chr(00) + chr(129) +      )
                     await writer.drain()
                     print(msg)

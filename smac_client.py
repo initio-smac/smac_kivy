@@ -23,16 +23,17 @@ class SMACClient():
     UDP_REQ = []
     ZMQ_PUB_PORT = 5556
     ZMQ_SUB_PORT = 5572
-    #ZMQ_SERVER = "smacsystem.com"
+    ZMQ_SERVER = "smacsystem.com"
     #ZMQ_SERVER = "192.168.43.85"
-    ZMQ_SERVER = "192.168.0.178"
+    #ZMQ_SERVER = "192.168.0.178"
     ZMQ_REQ = []
     ZMQ_PUB_CONNECTED = 0
     ZMQ_SUB_CONNECTED = 0
     ZMQ_RECONNECT_INTERVAL = 10
     ZMQ_CONN_INITIALIZED = False
     ZMQ_SEND_MSG_QUEUE = []
-    ZMQ_FRAME_FLAG = b"\x00"
+    #ZMQ_FRAME_FLAG = b"\x00"
+    ZMQ_LONG_FRAME = True
     #_zmq_pub_connected = 0
     #_zmq_sub_connected = 0
     MAX_BUFFER = 256
@@ -166,7 +167,14 @@ class SMACClient():
                 #ba1 = self.smac_bytearray('\x00' + len(msg))
                 #l = len(msg)
                 #self.zmq_pub_writer.write(  self.smac_bytearray("\x00{}{}".format(str(hex(l))[2:], msg) ) )
-                m = bytearray("\x00{}{}\n".format(chr(len(msg)+1),msg), encoding="raw_unicode_escape")
+                if self.ZMQ_LONG_FRAME:
+                    l = str(hex(len(msg)+1))[2:]
+                    l = l.zfill(16)
+                    N = 2
+                    l = "".join( [ chr( int(l[i:i+N], 16) )  for i in range(0, len(l), N)])
+                    m = bytearray("\x02{}{}\n".format(l, msg), encoding="raw_unicode_escape")
+                else:
+                    m = bytearray("\x00{}{}\n".format(chr(len(msg)+1),msg), encoding="raw_unicode_escape")
                 #print(m)
                 self.zmq_pub_writer.write( m )
                 #self.zmq_pub_writer.write(bytearray("\x00\x04\x30\x31\x32\x33", encoding="utf-8") )
