@@ -283,18 +283,21 @@ class SmacApp(App):
         client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_REMOVE_TOPIC"], message=d, udp=True,tcp=False)
         print("unsubscribed topic: {}".format(wid.id_topic))'''
 
-    def send_device_info(self, dest_topic, udp=True, tcp=False, *args):
+    def send_device_info(self, dest_topic, udp=True, tcp=True, *args):
         self.SENDING_INFO = 1
         #topics = client.SUB_TOPIC
         #print(topics)
         #print(client.SUB_TOPIC)
         #topics.remove( "#" )
         #topics.remove( self.ID_DEVICE)
-        topics = db.get_topic_list_by_device(id_device=self.ID_DEVICE)
+        if tcp:
+            topics = db.get_topic_list_by_device(id_device=self.ID_DEVICE)
+        else:
+            topics = [ ("", "", "") ]
         #topics.append( ("#", "", "") )
         print("topics" ,topics)
         print("dest_topic", dest_topic)
-        client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd= smac_keys["CMD_INIT_SEND_INFO"], message={}, udp=True, tcp=False)
+        #client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd= smac_keys["CMD_INIT_SEND_INFO"], message={}, udp=True, tcp=False)
         for id_topic, name_home, name_topic in topics:
             print("aa", id_topic )
             if id_topic not in ["#", self.ID_DEVICE]:
@@ -321,12 +324,12 @@ class SmacApp(App):
             p1[ smac_keys["VALUE"]] = p[5]
             p1[ smac_keys["VALUE_MIN"]] = p[6]
             p1[ smac_keys["VALUE_MAX"]] = p[7]
-            client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=p1, udp=True, tcp=False)
+            client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=p1, udp=udp, tcp=tcp)
         print("send property")
 
 
-        client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_END_SEND_INFO"], message={},
-                            udp=True, tcp=False)
+        #client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_END_SEND_INFO"], message={},
+        #                    udp=True, tcp=False)
         self.SENDING_INFO = 0
 
     def change_property(self, wid, value, *args):
@@ -339,7 +342,7 @@ class SmacApp(App):
             d[ smac_keys["VALUE"] ] = value
             topics = db.get_topic_list_by_device(id_device=wid.id_device)
             for id_topic, name_topic in topics:
-                client.send_message(frm=self.ID_DEVICE, to=id_topic, message=d, cmd=smac_keys["CMD_STATUS_SET_PROPERTY"], udp=True, tcp=False)
+                client.send_message(frm=self.ID_DEVICE, to=id_topic, message=d, cmd=smac_keys["CMD_STATUS_SET_PROPERTY"], udp=True, tcp=True)
 
     def on_message(self, topic, message, protocol,  *args):
             print( "{}, {}, {}".format(topic, message, protocol) )
@@ -430,22 +433,26 @@ class SmacApp(App):
                 if cmd == smac_keys["CMD_SEND_INFO"]:
                     print("CMD_SEND_INFO")
                     if data.get( smac_keys["ID_TOPIC"], None) != None:
+                        id_device = data.get( smac_keys["ID_DEVICE"] )
                         id_topic = data.get( smac_keys["ID_TOPIC"] )
                         name_device = data.get(smac_keys["NAME_DEVICE"], "")
                         name_home = data.get(smac_keys["NAME_HOME"], "")
                         name_topic = data.get(smac_keys["NAME_TOPIC"], "")
                         type_device = data.get(smac_keys["TYPE_DEVICE"], "")
-                        db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device, type_device=type_device, remove=0)
+                        if (protocol == "UDP") or ((protocol == "TCP") and (id_topic != '') and  (id_topic in self.SUB_TOPIC)):
+                            db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device, type_device=type_device, remove=0)
                         #db.update_delete_by_topic_id(id_device=frm, id_topic=id_topic, value=0)
                         print("new network entry added: {}, {}".format(id_topic, frm))
                     if data.get(smac_keys["ID_PROPERTY"], None) != None:
+                        id_device = data.get(smac_keys["ID_DEVICE"])
                         id_prop = data.get(smac_keys["ID_PROPERTY"])
                         type_prop = data.get(smac_keys["TYPE_PROPERTY"], "")
                         name_prop = data.get(smac_keys["NAME_PROPERTY"], "")
                         value = data.get(smac_keys["VALUE"], 0)
                         value_min = data.get(smac_keys["VALUE_MIN"], 0)
                         value_max = data.get(smac_keys["VALUE_MAX"], 1)
-                        db.add_property(id_device=frm, id_property=id_prop, type_property=type_prop, name_property=name_prop, value=value, value_min=value_min, value_max=value_max, remove=0)
+                        if (protocol == "UDP") or ((protocol == "TCP") and  len(db.get_property_list_by_device(id_device)) >0):
+                            db.add_property(id_device=id_device, id_property=id_prop, type_property=type_prop, name_property=name_prop, value=value, value_min=value_min, value_max=value_max, remove=0)
                         #db.update_delete_by_prop_id(id_device=frm, id_property=id_prop, value=0)
                         print("new property entry added: {}".format(name_prop) )
 
@@ -519,7 +526,8 @@ class SmacApp(App):
                     name_topic = data.get(smac_keys["NAME_TOPIC"], "")
                     name_home = data.get(smac_keys["NAME_HOME"], "")
                     type_device = data.get(smac_keys["TYPE_DEVICE"], "")
-                    db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device,
+                    if ((protocol == "TCP") and len(db.get_property_list_by_device(frm)) > 0):
+                        db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device,
                                          type_device=type_device, remove=0)
                     #self.ACKS.append( "{}:{}:{}".format(id_topic, id_device, smac_keys["CMD_STATUS_ADD_TOPIC"]) )
                     db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
@@ -527,13 +535,14 @@ class SmacApp(App):
 
                 if cmd == smac_keys["CMD_STATUS_REMOVE_TOPIC"]:
                     id_topic = data.get(smac_keys["ID_TOPIC"])
-                    db.delete_network_entry_by_topic(id_topic=id_topic, id_device=frm)
-                    db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
-                    scr = self.screen_manager.get_screen(name="Screen_network")
-                    container = scr.ids["id_network_container"]
-                    container.remove_widget(scr.TOPIC_IDS[id_topic])
-                    del scr.TOPIC_IDS[id_topic]
-                    #self.ACKS.append( "{}:{}:{}".format(id_topic, id_device, smac_keys["CMD_STATUS_REMOVE_TOPIC"]) )
+                    if ((protocol == "TCP") and len(db.get_property_list_by_device(frm)) > 0):
+                        db.delete_network_entry_by_topic(id_topic=id_topic, id_device=frm)
+                        db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
+                        scr = self.screen_manager.get_screen(name="Screen_network")
+                        container = scr.ids["id_network_container"]
+                        container.remove_widget(scr.TOPIC_IDS[id_topic])
+                        del scr.TOPIC_IDS[id_topic]
+                        #self.ACKS.append( "{}:{}:{}".format(id_topic, id_device, smac_keys["CMD_STATUS_REMOVE_TOPIC"]) )
 
                 if cmd == smac_keys["CMD_ONLINE"]:
                     db.update_device_last_updated(id_device=frm)
@@ -617,7 +626,7 @@ class SmacApp(App):
                 d1[smac_keys["ID_DEVICE"]] = id_device
                 d1[smac_keys["INTERVAL"]] = interval_online
                 print(d1[smac_keys["MESSAGE"]])
-                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_UPDATE_INTERVAL_ONLINE"], message=d1, udp=True, tcp=False)
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_UPDATE_INTERVAL_ONLINE"], message=d1)
             else:
                 d1 = {}
                 d1[smac_keys["MESSAGE"]] = "Device Online Interval not updated. Passkey Error"
@@ -734,10 +743,10 @@ class SmacApp(App):
         client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS"] , message=m, udp=True, tcp=False)
 
 
-    def send_info(self, *args):
+    def send_info(self, udp=True, tcp=True, *args):
         #Clock.schedule_once(partial(client.send_message, self.ID_DEVICE, "#", smac_keys["CMD_REQ_SEND_INFO"] , {}, False, None, True, False), 5)
-        client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_REQ_SEND_INFO"], message={}, udp=True, tcp=False)
-        self.send_device_info(dest_topic="#", udp=True)
+        client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_REQ_SEND_INFO"], message={}, udp=udp, tcp=tcp)
+        self.send_device_info(dest_topic="#", udp=udp, tcp=tcp)
         #Clock.schedule_interval(self.test_send_status, 0)
         #Clock.schedule_interval(self.check_for_new_value, 0)
 
@@ -761,7 +770,7 @@ class SmacApp(App):
                         d = {}
                         d[smac_keys["ID_DEVICE"]] = self.ID_DEVICE
                         d[smac_keys["VALUE"]] = 5
-                        client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_DEVICE_BUSY"], message=d, udp=True, tcp=False )
+                        client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_DEVICE_BUSY"], message=d )
                     #else:
                         #self.open_modal(text=)
             await asyncio.sleep(.1)
@@ -787,7 +796,7 @@ class SmacApp(App):
                 #COUNTER = 0
                 print("Sending CMD_ONLINE")
                 print("Sending CMD_ONLINE")
-                client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_ONLINE"], message={}, udp=True, tcp=False)
+                client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_ONLINE"], message={})
                 await  asyncio.sleep(0)
 
             COUNTER += 1
@@ -969,7 +978,7 @@ class SmacApp(App):
     def on_tcp_start(self, *args):
         print("TCP services started")
         print(args)
-        self.send_info()
+        self.send_info(tcp=True, udp=False)
 
     def on_start(self):
         print("kivy started")
@@ -984,6 +993,7 @@ class SmacApp(App):
         client.on_start = self.on_tcp_start
         db.delete_network_entry(id_topic='')
         db.remove_command_status_all()
+        db.update_delete_all(this_device=self.ID_DEVICE, value=1)
         tps = db.get_device_list_by_topic(id_topic='')
         if len(tps) < 1:
             db.add_network_entry(name_topic="", id_topic="", id_device=self.ID_DEVICE, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
@@ -1029,7 +1039,7 @@ class SmacApp(App):
             db.update_value_property_by_dev_id(id_device=self.ID_DEVICE, id_property=i["id_property"], value=str(value) )
 
         self.text1 = "message: {}".format("kivy started")
-        self.send_info()
+        self.send_info(udp=True, tcp=False)
         
 
 

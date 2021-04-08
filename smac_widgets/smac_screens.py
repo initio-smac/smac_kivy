@@ -618,6 +618,11 @@ class Screen_deviceSetting(SelectClass):
                                 tcp=True)
             app.add_task(db.get_command_status, (id_topic, id_device, [ smac_keys["CMD_STATUS_ADD_TOPIC"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"] ]) )
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
+            # if this device is not added then add it to the Topic
+            topics = [ i[0] for i in db.get_device_list_by_topic(id_topic=id_topic) ]
+            if app.ID_DEVICE not in topics:
+                db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=app.ID_DEVICE,
+                                 name_device=app.NAME_DEVICE, type_device=app.TYPE_DEVICE)
         self.load_widgets()
 
 

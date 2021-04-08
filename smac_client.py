@@ -24,7 +24,8 @@ class SMACClient():
     ZMQ_PUB_PORT = 5556
     ZMQ_SUB_PORT = 5572
     #ZMQ_SERVER = "smacsystem.com"
-    ZMQ_SERVER = "192.168.43.85"
+    #ZMQ_SERVER = "192.168.43.85"
+    ZMQ_SERVER = "192.168.0.178"
     ZMQ_REQ = []
     ZMQ_PUB_CONNECTED = 0
     ZMQ_SUB_CONNECTED = 0
@@ -145,14 +146,10 @@ class SMACClient():
         msg[ smac_keys["ID_MESSAGE"] ] = self.MSG_ID
         #msg[ smac_keys["MESSAGE"] ] = d
         msg = json.dumps(msg)
-        #if udp:
-        #self.send_udp(topic, msg)
-        #if tcp:
-            #if SMAC_PLATFORM == "ESP":
-            #    asyncio.run( self.send_zmq(topic, msg)   )
-            #else:
-            #    asyncio.gather( self.send_zmq(topic, msg)   )
-        self.ZMQ_SEND_MSG_QUEUE.append( (topic, msg) )
+        if udp:
+            self.send_udp(topic, msg)
+        if tcp:
+            self.ZMQ_SEND_MSG_QUEUE.append( (topic, msg) )
         #print("msg_queue", self.ZMQ_SEND_MSG_QUEUE)
         self.MSG_ID += 1
         #await self.send_zmq(topic, msg)
@@ -176,8 +173,8 @@ class SMACClient():
                 #self.zmq_pub_writer.write(bytearray("00040123", encoding="utf-8") )
                 await self.zmq_pub_writer.drain()
                 print(msg)
-                print(chr(len(msg)))
-                print(len(msg))
+                #print(chr(len(msg)))
+                #print(len(msg))
                 #print(  m )
                 #print(chr(len(msg)))
                 #print(ba1)
@@ -482,13 +479,13 @@ class SMACClient():
         zmq_t1 = asyncio.create_task(self.listen_zmq())
         zmq_t2 = asyncio.create_task(self.on_message_zmq())
         zmq_t3 = asyncio.create_task(self.send_message_listener_zmq())
-        #udp_t1 = asyncio.create_task(self.listen_udp())
-        #udp_t2 = asyncio.create_task(self.on_message_udp())
+        udp_t1 = asyncio.create_task(self.listen_udp())
+        udp_t2 = asyncio.create_task(self.on_message_udp())
         #test1 = asyncio.create_task(self.test_pub())
 
         #await test1
-        #await udp_t1
-        #await udp_t2
+        await udp_t1
+        await udp_t2
 
         await zmq_con
         await zmq_t3

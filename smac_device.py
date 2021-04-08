@@ -166,6 +166,7 @@ def set_property(type_property, value, id_property=None):
 
 
 def send_status(id_property, value, update_ui=True):
+    #print("status updated")
     app = App.get_running_app()
     d = {}
     d[ smac_keys["ID_DEVICE"] ] = app.ID_DEVICE
