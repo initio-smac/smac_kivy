@@ -23,8 +23,20 @@ class Database():
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_network(id INTEGER PRIMARY KEY AUTOINCREMENT,  name_home STR, name_topic STR, id_topic STR, id_device STR, name_device STR, type_device STR, remove INT, view_topic INT, view_device INT, is_busy INT, busy_period INT, pin_device STR, pin_device_valid INT, last_updated INT, interval_online INT   )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_property(id INTEGER PRIMARY KEY AUTOINCREMENT, id_device STR, id_property STR, type_property STR, name_property STR, value STR, value_min STR, value_max STR, value_step STR, value_unit STR , remove INT, value_temp STR, value_last_updated STR)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_command_status(id INTEGER PRIMARY KEY AUTOINCREMENT, id_topic STR, id_device STR, id_property STR, cmd STR, time INT)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS smac_context_action(id INTEGER PRIMARY KEY AUTOINCREMENT, id_context STR, name_context STR, id_topic STR, id_device STR, id_property STR, value STR, comparator STR, last_updated INT, status INT )")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS smac_context_trigger(id INTEGER PRIMARY KEY AUTOINCREMENT, id_context STR, id_topic STR, id_device STR, id_property STR, value STR, last_updated INT, status INT )")
 
     def create_indexes(self, *args):
+        try:
+            self.cur.execute("CREATE UNIQUE INDEX smac_action_index ON smac_network( id_topic, id_device, id_property );")
+        except Exception as e:
+            print(e)
+
+        try:
+            self.cur.execute("CREATE UNIQUE INDEX smac_trigger_index ON smac_network( id_topic, id_device, id_property );")
+        except Exception as e:
+            print(e)
+
         try:
             self.cur.execute("CREATE UNIQUE INDEX smac_network_index ON smac_network( id_topic, id_device );")
         except Exception as e:
@@ -40,7 +52,160 @@ class Database():
         #except Exception as e:
         #    print(e)
 
-    #
+    # context actions
+    def add_context(self, id_context, name_context, id_topic):
+        try:
+            lock.acquire(True)
+            self.cur.execute(
+                'REPLACE INTO smac_context_action ( id_topic, id_context, id_device, id_property, value, name_context, comparator, status, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', (id_topic, id_context, "", "", "0", name_context, "=", 0,  int(time.time()) ))
+            self.connection.commit()
+        except Exception as e:
+            print("eg: {}".format(e))
+        finally:
+            lock.release()
+
+    def get_context_by_topic(self, id_topic):
+        try:
+            lock.acquire(True)
+            return self.cur.execute('SELECT DISTINCT id_topic, id_context, name_context FROM smac_context_action WHERE id_topic=?', (id_topic,)).fetchall()
+            # return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def add_context_action(self, id_context, id_topic, id_device, id_property, name_context, value, comparator="="):
+        try:
+            lock.acquire(True)
+            self.cur.execute(
+                'REPLACE INTO smac_context_action ( id_topic, id_context, id_device, id_property, value, name_context, comparator, status, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', (id_topic, id_context, id_device, id_property, value, name_context, comparator, 0,  int(time.time()) ))
+            self.connection.commit()
+        except Exception as e:
+            print("eg: {}".format(e))
+        finally:
+            lock.release()
+
+    def get_action_by_context(self, id_context):
+        try:
+            lock.acquire(True)
+            return self.cur.execute('SELECT id_device, id_property, value, comparator, status, last_updated FROM smac_context_action WHERE id_context=?', (id_context,)).fetchall()
+            # return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def update_action_value(self, id_topic, id_context, id_device, id_property, value):
+        try:
+            lock.acquire(True)
+            self.cur.execute('UPDATE smac_context_action SET value=? WHERE id_topic=? AND id_context=? AND id_device=? AND id_property=?', (value, id_topic, id_context, id_device, id_property))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def update_action_status(self, id_topic, id_context, id_device, id_property, status=0):
+        try:
+            lock.acquire(True)
+            self.cur.execute('UPDATE smac_context_action SET status=? WHERE id_topic=? AND id_context=? AND id_device=? AND id_property=?', (status, id_topic, id_context, id_device, id_property))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def remove_action_by_topic(self, id_topic):
+        try:
+            lock.acquire(True)
+            self.cur.execute('DELETE FROM smac_context_action WHERE id_topic=?', (id_topic,))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def remove_action_by_property(self, id_topic, id_context, id_device, id_property):
+        try:
+            lock.acquire(True)
+            self.cur.execute('DELETE FROM smac_context_action WHERE id_topic=? AND id_context=? AND id_device=? AND id_property=?', (id_topic, id_context, id_device, id_property))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    # context trigger
+    def add_context_trigger(self, id_context, id_topic, id_device, id_property, value):
+        try:
+            lock.acquire(True)
+            self.cur.execute(
+                'REPLACE INTO smac_context_trigger ( id_topic, id_context, id_device, id_property, value, status, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                (id_topic, id_context, id_device, id_property, value,  0, int(time.time())))
+            self.connection.commit()
+        except Exception as e:
+            print("eg: {}".format(e))
+        finally:
+            lock.release()
+
+    def get_trigger_by_context(self, id_context):
+        try:
+            lock.acquire(True)
+            self.cur.execute('SELECT id_device, id_property, value, status, last_updated FROM smac_context_trigger WHERE id_context=?', (id_context,))
+            return self.cur.fetchall()
+            # return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+            return []
+        finally:
+            lock.release()
+
+    def update_trigger_value(self, id_topic, id_context, id_device, id_property, value):
+        try:
+            lock.acquire(True)
+            self.cur.execute(
+                'UPDATE smac_context_trigger SET value=? WHERE id_topic=? AND id_context=? AND id_device=? AND id_property=?',
+                (value, id_topic, id_context, id_device, id_property))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def update_trigger_status(self, id_topic, id_context, id_device, id_property, status=0):
+        try:
+            lock.acquire(True)
+            self.cur.execute('UPDATE smac_context_trigger SET status=? WHERE id_topic=? AND id_context=? AND id_device=? AND id_property=?', (status, id_topic, id_context, id_device, id_property))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def remove_trigger_by_topic(self, id_topic):
+        try:
+            lock.acquire(True)
+            self.cur.execute('DELETE FROM smac_context_trigger WHERE id_topic=?', (id_topic,))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def remove_trigger_by_property(self, id_topic, id_context, id_device, id_property):
+        try:
+            lock.acquire(True)
+            self.cur.execute(
+                'DELETE FROM smac_context_trigger WHERE id_topic=? AND id_context=? AND id_device=? AND id_property=?',
+                (id_topic, id_context, id_device, id_property))
+            self.connection.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    # command status
+    # used to handle device responses
     def add_command_status(self, id_topic, id_device, cmd, id_property="", ):
         try:
             lock.acquire(True)
@@ -368,7 +533,7 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT name_home FROM smac_network WHERE remove=0 ORDER BY name_topic DESC LIMIT ?,?', ( set, self.ELEMENTS_PER_PAGE))
+            self.cur.execute('SELECT DISTINCT name_home, id_topic FROM smac_network WHERE remove=0')
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -382,6 +547,18 @@ class Database():
             self.cur.execute('SELECT DISTINCT id_property, name_property, type_property, value_min, value_max, value, value_temp, value_last_updated FROM smac_property WHERE id_device=? AND remove=0 LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
             #print(a)
             return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def get_property_name_by_property(self, id_device, id_property):
+        try:
+            lock.acquire(True)
+            return self.cur.execute('SELECT name_property, type_property FROM smac_property WHERE id_device=? AND id_property=? AND remove=0', (id_device, id_property)).fetchone()
+            #print(d)
+            #print(a)
+            #return self.cur.fetchall()
         except Exception as e:
             print(e)
         finally:

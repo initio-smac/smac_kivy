@@ -45,7 +45,8 @@ class SmacApp(App):
         "name_home": "Local",
         "id_device": "",
         "name_device": "",
-        "type_device": ""
+        "type_device": "",
+        "id_context": ""
     })
     ID_DEVICE = ""
     NAME_DEVICE = ""
@@ -90,6 +91,7 @@ class SmacApp(App):
         Builder.load_file('smac_widgets/smac_layouts.kv')
         self.screen_manager.add_widget(Screen_network(name='Screen_network'))
         self.screen_manager.add_widget(Screen_deviceSetting(name='Screen_deviceSetting'))
+        self.screen_manager.add_widget(Screen_context(name='Screen_context'))
         #self.screen_manager.add_widget(Screen_devices(name='Screen_devices'))
         #self.screen_manager.add_widget(Screen_property(name='Screen_deviceSetting'))
         return self.screen_manager

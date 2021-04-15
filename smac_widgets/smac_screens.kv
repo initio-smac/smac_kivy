@@ -17,6 +17,11 @@
                     color: app.colors["COLOR_TEXT"]
                     size_hint_y: None
                     height: app.grid_min
+                Image_iconButton:
+                    source: app.source_icon + 'CLOUD.png'
+                    on_release:
+                        #app.APP_DATA["id_topic"] =
+                        app.change_screen("Screen_context")
                 #Button:
                 #    id: id_btn
                 #	text: "SEND INFO"
@@ -28,6 +33,27 @@
                 BoxLayout_container:
                     id: id_network_container
                     spacing: dp(10)
+        #BoxLayout:
+        #    size_hint_y: None
+        #    height: app.grid_min
+        #    canvas.before:
+        #        Color:
+        #            rgba: app.colors["COLOR_THEME_BASIC"]
+        #        Rectangle:
+        #            size: self.size
+        #            pos: self.pos
+        #    Widget_tab:
+        #        source: app.source_icon + "HOME.png"
+        #        text: "Homes"
+        #        screen:  "Screen_network"
+        #        on_release:
+        #            app.change_screen("Screen_network")
+        #    Widget_tab:
+        #        source: app.source_icon + "CLOUD.png"
+        #        text: "Context"
+        #        screen: "Screen_context"
+        #        on_release:
+        #            app.change_screen("Screen_context")
         Widget_menuBG:
             id: id_menu_bg
             pos: self.pos
@@ -81,11 +107,31 @@
 
                 Label_menuItem:
                     text: "Local"
-                    #bg_color: app.colors["COLOR_THEME"]
+                    bg_color: app.colors["COLOR_THEME_BASIC_2"]
+                    id_topic: ''
                     on_release:
                         #self.bg_color: get_color_from_hex("#c9c9c9")
                         root.on_menu_item_release(self)
 
+<Screen_context>:
+    BoxLayout:
+		orientation: "vertical"
+		BoxLayout_header:
+		    Image_iconButton:
+		        source: app.source_icon + "LEFT.png"
+		        on_release:
+		            app.change_screen("Screen_network")
+			Label:
+				text: "Contexts"
+				color: app.colors["COLOR_TEXT"]
+            Image_iconButton:
+                source: app.source_icon + "PLUS.png"
+                on_release:
+                    root.open_add_context()
+		ScrollView:
+			size_hint_y: 1
+			BoxLayout_container:
+			    id: id_context_container
 
 
 <Screen_deviceSetting>:

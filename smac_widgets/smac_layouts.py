@@ -11,10 +11,11 @@ from kivy.uix.popup import Popup
 from kivy.uix.slider import Slider
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
-from kivy.properties import StringProperty, ColorProperty, NumericProperty, BooleanProperty
+from kivy.properties import StringProperty, ColorProperty, NumericProperty, BooleanProperty, DictProperty
 from kivy.utils import get_color_from_hex
 
 from smac_behaviors import SelectBehavior
+from smac_db import db
 
 
 class Widget_base( ButtonBehavior, BoxLayout ):
@@ -32,9 +33,24 @@ class Widget_base( ButtonBehavior, BoxLayout ):
         self.text = text
         super().__init__(**kwargs)
 
+class Widget_tab(ButtonBehavior, BoxLayout):
+    text = StringProperty("")
+    source = StringProperty("")
+    screen = StringProperty("")
 
 class Widget_network( Widget_base ):
     pass
+
+class Widget_context( Widget_base ):
+    pass
+
+class BoxLayout_action(ButtonBehavior, BoxLayout ):
+    text = StringProperty("")
+    status = NumericProperty(0)
+
+class BoxLayout_trigger(ButtonBehavior, BoxLayout ):
+    text = StringProperty("")
+    status = NumericProperty(0)
 
 class Widget_slider(SelectBehavior, Slider):
     value_min = NumericProperty(0)
@@ -107,7 +123,7 @@ class Widget_property( BoxLayout ):
         print("val", value)
         print(slider)
         if slider != None:
-            slider.disable = value
+            slider.disabled = value
             slider.opacity = 0 if value else 1
 
     def __init__(self, text, *args, **kwargs):
@@ -120,6 +136,13 @@ class Widget_property( BoxLayout ):
         opacity = 1-value
         anim = Animation(height=height, opacity=opacity, duration=.1)
         anim.start(self)
+        for child in self.children:
+            if ButtonBehavior in child.__class__.__bases__:
+                print("hiding : {}, val: {}".format(child, value))
+                child.disabled = value
+        #for child in self.children:
+        #    print(child)
+        #    child.disabled = value
 
     def on_value(self, *args):
         #if self.value_max == 1:
@@ -140,6 +163,13 @@ class Widget_device( Widget_base ):
         if value != '':
             height = 0 if value else self.minimum_height
             opacity = 1-value
+            #for child in self.children:
+            #    child.disabled = value
+            #print(self.children)
+            for child in self.walk():
+                if ButtonBehavior in child.__class__.__bases__:
+                    #print("hiding : {}, val: {}".format(child, value))
+                    child.disabled = value
             anim = Animation(height=height, opacity=opacity, duration=.1)
             anim.start(self)
 
@@ -214,6 +244,31 @@ class BoxLayout_addTopicContent(BoxLayout):
 
 class BoxLayout_updatePropNameContent(BoxLayout):
     name_property = StringProperty("")
+
+class BoxLayout_addContextContent(BoxLayout):
+    name_context = StringProperty("")
+
+class BoxLayout_btnActionTriggerContent(BoxLayout):
+    pass
+
+class BoxLayout_addActionContent(BoxLayout):
+    active = BooleanProperty(False)
+    data = DictProperty({
+        "id_topic": "",
+        "id_context": '',
+        "id_device": "",
+        "name_device": "Device",
+        "id_property": "",
+        "name_property": "Prop",
+        "type_property": "",
+        "value": "0"
+    })
+
+class BoxLayout_addTriggerContent(BoxLayout):
+    pass
+
+class BoxLayout_block(BoxLayout):
+    text = StringProperty("")
 
 class Widget_menuBG(ButtonBehavior, Widget):
     pass

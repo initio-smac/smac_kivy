@@ -28,6 +28,9 @@ def get_id_device():
 def generate_id_topic(id_device):
     return id_device+".T{}".format( int(time.time()) )
 
+def generate_id_context(id_device):
+    return id_device+".C{}".format( int(time.time()) )
+
 def get_device_name():
     if platform == "android":
         from jnius import autoclass

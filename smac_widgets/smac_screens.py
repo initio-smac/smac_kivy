@@ -7,7 +7,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.app import App
 
 from smac_client import client
-from smac_device import set_property, generate_id_topic
+from smac_device import set_property, generate_id_topic, generate_id_context
 from smac_device_keys import SMAC_PROPERTY, SMAC_DEVICES
 from smac_keys import smac_keys
 from smac_widgets.smac_layouts import *
@@ -84,6 +84,197 @@ class SelectClass(Screen):
                 wid.dispatch("on_release")
             elif TextInput in wid.__class__.__bases__:
                 wid.focus = True
+
+class Screen_context(SelectClass):
+    modal = ModalView_custom(size_hint_x=.9, size_hint_max_x=dp(400), size_hint_y=None, height=dp(400))
+    data = DictProperty({
+        "id_topic": "",
+        "id_context": '',
+        "id_device": "",
+        "name_device": "Device",
+        "id_property": "",
+        "name_property": "Prop",
+        "type_property": "",
+        "value": "0"
+    })
+
+    def open_modal(self, content, title="Info", auto_dismiss=True):
+        if content != None:
+            self.modal.content = content
+            self.modal.title = title
+            self.modal.content.parent.parent.parent.height = content.height + dp(70)
+            self.modal.open(auto_dismiss=auto_dismiss)
+
+    def close_modal(self, *args):
+        self.modal.title = ""
+        self.modal.dismiss()
+
+    def on_realease_add_btn(self, wid, *args):
+        app = App.get_running_app()
+        #content = BoxLayout(size_hint_y=None, orientation="vertical")
+        #content.height = content.minimum_height
+        #for w in ["Add Action", "Add Trigger"]:
+        #    btn =  Button_custom1(text=w, size_hint_x=1)
+        #    btn.bind(on_release=self.open_add_action_trigger_modal)
+        #    content.add_widget(btn)
+
+        content = BoxLayout_btnActionTriggerContent()
+        for child in content.children:
+            child.bind(on_release=self.open_add_action_trigger_modal)
+        app.open_modal(content)
+
+    def open_add_action_trigger_modal(self, wid, *args):
+        app = App.get_running_app()
+        #app.close_modal()
+        if wid.text == "Add Action":
+            content = BoxLayout_addActionContent()
+            content.data = self.data
+            content.ids["id_btn_sel_device"].bind(on_release=self.open_device_selection)
+            content.ids["id_btn_sel_property"].bind(on_release=self.open_property_selection)
+            content.ids["id_btn_sel_value"].bind(on_release=self.open_value_selection)
+            app.open_modal(content=content)
+        if wid.text == "Add Trigger":
+            content = BoxLayout_addTriggerContent()
+            app.open_modal(content=content)
+
+    def open_device_selection(self, *args):
+        app = App.get_running_app()
+        content = BoxLayout_container()
+        content.height = content.minimum_height + app.grid_min
+        for dev in db.get_device_list_by_topic(id_topic=app.APP_DATA["id_topic"]):
+            btn = Button(size_hint_y=None, height=app.grid_min, text=dev[1])
+            btn.id_device = dev[0]
+            btn.name_device = dev[1]
+            btn.type_device = dev[2]
+            btn.bind(on_release=self.select_device)
+            content.add_widget(btn)
+        self.open_modal(content=content, title="Select A Device")
+
+    def select_device(self, wid,  *args):
+        self.data["id_device"] = wid.id_device
+        self.data["name_device"] = wid.name_device
+        self.data["type_device"] = wid.type_device
+        self.close_modal()
+
+    def open_property_selection(self, *args):
+        app = App.get_running_app()
+        content = BoxLayout_container()
+        content.height = content.minimum_height + app.grid_min
+        print(self.data)
+        for prop in db.get_property_list_by_device(id_device=self.data["id_device"]):
+            btn = Button(size_hint_y=None, height=app.grid_min, text=prop[1])
+            btn.id_property =prop[0]
+            btn.name_property = prop[1]
+            btn.type_property = prop[2]
+            btn.value_min = prop[3]
+            btn.value_max = prop[4]
+            btn.bind(on_release=self.select_property)
+            content.add_widget(btn)
+        self.open_modal(content=content, title="Select A Property")
+
+    def select_property(self, wid, *args):
+        self.data["id_property"] = wid.id_property
+        self.data["name_property"] = wid.name_property
+        self.data["type_property"] = wid.type_property
+        self.data["value_min"] = wid.value_min
+        self.data["value_max"] = wid.value_max
+        self.close_modal()
+
+    def open_value_selection(self, *args):
+        app = App.get_running_app()
+        content = BoxLayout_container()
+        content.height = content.minimum_height + app.grid_min
+        print(self.data)
+        for val in range(int(self.data["value_min"]), int(self.data["value_max"]), 1):
+            btn = Button(size_hint_y=None, height=app.grid_min, text=str(val) )
+            btn.value = str(val)
+            btn.bind(on_release=self.select_value)
+            content.add_widget(btn)
+        self.open_modal(content=content, title="Select A Value")
+
+    def select_value(self, wid, *args):
+        self.data["value"] = wid.value
+        self.close_modal()
+
+    def load_widgets(self, *args):
+        app = App.get_running_app()
+        id_topic = app.APP_DATA["id_topic"]
+        container = self.ids["id_context_container"]
+        for id_topic, id_context, name_context in db.get_context_by_topic(id_topic):
+            c = Widget_context(text=name_context)
+            c.id_topic = id_topic
+            c.id_context = id_context
+            c.name_context = name_context
+            container.add_widget(c)
+            c.ids["id_icon2"].bind(on_release=self.on_realease_add_btn)
+            actions = db.get_action_by_context(id_context)
+            if len(actions) > 0:
+                label_act = Label_custom(size_hint_y=None, height=app.grid_min/5)
+                #label_act.size_hint_y = None
+                #label_act.text = "Actions"
+                #label_act.text_size = label_act.size
+                #label_act.halign = "left"
+                #label_act.padding = dp(2), dp(3)
+                #c.add_widget(label_act)
+            for id_device, id_property, value, comparator, status, last_updated in actions:
+                try:
+                    if(id_device != None) and (id_device != ''):
+                        a = BoxLayout_action()
+                        name_device = db.get_device_name(id_device)
+                        np = db.get_property_name_by_property(id_device, id_property)
+                        if np != None:
+                            a.name_property = np[0]
+                            a.type_property = np[1]
+                        a.text = "When device:{} property:{} value is {}".format(name_device, np[0], value)
+                        a.status = int(status)
+                        c.add_widget(a)
+                except Exception as e:
+                    print("exception while adding action: {}".format(e))
+            triggers = db.get_trigger_by_context(id_context)
+            for id_device, id_property, value,  status, last_updated in triggers:
+                try:
+                    if(id_device != None) and (id_device != ''):
+                        t = BoxLayout_trigger()
+                        name_device = db.get_device_name(id_device)
+                        np = db.get_property_name_by_property(id_device, id_property)
+                        if np != None:
+                            t.name_property = np[0]
+                            t.type_property = np[1]
+                        t.text = "When device:{} property:{} value is {}".format(name_device, np[0], value)
+                        t.status = int(status)
+                        c.add_widget(t)
+                except Exception as e:
+                    print("exception while adding trigger: {}".format(e))
+
+
+
+
+    def open_add_context(self, *args):
+        app = App.get_running_app()
+        content = BoxLayout_addContextContent()
+        content.id_topic = app.APP_DATA["id_topic"]
+        content.ids["id_btn"].bind(on_release=self.add_context)
+        #content.ids["id_name_context"].text = ""
+        app = App.get_running_app()
+        app.open_modal(content=content, title="Add Context")
+
+    def add_context(self, wid, *args):
+        content = wid.parent
+        print(content)
+        app = App.get_running_app()
+        id_context = generate_id_context( app.ID_DEVICE )
+        name_context = content.ids["id_name_context"].text
+        db.add_context(id_context=id_context, name_context=name_context, id_topic=app.APP_DATA["id_topic"])
+        app.open_modalInfo(text="Context added")
+
+    def on_enter(self, *args):
+        app = App.get_running_app()
+        print("id_topic", app.APP_DATA["id_topic"])
+        self.load_widgets()
+
+    def on_leave(self, *args):
+        container = self.ids["id_context_container"]
+        container.clear_widgets()
 
 class Screen_network(SelectClass):
     TOPIC_IDS = {}
@@ -355,12 +546,13 @@ class Screen_network(SelectClass):
         app = App.get_running_app()
         menu = self.ids["id_menu"]
         #menu.clear_widgets()
-        for name_home, in db.get_home_list():
+        for name_home, id_topic in db.get_home_list():
             if (name_home not in menu.ids.keys()):
                 if (name_home != "") and (name_home != None):
                     # name_home = "Local"
                     print("name_home", name_home)
                     wid = Label_menuItem(text=name_home)
+                    wid.id_topic = id_topic
                     wid.padding = ( dp(10), dp(15))
                     wid.bg_color = app.colors["COLOR_THEME"]
                     wid.bind(on_release=self.on_menu_item_release)
@@ -402,6 +594,7 @@ class Screen_network(SelectClass):
     def on_menu_item_release(self, wid, *args):
         app = App.get_running_app()
         app.APP_DATA["name_home"] = wid.text
+        app.APP_DATA["id_topic"] = wid.id_topic
         self.open_close_menu()
         self.CLEAR_WIDGETS = 1
 

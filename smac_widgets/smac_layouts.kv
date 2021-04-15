@@ -18,8 +18,8 @@
         Color:
             rgba: app.colors["COLOR_THEME"]
         Rectangle:
-            size: self.size
-            pos: self.pos
+            size: Window.size
+            pos: 0,0
 
 
 <Label>:
@@ -80,6 +80,33 @@
 #		on_release:
 #			app.add_group( id_group_name.text)
 
+<Widget_tab>:
+    size_hint_y: None
+    height: app.grid_min
+    source: app.source_icon + "CLOUD.png"
+    orientation: 'vertical'
+    canvas.before:
+        Color:
+            rgba: app.colors["COLOR_THEME_HIGHLIGHT"] if(app.screen_manager.current == root.screen) else (0,0,0,0)
+        Rectangle:
+            pos: self.x, self.y+self.top
+            size: self.width, dp(3)
+    Widget:
+        size_hint_y: 1
+        height: app.grid_min - dp(10)
+        center: root.center
+        Image:
+            width: app.grid_min/2
+            height: app.grid_min/2
+            #size_hint_x: 1
+            source: root.source
+            center: self.parent.center
+    Label_custom:
+        height: dp(15)
+        text: root.text
+        font_size: dp(12)
+        color: app.colors["COLOR_THEME_HIGHLIGHT"] if(app.screen_manager.current == root.screen) else app.colors["COLOR_TEXT"]
+
 <Widget_base>:
 	height: self.minimum_height
 	icon1:  "TOP.png"
@@ -107,7 +134,7 @@
 <Widget_network>:
 	size_hint: 1, None
 	#height: dp(200)
-	spacing: app.grid_min/2
+	#spacing: app.grid_min/2
 	height: self.minimum_height
 	font_size: dp(20)
 	padding: dp(10), dp(10)
@@ -120,6 +147,78 @@
             size: self.size
             pos: self.pos
             radius: [ dp(5), ]
+
+<Widget_context>:
+	size_hint: 1, None
+	spacing: app.grid_min/3
+	height: self.minimum_height
+	font_size: dp(20)
+	padding: dp(10), dp(10)
+	icon2: "PLUS.png"
+	canvas.before:
+        Color:
+            rgba: app.colors["COLOR_THEME_BASIC"]
+        RoundedRectangle:
+            size: self.size
+            pos: self.pos
+            radius: [ dp(5), ]
+
+<BoxLayout_action>:
+    size_hint_y: None
+    height: app.grid_min
+    source: 'CHECK.png'
+    opacity: 1 if self.status else .5
+    Image_iconButton:
+        source: app.source_icon + root.source
+        opacity: root.status
+        canvas.before:
+            Color:
+                rgba: app.colors["COLOR_THEME_HIGHLIGHT"] if root.status else (0,0,0,0)
+            RoundedRectangle:
+                size: self.width*.8, self.height*.8
+                pos: self.x + dp(5), self.y + dp(5)
+                radius: [ app.grid_min/2, ]
+    Label_custom:
+        text: root.text
+        text_size: self.size
+        halign: 'left'
+        padding: dp(10), dp(15)
+        canvas.before:
+            Color:
+                rgba: app.colors["COLOR_THEME_BASIC_3"]
+            RoundedRectangle:
+                size: self.size
+                pos: self.pos
+                radius: [ dp(5), ]
+
+
+<BoxLayout_trigger>:
+    size_hint_y: None
+    height: app.grid_min
+    source: 'CHECK.png'
+    opacity: 1 if self.status else .5
+    Image_iconButton:
+        source: app.source_icon + root.source
+        opacity: root.status
+        canvas.before:
+            Color:
+                rgba: app.colors["COLOR_THEME_HIGHLIGHT"] if root.status else (0,0,0,0)
+            RoundedRectangle:
+                size: self.width*.8, self.height*.8
+                pos: self.x + dp(5), self.y + dp(5)
+                radius: [ app.grid_min/2, ]
+    Label_custom:
+        text: root.text
+        text_size: self.size
+        halign: 'left'
+        padding: dp(10), dp(15)
+        canvas.before:
+            Color:
+                rgba: app.colors["COLOR_THEME_BASIC_3"]
+            RoundedRectangle:
+                size: self.size
+                pos: self.pos
+                radius: [ dp(5), ]
 
 <Widget_device>:
 	size_hint: 1, None
@@ -396,6 +495,83 @@
         size_hint: 1, None
         height: app.grid_min
         text: "Update Property"
+
+<BoxLayout_addContextContent>:
+    orientation: 'vertical'
+    size_hint: 1, None
+    height: app.grid_min*2
+    TextInput_custom:
+        id: id_name_context
+        size_hint_y: None
+        height: app.grid_min
+        hint_text: "Context Name"
+        on_text:
+            root.name_context = self.text
+    Button_custom1:
+        id: id_btn
+        size_hint: 1, None
+        height: app.grid_min
+        text: "Add Context"
+
+<BoxLayout_btnActionTriggerContent>:
+    orientation: 'vertical'
+    size_hint_y: None
+    height: app.grid_min*2
+    Button_custom1:
+        size_hint_x: 1
+        text: "Add Action"
+    Button_custom1:
+        size_hint_x: 1
+        text: "Add Trigger"
+
+<BoxLayout_block>:
+    size_hint_y: None
+    height: self.minimum_height
+    active: True
+    canvas.before:
+        Color:
+            rgba: app.colors["COLOR_THEME_BASIC"]
+        RoundedRectangle:
+            size: self.size
+            pos: self.pos
+            radius: [ dp(5), ]
+    CheckBox:
+        size_hint: None, None
+        size: app.grid_min, app.grid_min
+        id: id_chkbox
+        active: root.active
+    Label_custom:
+        text_size: self.size
+        halign: 'left'
+        padding: dp(10), dp(15)
+        text: root.text
+
+
+
+<BoxLayout_addActionContent>:
+    size_hint_y: None
+    height: self.minimum_height + app.grid_min*2
+    orientation: 'vertical'
+    BoxLayout_block:
+        text: ""
+        Button_custom1:
+            text: root.data["name_device"]
+            id: id_btn_sel_device
+        Button_custom1:
+            text: root.data["name_property"]
+            id: id_btn_sel_property
+        Button_custom1:
+            text: root.data["value"]
+            id: id_btn_sel_value
+    Button_custom1:
+        text: "Add Action"
+        id: id_btn_add_action
+
+
+<BoxLayout_addTriggerContent>:
+    size_hint_y: None
+    height: self.minimum_height
+    BoxLayout_block:
 
 <BoxLayout_addHomeContent>:
     orientation: 'vertical'
