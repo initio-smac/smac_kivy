@@ -90,12 +90,15 @@ class Screen_context(SelectClass):
     data = DictProperty({
         "id_topic": "",
         "id_context": '',
+        'name_context': '',
         "id_device": "",
         "name_device": "Device",
         "id_property": "",
         "name_property": "Prop",
         "type_property": "",
-        "value": "0"
+        "value": "0",
+        "value_min": "0",
+        "value_max": "1"
     })
 
     def open_modal(self, content, title="Info", auto_dismiss=True):
@@ -117,6 +120,9 @@ class Screen_context(SelectClass):
         #    btn =  Button_custom1(text=w, size_hint_x=1)
         #    btn.bind(on_release=self.open_add_action_trigger_modal)
         #    content.add_widget(btn)
+        cxt_obj = wid.parent.parent
+        self.data["id_context"] = cxt_obj.id_context
+        self.data["name_context"] = cxt_obj.name_context
 
         content = BoxLayout_btnActionTriggerContent()
         for child in content.children:
@@ -132,10 +138,62 @@ class Screen_context(SelectClass):
             content.ids["id_btn_sel_device"].bind(on_release=self.open_device_selection)
             content.ids["id_btn_sel_property"].bind(on_release=self.open_property_selection)
             content.ids["id_btn_sel_value"].bind(on_release=self.open_value_selection)
-            app.open_modal(content=content)
+            content.ids["id_btn_add_action"].bind(on_release=self.add_action)
+            app.open_modal(content=content, title='Add Action')
         if wid.text == "Add Trigger":
             content = BoxLayout_addTriggerContent()
-            app.open_modal(content=content)
+            content.data = self.data
+            content.ids["id_btn_sel_device"].bind(on_release=self.open_device_selection)
+            content.ids["id_btn_sel_property"].bind(on_release=self.open_property_selection)
+            content.ids["id_btn_sel_value"].bind(on_release=self.open_value_selection)
+            content.ids["id_btn_add_trigger"].bind(on_release=self.add_trigger)
+            app.open_modal(content=content, title="Add Trigger")
+
+    def add_trigger(self, wid, *args):
+        app = App.get_running_app()
+        id_device = self.data["id_device"]
+        if  id_device == app.ID_DEVICE:
+            id_context = generate_id_context(id_device)
+            db.add_context_trigger(id_context=id_context, id_topic=self.data["id_topic"], id_device=id_device, id_property=self.data["id_property"],  value=self.data["value"])
+            app.open_modalInfo(text="Context Trigger added")
+        else:
+            d = {}
+            d[smac_keys["ID_TOPIC"]] = self.data["id_topic"]
+            d[smac_keys["ID_DEVICE"]] = id_device
+            d[smac_keys["ID_CONTEXT"]] = self.data["id_context"]
+            d[smac_keys["ID_PROPERTY"]] = self.data["id_property"]
+            #d[smac_keys["NAME_CONTEXT"]] = self.data["name_context"]
+            d[smac_keys["VALUE"]] = self.data["value"]
+            d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
+            #id_topic, id_context, id_device, id_property, value
+            client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_TRIGGER"], message=d, udp=True,
+                                tcp=True)
+            #app.add_task(db.get_command_status, (self.data["id_topic"], id_device, [smac_keys["CMD_STATUS_ADD_TRIGGER"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_TRIGGER_LIMIT_EXCEEDED"]]))
+            app.add_task(db.get_command_status, (self.data["id_topic"], id_device, [smac_keys["CMD_STATUS_ADD_TRIGGER"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_ACTION_LIMIT_EXCEEDED"]], "", self.data["id_context"]))
+            app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
+
+    def add_action(self, wid, *args):
+        app = App.get_running_app()
+        id_device = self.data["id_device"]
+        if  id_device == app.ID_DEVICE:
+            id_context = generate_id_context(id_device)
+            db.add_context_action(id_context=id_context, id_topic=self.data["id_topic"], id_device=id_device, id_property=self.data["id_property"], name_context=self.data["name_context"], value=self.data["value"])
+            app.open_modalInfo(text="Context Action added")
+        else:
+            d = {}
+            d[smac_keys["ID_TOPIC"]] = self.data["id_topic"]
+            d[smac_keys["ID_DEVICE"]] = id_device
+            d[smac_keys["ID_CONTEXT"]] = self.data["id_context"]
+            d[smac_keys["ID_PROPERTY"]] = self.data["id_property"]
+            d[smac_keys["NAME_CONTEXT"]] = self.data["name_context"]
+            d[smac_keys["VALUE"]] = self.data["value"]
+            d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
+            #id_topic, id_context, id_device, id_property, value, name_context
+            client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_ACTION"], message=d, udp=True,
+                                tcp=True)
+            app.add_task(db.get_command_status, (self.data["id_topic"], id_device, [smac_keys["CMD_STATUS_ADD_ACTION"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_ACTION_LIMIT_EXCEEDED"]], "", self.data["id_context"]))
+            app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
+
 
     def open_device_selection(self, *args):
         app = App.get_running_app()
@@ -185,7 +243,7 @@ class Screen_context(SelectClass):
         content = BoxLayout_container()
         content.height = content.minimum_height + app.grid_min
         print(self.data)
-        for val in range(int(self.data["value_min"]), int(self.data["value_max"]), 1):
+        for val in range(int(self.data["value_min"]), int(self.data["value_max"])+1, 1):
             btn = Button(size_hint_y=None, height=app.grid_min, text=str(val) )
             btn.value = str(val)
             btn.bind(on_release=self.select_value)
@@ -208,6 +266,8 @@ class Screen_context(SelectClass):
             container.add_widget(c)
             c.ids["id_icon2"].bind(on_release=self.on_realease_add_btn)
             actions = db.get_action_by_context(id_context)
+            #print(c)
+            #print("actions", actions)
             if len(actions) > 0:
                 label_act = Label_custom(size_hint_y=None, height=app.grid_min/5)
                 #label_act.size_hint_y = None
@@ -266,6 +326,23 @@ class Screen_context(SelectClass):
         name_context = content.ids["id_name_context"].text
         db.add_context(id_context=id_context, name_context=name_context, id_topic=app.APP_DATA["id_topic"])
         app.open_modalInfo(text="Context added")
+        d1 = {}
+        d1[smac_keys["ID_CONTEXT"]] = id_context
+        #d1[smac_keys["ID_DEVICE"]] = app.ID_DEVICE
+        d1[smac_keys["NAME_CONTEXT"]] = name_context
+        d1[smac_keys["ID_TOPIC"]] = app.APP_DATA["id_topic"]
+        client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_ADD_CONTEXT"], message=d1)
+
+    def remove_context(self, wid, *args):
+        content = wid.parent
+        app = App.get_running_app()
+        id_topic = app.APP_DATA["id_topic"]
+        id_context = content.id_context
+        db.remove_context(id_context, id_topic)
+        d1 = {}
+        d1[smac_keys["ID_CONTEXT"]] = id_context
+        d1[smac_keys["ID_TOPIC"]] = app.APP_DATA["id_topic"]
+        client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_REMOVE_CONTEXT"], message=d1)
 
     def on_enter(self, *args):
         app = App.get_running_app()

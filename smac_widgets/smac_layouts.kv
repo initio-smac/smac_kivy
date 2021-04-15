@@ -134,7 +134,7 @@
 <Widget_network>:
 	size_hint: 1, None
 	#height: dp(200)
-	#spacing: app.grid_min/2
+	spacing: app.grid_min/2
 	height: self.minimum_height
 	font_size: dp(20)
 	padding: dp(10), dp(10)
@@ -570,8 +570,22 @@
 
 <BoxLayout_addTriggerContent>:
     size_hint_y: None
-    height: self.minimum_height
+    height: self.minimum_height+ app.grid_min*2
+    orientation: 'vertical'
     BoxLayout_block:
+        text: ""
+        Button_custom1:
+            text: root.data["name_device"]
+            id: id_btn_sel_device
+        Button_custom1:
+            text: root.data["name_property"]
+            id: id_btn_sel_property
+        Button_custom1:
+            text: root.data["value"]
+            id: id_btn_sel_value
+    Button_custom1:
+        text: "Add Trigger"
+        id: id_btn_add_trigger
 
 <BoxLayout_addHomeContent>:
     orientation: 'vertical'

@@ -160,8 +160,20 @@ class SmacApp(App):
             return "Device Online Interval Updated"
         elif cmd == smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"]:
             return "Home Limit for the Device is Exceeded"
+        elif cmd == smac_keys["CMD_ACTION_LIMIT_EXCEEDED"]:
+            return "Context Action Limit for the Device is Exceeded"
+        elif cmd == smac_keys["CMD_TRIGGER_LIMIT_EXCEEDED"]:
+            return "Context Trigger Limit for the Device is Exceeded"
         elif cmd == smac_keys["CMD_STATUS_UPDATE_WIFI_CONFIG"]:
             return "Wifi Config Updated"
+        elif cmd == smac_keys["CMD_STATUS_ADD_ACTION"]:
+            return "Context Action Added"
+        elif cmd == smac_keys["CMD_STATUS_REMOVE_ACTION"]:
+            return "Context Action Removed"
+        elif cmd == smac_keys["CMD_STATUS_ADD_TRIGGER"]:
+            return "Context Trigger Added"
+        elif cmd == smac_keys["CMD_STATUS_REMOVE_TRIGGER"]:
+            return "Context Trigger Removed"
         else:
             return smac_keys[cmd]
 
@@ -305,6 +317,7 @@ class SmacApp(App):
             if id_topic not in ["#", self.ID_DEVICE]:
                 print("ab")
                 m = {}
+                m[ smac_keys["TOPIC"]] = 1
                 m[ smac_keys["ID_TOPIC"] ] = id_topic if(id_topic != None) else ""
                 m[ smac_keys["NAME_TOPIC"] ] = name_topic if(name_topic != None) else ""
                 m[ smac_keys["NAME_HOME"] ] = name_home if(name_home != None) else ""
@@ -314,20 +327,54 @@ class SmacApp(App):
                 #time.sleep(.1)
                 client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=m, udp=udp, tcp=tcp)
                 print("sent {}".format(id_topic))
-        print("send topics")
+
+                for id_topic, id_context, name_context in db.get_context_by_topic(id_topic):
+                    c1 = {}
+                    c1[ smac_keys["CONTEXT"] ] = 1
+                    c1[ smac_keys["ID_TOPIC"] ] = id_topic if(id_topic != None) else ""
+                    c1[ smac_keys["ID_CONTEXT"] ] = id_context if(id_context != None) else ""
+                    c1[ smac_keys["NAME_CONTEXT"] ] = name_context if(name_context != None) else ""
+                    client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=c1 ,udp=udp, tcp=tcp)
+        print("sent topics")
 
         for p in db.get_property(self.ID_DEVICE):
             print(p)
             p1 = {}
-            p1[ smac_keys["ID_DEVICE"] ] = self.ID_DEVICE
-            p1[ smac_keys["ID_PROPERTY"] ] = p[2]
-            p1[ smac_keys["TYPE_PROPERTY"] ] = p[3]
-            p1[ smac_keys["NAME_PROPERTY"] ] = p[4]
-            p1[ smac_keys["VALUE"]] = p[5]
-            p1[ smac_keys["VALUE_MIN"]] = p[6]
-            p1[ smac_keys["VALUE_MAX"]] = p[7]
-            client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=p1, udp=udp, tcp=tcp)
+            p1[smac_keys["PROPERTY"]] = 1
+            p1[smac_keys["ID_DEVICE"]] = self.ID_DEVICE
+            p1[smac_keys["ID_PROPERTY"]] = p[2]
+            p1[smac_keys["TYPE_PROPERTY"]] = p[3]
+            p1[smac_keys["NAME_PROPERTY"]] = p[4]
+            p1[smac_keys["VALUE"]] = p[5]
+            p1[smac_keys["VALUE_MIN"]] = p[6]
+            p1[smac_keys["VALUE_MAX"]] = p[7]
+            client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=p1, udp=udp,
+                                tcp=tcp)
         print("send property")
+
+        for id_topic1, id_context, id_device, id_property, value, name_context in db.get_action_by_device(self.ID_DEVICE):
+            c2 = {}
+            c2[ smac_keys["CONTEXT_ACTION"] ] = 1
+            c2[ smac_keys["ID_TOPIC"]] = id_topic1 if (id_topic1 != None) else ""
+            c2[ smac_keys["ID_CONTEXT"]] = id_context if (id_context != None) else ""
+            c2[ smac_keys["ID_DEVICE"]] = id_device
+            c2[ smac_keys["ID_PROPERTY"]] = id_property
+            c2[ smac_keys["VALUE"] ] = value
+            c2[ smac_keys["NAME_CONTEXT"] ] = name_context
+            client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=c2, udp=udp, tcp=tcp)
+
+        for id_topic2, id_context, id_device, id_property, value in db.get_trigger_by_device(self.ID_DEVICE):
+            c2 = {}
+            c2[ smac_keys["CONTEXT_TRIGGER"] ] = 1
+            c2[ smac_keys["ID_TOPIC"]] = id_topic2 if (id_topic2 != None) else ""
+            c2[ smac_keys["ID_CONTEXT"]] = id_context if (id_context != None) else ""
+            c2[ smac_keys["ID_DEVICE"]] = id_device
+            c2[ smac_keys["ID_PROPERTY"]] = id_property
+            c2[ smac_keys["VALUE"] ] = value
+            #c2[ smac_keys["NAME_CONTEXT"] ] = name_context
+            client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=c2, udp=udp, tcp=tcp)
+
+
 
 
         #client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_END_SEND_INFO"], message={},
@@ -434,7 +481,7 @@ class SmacApp(App):
 
                 if cmd == smac_keys["CMD_SEND_INFO"]:
                     print("CMD_SEND_INFO")
-                    if data.get( smac_keys["ID_TOPIC"], None) != None:
+                    if data.get( smac_keys["TOPIC"], None) != None:
                         id_device = data.get( smac_keys["ID_DEVICE"] )
                         id_topic = data.get( smac_keys["ID_TOPIC"] )
                         name_device = data.get(smac_keys["NAME_DEVICE"], "")
@@ -446,7 +493,7 @@ class SmacApp(App):
                             #db.update_delete_by_topic_id(id_device=frm, id_topic=id_topic, value=0)
                             print("new network entry added: {}, {}".format(id_topic, frm))
                         print("12")
-                    if data.get(smac_keys["ID_PROPERTY"], None) != None:
+                    if data.get(smac_keys["PROPERTY"], None) != None:
                         id_device = data.get(smac_keys["ID_DEVICE"])
                         id_prop = data.get(smac_keys["ID_PROPERTY"])
                         type_prop = data.get(smac_keys["TYPE_PROPERTY"], "")
@@ -458,7 +505,35 @@ class SmacApp(App):
                             db.add_property(id_device=id_device, id_property=id_prop, type_property=type_prop, name_property=name_prop, value=value, value_min=value_min, value_max=value_max, remove=0)
                             #db.update_delete_by_prop_id(id_device=frm, id_property=id_prop, value=0)
                             print("new property entry added: {}".format(name_prop) )
-                        print("13")
+                        #print("13")
+
+                    if data.get(smac_keys["CONTEXT"], None) != None:
+                        id_topic = data.get(smac_keys["ID_TOPIC"])
+                        id_context = data.get( smac_keys["ID_CONTEXT"] )
+                        name_context = data.get( smac_keys["NAME_CONTEXT"] )
+                        db.add_context(id_context=id_context, id_topic=id_topic, name_context=name_context)
+                        #print("14")
+
+                    if data.get(smac_keys["CONTEXT_ACTION"], None) != None:
+                        id_topic = data.get(smac_keys["ID_TOPIC"])
+                        id_context = data.get( smac_keys["ID_CONTEXT"] )
+                        id_device = data.get( smac_keys["ID_DEVICE"] )
+                        id_property = data.get( smac_keys["ID_PROPERTY"] )
+                        value = data.get( smac_keys["VALUE"] )
+                        name_context = data.get( smac_keys["NAME_CONTEXT"] )
+                        db.add_context_action(id_context, id_topic, id_device, id_property, name_context, value)
+
+                    if data.get(smac_keys["CONTEXT_TRIGGER"], None) != None:
+                        id_topic = data.get(smac_keys["ID_TOPIC"])
+                        id_context = data.get(smac_keys["ID_CONTEXT"])
+                        id_device = data.get(smac_keys["ID_DEVICE"])
+                        id_property = data.get(smac_keys["ID_PROPERTY"])
+                        value = data.get(smac_keys["VALUE"])
+                        #name_context = data.get(smac_keys["NAME_CONTEXT"])
+                        db.add_context_trigger(id_context, id_topic, id_device, id_property, value)
+
+
+
 
                 if cmd == smac_keys["CMD_INIT_SEND_INFO"]:
                     print("updating DELETE field of entries: {}".format(frm))
@@ -551,9 +626,10 @@ class SmacApp(App):
                 if cmd == smac_keys["CMD_ONLINE"]:
                     db.update_device_last_updated(id_device=frm)
 
-                if cmd == smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"]:
-                    id_topic = data.get(smac_keys["ID_TOPIC"])
-                    db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
+                if cmd in [ smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"], smac_keys["CMD_ACTION_LIMIT_EXCEEDED"], smac_keys["CMD_TRIGGER_LIMIT_EXCEEDED"] ]:
+                    id_topic = data.get(smac_keys["ID_TOPIC"], "")
+                    id_context = data.get(smac_keys["ID_CONTEXT"], "")
+                    db.add_command_status(id_topic=id_topic, id_context=id_context, id_device=frm, cmd=cmd)
 
                 if cmd == smac_keys["CMD_UPDATE_NAME_DEVICE"]:
                     id_device = data.get(smac_keys["ID_DEVICE"])
@@ -582,6 +658,7 @@ class SmacApp(App):
                     #print("id_device", id_device)
                     #print("name_prop", name_property)
                     self.update_name_property(frm, id_device, name_property, id_property, passkey)
+
 
                 if cmd == smac_keys["CMD_STATUS_UPDATE_NAME_PROPERTY"]:
                     id_topic = ""
@@ -613,11 +690,147 @@ class SmacApp(App):
                     if m != "":
                         self.open_modalInfo(text=m , title="Info")
 
+                if cmd == smac_keys["CMD_STATUS_ADD_CONTEXT"]:
+                    id_context = data.get( smac_keys["ID_CONTEXT"] )
+                    #id_device = smac_keys["ID_DEVICE"]
+                    name_context = data.get( smac_keys["NAME_CONTEXT"] )
+                    id_topic = data.get( smac_keys["ID_TOPIC"] )
+                    db.add_context(id_context=id_context, name_context=name_context, id_topic=id_topic)
 
+                if cmd == smac_keys["CMD_STATUS_REMOVE_CONTEXT"]:
+                    id_context = data.get( smac_keys["ID_CONTEXT"] )
+                    id_topic = data.get( smac_keys["ID_TOPIC"] )
+                    db.remove_context(id_context=id_context, id_topic=id_topic)
 
+                if cmd in  [ smac_keys["CMD_ADD_ACTION"], smac_keys["CMD_STATUS_ADD_ACTION"] ]:
+                    print("cmd in CMD_ACTION")
+                    id_context = data.get( smac_keys["ID_CONTEXT"] )
+                    id_topic =  data.get( smac_keys["ID_TOPIC"] )
+                    id_device=  data.get( smac_keys["ID_DEVICE"] )
+                    id_property =  data.get( smac_keys["ID_PROPERTY"] )
+                    name_context =  data.get( smac_keys["NAME_CONTEXT"] )
+                    value =  data.get( smac_keys["VALUE"] )
+                    passkey =  data.get( smac_keys["PASSKEY"] )
+                    if cmd == smac_keys["CMD_ADD_ACTION"]:
+                        print("act")
+                        self.add_action(frm, id_context, id_topic, id_device, id_property, name_context, value, passkey)
+                    elif cmd == smac_keys["CMD_STATUS_ADD_ACTION"]:
+                        print("b1")
+                        db.add_context_action(id_context=id_context, id_topic=id_topic,id_device=id_device, id_property=id_property,name_context=name_context, value=value)
+                        db.add_command_status(id_topic=id_topic, id_device=id_device, cmd=cmd, id_context=id_context)
+                        print("b2")
+
+                if cmd in [smac_keys["CMD_ADD_TRIGGER"], smac_keys["CMD_STATUS_ADD_TRIGGER"]]:
+                    id_context =  data.get(  smac_keys["ID_CONTEXT"] )
+                    id_topic =  data.get( smac_keys["ID_TOPIC"] )
+                    id_device=  data.get( smac_keys["ID_DEVICE"] )
+                    id_property =  data.get( smac_keys["ID_PROPERTY"] )
+                    #name_context = smac_keys["NAME_CONTEXT"]
+                    value =  data.get( smac_keys["VALUE"] )
+                    passkey =  data.get( smac_keys["PASSKEY"] )
+                    if cmd == smac_keys["CMD_ADD_TRIGGER"]:
+                        self.add_trigger(frm, id_context, id_topic, id_device, id_property, value, passkey)
+                    elif cmd == smac_keys["CMD_STATUS_ADD_TRIGGER"]:
+                        db.add_context_trigger(id_context=id_context, id_topic=id_topic,id_device=id_device, id_property=id_property,value=value)
+                        db.add_command_status(id_topic=id_topic, id_device=id_device, cmd=cmd, id_context=id_context)
+
+                if cmd in [smac_keys["CMD_REMOVE_ACTION"], smac_keys["CMD_REMOVE_TRIGGER"]]:
+                    #id_topic, id_context, id_device, id_property, passkey
+                    id_context =  data.get( smac_keys["ID_CONTEXT"] )
+                    id_topic =  data.get( smac_keys["ID_TOPIC"] )
+                    id_device =  data.get( smac_keys["ID_DEVICE"] )
+                    id_property =  data.get( smac_keys["ID_PROPERTY"] )
+                    passkey =  data.get( smac_keys["PASSKEY"] )
+                    if cmd == smac_keys["CMD_REMOVE_ACTION"]:
+                        self.remove_action(frm, id_topic, id_context, id_device, id_property, passkey)
+                    elif cmd == smac_keys["CMD_REMOVE_TRIGGER"]:
+                        self.remove_trigger(frm, id_topic, id_context, id_device, id_property, passkey)
 
         #except Exception as e:
         #    print("Exception while decoding message: {}".format(e) )
+
+    def add_action(self, frm, id_context, id_topic, id_device, id_property, name_context, value, passkey ):
+        passkey = str(passkey)
+        print(id_device)
+        print(self.ID_DEVICE)
+        if id_device == self.ID_DEVICE:
+            print("act 0")
+            if passkey == self.PIN_DEVICE:
+                print("act 1")
+                db.add_context_action(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property, name_context=name_context,value=value)
+                print("act 2")
+                d1 = {}
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                d1[smac_keys["ID_TOPIC"]] = id_topic
+                d1[smac_keys["ID_CONTEXT"]] = id_context
+                d1[smac_keys["ID_PROPERTY"]] = id_property
+                d1[smac_keys["NAME_CONTEXT"]] = name_context
+                d1[smac_keys["VALUE"]] = value
+                # id_topic, id_context, id_device, id_property, value, name_context
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_ADD_ACTION"], message=d1)
+            else:
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Context Action Not Added. Passkey Error"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+
+    def remove_action(self, frm, id_topic, id_context, id_device, id_property, passkey):
+        passkey = str(passkey)
+        if id_device == self.ID_DEVICE:
+            if passkey == self.PIN_DEVICE:
+                db.remove_action_by_property(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property)
+                d1 = {}
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                d1[smac_keys["ID_TOPIC"]] = id_topic
+                d1[smac_keys["ID_CONTEXT"]] = id_context
+                d1[smac_keys["ID_PROPERTY"]] = id_property
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_REMOVE_ACTION"],message=d1)
+            else:
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Context Action Not Removed. Passkey Error"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+
+    def remove_trigger(self, frm, id_topic, id_context, id_device, id_property, passkey):
+        passkey = str(passkey)
+        if id_device == self.ID_DEVICE:
+            if passkey == self.PIN_DEVICE:
+                db.remove_trigger_by_property(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property)
+                d1 = {}
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                d1[smac_keys["ID_TOPIC"]] = id_topic
+                d1[smac_keys["ID_CONTEXT"]] = id_context
+                d1[smac_keys["ID_PROPERTY"]] = id_property
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_REMOVE_TRIGGER"],message=d1)
+            else:
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Context Trigger Not Removed. Passkey Error"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
+
+    def add_trigger(self, frm, id_context, id_topic, id_device, id_property, value, passkey ):
+        passkey = str(passkey)
+        if id_device == self.ID_DEVICE:
+            if passkey == self.PIN_DEVICE:
+                db.add_context_trigger(id_context=id_context, id_topic=id_topic, id_device=id_device,id_property=id_property,value=value)
+                d1 = {}
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                d1[smac_keys["ID_TOPIC"]] = id_topic
+                d1[smac_keys["ID_CONTEXT"]] = id_context
+                d1[smac_keys["ID_PROPERTY"]] = id_property
+                #d1[smac_keys["NAME_CONTEXT"]] = name_context
+                d1[smac_keys["VALUE"]] = value
+                # id_topic, id_context, id_device, id_property, value, name_context
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_ADD_TRIGGER"], message=d1)
+            else:
+                d1 = {}
+                d1[smac_keys["MESSAGE"]] = "Context Trigger Not Added. Passkey Error"
+                d1[smac_keys["ID_DEVICE"]] = id_device
+                print(d1[smac_keys["MESSAGE"]])
+                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
 
     def update_interval_online(self, frm, id_device, interval_online, passkey):
         if id_device == self.ID_DEVICE:
@@ -822,15 +1035,13 @@ class SmacApp(App):
                     id_topic = args[0]
                     id_device = args[1]
                     cmd = args[2]
-                    if len(args) > 3:
-                        id_property = args[3]
-                    else:
-                        id_property = ""
-                    st = db.get_command_status(id_topic=id_topic, id_device=id_device, id_property=id_property)
+                    id_property = args[3] if(len(args) > 3) else ""
+                    id_context= args[4] if(len(args) > 4) else ""
+                    st = db.get_command_status(id_topic=id_topic, id_device=id_device, id_property=id_property, id_context=id_context)
                     print("st", st)
                     if st != None:
-                        tim = st[5]
-                        cmd1 = st[4]
+                        tim = st[6]
+                        cmd1 = st[5]
                         t_diff = int(time.time()) - tim
                         print("t_diff", t_diff)
                         if t_diff < 15:

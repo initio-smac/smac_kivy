@@ -256,6 +256,7 @@ class BoxLayout_addActionContent(BoxLayout):
     data = DictProperty({
         "id_topic": "",
         "id_context": '',
+        "name_context": '',
         "id_device": "",
         "name_device": "Device",
         "id_property": "",
@@ -265,7 +266,18 @@ class BoxLayout_addActionContent(BoxLayout):
     })
 
 class BoxLayout_addTriggerContent(BoxLayout):
-    pass
+    active = BooleanProperty(False)
+    data = DictProperty({
+        "id_topic": "",
+        "id_context": '',
+        "name_context": '',
+        "id_device": "",
+        "name_device": "Device",
+        "id_property": "",
+        "name_property": "Prop",
+        "type_property": "",
+        "value": "0"
+    })
 
 class BoxLayout_block(BoxLayout):
     text = StringProperty("")
