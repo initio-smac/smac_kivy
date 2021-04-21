@@ -27,7 +27,8 @@ class SelectBehavior(object):
         app = App.get_running_app()
         self.padding = (5, 5)
         #self.width = self.width + self.border_width*4
-        self.border_color = app.colors["COLOR_THEME_HIGHLIGHT"]
+        if app != None:
+            self.border_color = app.colors["COLOR_THEME_HIGHLIGHT"]
 
     def _border(self, *args):
         w = round(self.border_line.width, 1)

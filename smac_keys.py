@@ -147,5 +147,15 @@ smac_keys={
     'ID_CONTEXT'                        :'a10',
     'a10'                               :'ID_CONTEXT',
     'NAME_CONTEXT'                      :'a11',
-    'a11'                               :'NAME_CONTEXT'
+    'a11'                               :'NAME_CONTEXT',
+    'TYPE_TRIGGER_PROP'                 :'a12',
+    'a12'                               :'TYPE_TRIGGER_PROP',
+    'TYPE_TRIGGER_TIME'                 :'a13',
+    'a13'                               :'TYPE_TRIGGER_TIME',
+    'TYPE_TRIGGER_LOCATION'             :'a14',
+    'a14'                               :'TYPE_TRIGGER_LOCATION',
+    'TYPE_TRIGGER'                      :'a15',
+    'a15'                               :'TYPE_TRIGGER',
+    'CMD_TRIGGER_CONTEXT'                   :'a16',
+    'a16'                               :'CMD_TRIGGER_CONTEXT'
     }

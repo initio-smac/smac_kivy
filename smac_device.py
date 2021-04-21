@@ -127,8 +127,13 @@ async def property_listener(id_device):
             send_status(id_property=id_property, value=value)
 
 def set_property(type_property, value, id_property=None):
+    #print(type_property, type(type_property))
+    #print( SMAC_PROPERTY[type_property])
+    #print(value)
     if type_property == SMAC_PROPERTY["BLUETOOTH"]:
         try:
+            if type(value) == str:
+                value = int(value)
             if value == 0:
                 mBluetoothAdapter.disable()
             elif value == 1:
@@ -139,10 +144,14 @@ def set_property(type_property, value, id_property=None):
             print("Bluetooth control err: {}".format(e))
             return False
     elif type_property == SMAC_PROPERTY["BRIGHTNESS"]:
+        print("btihtness")
         if platform == "android":
             #print(check_permission(Permission.WRITE_SETTINGS))
             #if check_permission(Permission.WRITE_SETTINGS):
             try:
+                print("val", value, type(value))
+                if type(value) == str:
+                    value = int(value)
                 brightness.set_level(value)
                 send_status(id_property, value)
                 return True
@@ -151,6 +160,8 @@ def set_property(type_property, value, id_property=None):
                 return False
     elif type_property == SMAC_PROPERTY["FLASH"]:
         try:
+            if type(value) == str:
+                value = int(value)
             if value: flash.on()
             else: flash.off()
             send_status(id_property, value)
@@ -183,5 +194,5 @@ def send_status(id_property, value, update_ui=True):
 
     #for id_topic in app.SUB_TOPIC:
     client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_SET_PROPERTY"], message=d, udp=True, tcp=True)
-
+    app.check_for_action_trigger_status(app.ID_DEVICE, id_property, value)
 

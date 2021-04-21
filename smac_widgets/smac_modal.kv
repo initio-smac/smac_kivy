@@ -1,0 +1,51 @@
+
+<Image_iconButton>:
+    size_hint: None, None
+    size: dp(50), dp(50)
+    Image:
+        size_hint: None, None
+        size: self.parent.width/2, self.parent.height/2
+        allow_stretch: True
+        center: self.parent.center
+        source: root.source
+
+
+<ModalView_custom>:
+    separator_color: 74/255,129/255,17/255,1
+    separator_height: dp(2)
+    _container: container
+    GridLayout:
+        id: id_grid_container
+        padding: '12dp'
+        cols: 1
+        size_hint: None, None
+        pos: root.pos
+        size: root.size
+        Label:
+            text: root.title
+            color: root.title_color
+            size_hint_y: None
+            height: self.texture_size[1] + dp(16)
+            text_size: self.width - dp(16), None
+            font_size: root.title_size
+            font_name: root.title_font
+            halign: root.title_align
+            Image_iconButton:
+                id: id_btn_close
+                pos: self.parent.right-self.width+dp(5), self.parent.y-dp(5)
+                source: 'icons/DARK/CLOSE.png'
+                on_release:
+                    #print("dismiss")
+                    #root.dismiss()
+        Widget:
+            size_hint_y: None
+            height: dp(4)
+            canvas:
+                Color:
+                    rgba: root.separator_color
+                Rectangle:
+                    pos: self.x, self.y + root.separator_height / 2.
+                    size: self.width, root.separator_height
+
+        BoxLayout:
+            id: container

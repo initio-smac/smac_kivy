@@ -1,10 +1,12 @@
 import os
+from datetime import datetime
+#import time
 
 from kivy.properties import *
-from kivy.utils import get_color_from_hex, platform
+#from kivy.utils import get_color_from_hex, platform
 #from kivy.uix.screenmanager import ScreenManager, Screen, CardTransition, NoTransition, SlideTransition, SwapTransition, FadeTransition, WipeTransition, FallOutTransition, RiseInTransition
 from kivy.uix.screenmanager import ScreenManager, NoTransition
-from kivy.core.window import Window
+#from kivy.core.window import Window
 
 from smac_device import set_property, get_device_property, get_property_value, property_listener
 from smac_theme_colors import THEME_LIGHT, THEME_DARK
@@ -17,10 +19,6 @@ from smac_device_keys import SMAC_DEVICES
 from smac_widgets.smac_screens import *
 from smac_widgets.smac_layouts import *
 from smac_db import db
-
-from kivy.lang import Builder
-
-
 
 
 class BoxLayout_property(BoxLayout):
@@ -101,17 +99,26 @@ class SmacApp(App):
 
     def open_modal(self, content, title="Info", auto_dismiss=True):
         if content != None:
+            #print(content.height)
             self.modal.content = content
             self.modal.title = title
-            self.modal.content.parent.parent.parent.height = content.height + dp(70)
+            #self.modal.content.parent.parent.parent.height = content.height + dp(70)
+            self.modal.height = content.height + dp(70)
             self.modal.open(auto_dismiss=auto_dismiss)
             self.is_modal_open = True
+
+            scr = self.screen_manager.get_screen( self.screen_manager.current )
+            #print(scr)
+            scr.get_selectable_nodes(widget=self.modal)
+
 
     def close_modal(self, *args):
         #self.modal.content = None
         self.modal.title = ""
         self.modal.dismiss()
         self.is_modal_open = False
+        scr = self.screen_manager.get_screen(self.screen_manager.current)
+        scr.get_selectable_nodes()
 
     def open_modalInfo(self, title="Info", text="", auto_dismiss=True):
         print("text", text)
@@ -246,6 +253,28 @@ class SmacApp(App):
             container.remove_widget(scr.TOPIC_IDS[id_topic])
             del scr.TOPIC_IDS[id_topic]
 
+    def remove_action_widget(self, id_context, id_device, id_property):
+        app = App.get_running_app()
+        scr = app.screen_manager.get_screen(name="Screen_context")
+        container = scr.ids["id_context_container"]
+        if container.ids.get(id_context, None) != None:
+            cxt = container.ids[id_context]
+            act_id = "act_{}:{}".format(id_device, id_property)
+            if cxt.ids.get(act_id, None) != None:
+                cxt.ids["id_action_container"].remove_widget( cxt.ids[act_id] )
+                del cxt.ids[act_id]
+
+    def remove_trigger_widget(self, id_context, id_device, id_property):
+        app = App.get_running_app()
+        scr = app.screen_manager.get_screen(name="Screen_context")
+        container = scr.ids["id_context_container"]
+        if container.ids.get(id_context, None) != None:
+            cxt = container.ids[id_context]
+            trig_id = "trig_{}:{}".format(id_device, id_property)
+            if cxt.ids.get(trig_id, None) != None:
+                cxt.ids["id_trigger_container"].remove_widget( cxt.ids[trig_id] )
+                del cxt.ids[trig_id]
+
     def delete_topic(self, frm, id_topic, id_device, passkey, *args):
         print(passkey)
         print(self.PIN_DEVICE)
@@ -352,7 +381,7 @@ class SmacApp(App):
                                 tcp=tcp)
         print("send property")
 
-        for id_topic1, id_context, id_device, id_property, value, name_context in db.get_action_by_device(self.ID_DEVICE):
+        for id_topic1, id_context, id_device, id_property, value, name_context in db.get_action_by_device_only(self.ID_DEVICE):
             c2 = {}
             c2[ smac_keys["CONTEXT_ACTION"] ] = 1
             c2[ smac_keys["ID_TOPIC"]] = id_topic1 if (id_topic1 != None) else ""
@@ -363,7 +392,7 @@ class SmacApp(App):
             c2[ smac_keys["NAME_CONTEXT"] ] = name_context
             client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=c2, udp=udp, tcp=tcp)
 
-        for id_topic2, id_context, id_device, id_property, value in db.get_trigger_by_device(self.ID_DEVICE):
+        for id_topic2, id_context, id_device, id_property, value, type_trigger in db.get_trigger_by_device(self.ID_DEVICE):
             c2 = {}
             c2[ smac_keys["CONTEXT_TRIGGER"] ] = 1
             c2[ smac_keys["ID_TOPIC"]] = id_topic2 if (id_topic2 != None) else ""
@@ -371,6 +400,7 @@ class SmacApp(App):
             c2[ smac_keys["ID_DEVICE"]] = id_device
             c2[ smac_keys["ID_PROPERTY"]] = id_property
             c2[ smac_keys["VALUE"] ] = value
+            c2[ smac_keys["TYPE_TRIGGER"]] = type_trigger
             #c2[ smac_keys["NAME_CONTEXT"] ] = name_context
             client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=c2, udp=udp, tcp=tcp)
 
@@ -569,9 +599,9 @@ class SmacApp(App):
 
 
                 if cmd == smac_keys["CMD_STATUS_SET_PROPERTY"]:
-                    id_property = msg.get( smac_keys["ID_PROPERTY"] )
+                    id_property = str( msg.get( smac_keys["ID_PROPERTY"] ) )
                     #id_device = frm
-                    id_device= msg.get( smac_keys["ID_DEVICE"] )
+                    id_device=  str( msg.get( smac_keys["ID_DEVICE"] ) )
                     value = msg.get( smac_keys["VALUE"])
 
                     '''db_value = db.get_value_by_property(id_device, id_property)
@@ -581,8 +611,14 @@ class SmacApp(App):
                             #self.open_modal(text="Value missed: {}".format(value))
                             print("Value missed: {}".format(value))'''
 
+                    #print(type(value))
+                    #print(id_device)
+                    #print(type(id_device))
+                    #print(id_property)
+                    #print(type(id_property))
                     db.update_value_property_by_dev_id(id_property=id_property, id_device=frm, value=value)
                     self.update_slider_ui_val(id_device, id_property, value)
+                    self.check_for_action_trigger_status(id_device, id_property, value)
 
                 if cmd == smac_keys["CMD_ADD_TOPIC"]:
                     id_topic = data.get(smac_keys["ID_TOPIC"])
@@ -725,16 +761,17 @@ class SmacApp(App):
                     id_topic =  data.get( smac_keys["ID_TOPIC"] )
                     id_device=  data.get( smac_keys["ID_DEVICE"] )
                     id_property =  data.get( smac_keys["ID_PROPERTY"] )
+                    type_trigger = data.get( smac_keys["TYPE_TRIGGER"])
                     #name_context = smac_keys["NAME_CONTEXT"]
                     value =  data.get( smac_keys["VALUE"] )
                     passkey =  data.get( smac_keys["PASSKEY"] )
                     if cmd == smac_keys["CMD_ADD_TRIGGER"]:
-                        self.add_trigger(frm, id_context, id_topic, id_device, id_property, value, passkey)
+                        self.add_trigger(frm, id_context, id_topic, id_device, id_property, value, type_trigger, passkey)
                     elif cmd == smac_keys["CMD_STATUS_ADD_TRIGGER"]:
-                        db.add_context_trigger(id_context=id_context, id_topic=id_topic,id_device=id_device, id_property=id_property,value=value)
+                        db.add_context_trigger(id_context=id_context, id_topic=id_topic,id_device=id_device, id_property=id_property,value=value, type_trigger=type_trigger)
                         db.add_command_status(id_topic=id_topic, id_device=id_device, cmd=cmd, id_context=id_context)
 
-                if cmd in [smac_keys["CMD_REMOVE_ACTION"], smac_keys["CMD_REMOVE_TRIGGER"]]:
+                if cmd in [smac_keys["CMD_REMOVE_ACTION"], smac_keys["CMD_REMOVE_TRIGGER"], smac_keys["CMD_STATUS_REMOVE_ACTION"], smac_keys["CMD_STATUS_REMOVE_TRIGGER"]]:
                     #id_topic, id_context, id_device, id_property, passkey
                     id_context =  data.get( smac_keys["ID_CONTEXT"] )
                     id_topic =  data.get( smac_keys["ID_TOPIC"] )
@@ -745,9 +782,64 @@ class SmacApp(App):
                         self.remove_action(frm, id_topic, id_context, id_device, id_property, passkey)
                     elif cmd == smac_keys["CMD_REMOVE_TRIGGER"]:
                         self.remove_trigger(frm, id_topic, id_context, id_device, id_property, passkey)
+                    elif cmd == smac_keys["CMD_STATUS_REMOVE_ACTION"]:
+                        db.remove_action_by_property(id_topic=id_topic, id_context=id_context, id_device=id_device, id_property=id_property)
+                        db.add_command_status(id_topic=id_topic, id_device=id_device, cmd=cmd, id_context=id_context)
+                        self.remove_action_widget(id_context, id_device, id_property)
+                    elif cmd == smac_keys["CMD_STATUS_REMOVE_TRIGGER"]:
+                        db.remove_trigger_by_property(id_topic=id_topic, id_context=id_context, id_device=id_device, id_property=id_property)
+                        self.remove_trigger_widget(id_context, id_device, id_property)
+                        db.add_command_status(id_topic=id_topic, id_device=id_device, cmd=cmd, id_context=id_context)
 
-        #except Exception as e:
+                if cmd == smac_keys["CMD_TRIGGER_CONTEXT"]:
+                    id_context = data.get(smac_keys["ID_CONTEXT"])
+                    self.trigger_context(id_context)
+
+    #except Exception as e:
         #    print("Exception while decoding message: {}".format(e) )
+
+    def check_for_action_trigger_status(self, id_device, id_property, value, *args):
+        print("checking for trig status")
+        print(id_device)
+        print(id_property)
+        print(value)
+        #for id_topic, id_context, id_device, id_property, value, name_context in db.get_action_by_device_only(self.ID_DEVICE):
+        actions = db.get_action_by_property_value(id_device, id_property, value)
+        if actions != None:
+            action_status = 1 if(len(actions) > 0) else 0
+            db.update_action_status(id_device, id_property, status=action_status)
+        triggers = db.get_trigger_by_property_value(id_device, id_property, value)
+        if triggers != None:
+            trigger_status = 1 if( len(triggers)>0 ) else 0
+            db.update_trigger_status(id_device, id_property, status=trigger_status)
+
+
+    def send_trigger_context(self, id_context, *args):
+        print("sending trigger context request", id_context)
+        d = {}
+        d[ smac_keys["ID_CONTEXT"]] = id_context
+        client.send_message(frm=self.ID_DEVICE, to="#", message=d,
+                            cmd=smac_keys["CMD_TRIGGER_CONTEXT"], udp=True, tcp=True)
+
+    def trigger_context(self, id_context, *args):
+        print("triggering context {}".format(id_context))
+        for id_topic, id_context, id_device, id_property, value, name_context in db.get_action_by_device(self.ID_DEVICE,id_context):
+            # change property here
+            print(id_device)
+            print(id_property)
+            print(value)
+            tp = db.get_property_name_by_property(id_device, id_property)
+            print("tp", tp)
+            if tp != None:
+                set_property(str(tp[1]), value, id_property)
+            #db.update_value_property_by_dev_id(id_device=self.ID_DEVICE, id_property=id_property, value=value)
+            #d = {}
+            #d[smac_keys["ID_PROPERTY"]] = id_property
+            #d[smac_keys["ID_DEVICE"]] = id_device
+            #d[smac_keys["VALUE"]] = value
+            # topics = db.get_topic_list_by_device(id_device=id_device)
+            #client.send_message(frm=self.ID_DEVICE, to="#", message=d,
+            #                    cmd=smac_keys["CMD_STATUS_SET_PROPERTY"], udp=True, tcp=True)
 
     def add_action(self, frm, id_context, id_topic, id_device, id_property, name_context, value, passkey ):
         passkey = str(passkey)
@@ -811,16 +903,17 @@ class SmacApp(App):
                 print(d1[smac_keys["MESSAGE"]])
                 client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_INVALID_PIN"], message=d1)
 
-    def add_trigger(self, frm, id_context, id_topic, id_device, id_property, value, passkey ):
+    def add_trigger(self, frm, id_context, id_topic, id_device, id_property, value, type_trigger, passkey ):
         passkey = str(passkey)
         if id_device == self.ID_DEVICE:
             if passkey == self.PIN_DEVICE:
-                db.add_context_trigger(id_context=id_context, id_topic=id_topic, id_device=id_device,id_property=id_property,value=value)
+                db.add_context_trigger(id_context=id_context, id_topic=id_topic, id_device=id_device,id_property=id_property,value=value, type_trigger=type_trigger)
                 d1 = {}
                 d1[smac_keys["ID_DEVICE"]] = id_device
                 d1[smac_keys["ID_TOPIC"]] = id_topic
                 d1[smac_keys["ID_CONTEXT"]] = id_context
                 d1[smac_keys["ID_PROPERTY"]] = id_property
+                d1[ smac_keys["TYPE_TRIGGER"]] = type_trigger
                 #d1[smac_keys["NAME_CONTEXT"]] = name_context
                 d1[smac_keys["VALUE"]] = value
                 # id_topic, id_context, id_device, id_property, value, name_context
@@ -1016,7 +1109,24 @@ class SmacApp(App):
                 client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_ONLINE"], message={})
                 await  asyncio.sleep(0)
 
-            COUNTER += 1
+
+
+            # check for trigger and update value
+            if (COUNTER % 60) == 0:
+                for id_topic, id_context, id_device, id_property, value, type_trigger in db.get_trigger_by_device(self.ID_DEVICE):
+                    if type_trigger == smac_keys["TYPE_TRIGGER_PROP"]:
+                        db_value = db.get_value_by_property(id_device, id_property)
+                        if str(db_value) == str(value):
+                            self.trigger_context(id_context)
+                            #self.send_trigger_context(id_context)
+                    elif type_trigger == smac_keys["TYPE_TRIGGER_TIME"]:
+                        value_hour, value_min = value.split(":")
+                        time1 = datetime.now()
+                        if(value_hour == str(time1.hour)) and (value_min == str(time1.minute)):
+                            self.trigger_context(id_context)
+                            #self.send_trigger_context(id_context)
+
+
 
 
 
@@ -1053,7 +1163,11 @@ class SmacApp(App):
                                 self.open_modalInfo(title="Info", text=text)
                                 self.remove_task(t_id)
                                 for c in cmd:
-                                    db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c)
+                                    db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c, id_context=id_context)
+                        #else:
+                        #    for c in cmd:
+                        #        db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c)
+
                     TASK_COUNT[t_id] += 1
                     if TASK_COUNT[t_id] == 10:
                         self.remove_task(task_id=t_id)
@@ -1065,7 +1179,7 @@ class SmacApp(App):
                             await asyncio.sleep(.5)
                         self.open_modalInfo(title="Info", text=text)
 
-
+            COUNTER += 1
             await asyncio.sleep(1) # Busy period of device should be > than this interval period
 
     async def check_for_command_status(self, id_topic, id_device, id_property="", cmd=[], COUNT=10):
@@ -1206,6 +1320,12 @@ class SmacApp(App):
         client.subscribe( ["#", self.ID_DEVICE] + topics )
         client.process_message = self.on_message
         client.on_start = self.on_tcp_start
+        self.modal.separator_color = self.colors["COLOR_THEME_HIGHLIGHT"]
+        self.modal.separator_height = dp(2)
+        self.modal.ids["id_btn_close"].bind(on_release=self.close_modal)
+        self.screen_manager.get_screen("Screen_context").modal.ids["id_btn_close"].bind(on_release=self.close_modal)
+        #c = self.modal.children[0].children[0]
+        #c.add_widget(Label_custom(text="ge", size_hint=(None, None), size=(50, 50),pos=c.pos))
         db.delete_network_entry(id_topic='')
         db.remove_command_status_all()
         db.update_delete_all(this_device=self.ID_DEVICE, value=1)

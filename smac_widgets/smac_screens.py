@@ -5,12 +5,16 @@ from kivy.core.window import Window
 from kivy.properties import DictProperty
 from kivy.uix.screenmanager import Screen
 from kivy.app import App
+from kivy.uix.scrollview import ScrollView
 
 from smac_client import client
 from smac_device import set_property, generate_id_topic, generate_id_context
 from smac_device_keys import SMAC_PROPERTY, SMAC_DEVICES
 from smac_keys import smac_keys
 from smac_widgets.smac_layouts import *
+
+from kivy.lang import Builder
+Builder.load_file('smac_widgets/smac_modal.kv')
 
 from smac_db import db
 import time
@@ -20,32 +24,39 @@ class SelectClass(Screen):
     index = 0
     max_index = 0
 
-    def get_selectable_nodes(self, *args):
+    def get_selectable_nodes(self, widget=None, *args):
         self.nodes = []
-        #self.index = 0
+        self.index = 0
         #self.max_index = 0
-        for wid in self.walk():
+        w = widget if(widget != None) else self
+        #print(widget)
+        #print(w)
+        for wid in w.walk():
             #print(wid)
             try:
                 #print(wid.__class__.__bases__)
                 #print(SelectBehavior in wid.__class__.__bases__)
+                #print(wid.width)
                 if(not wid.disabled) and (wid.width != 0) and (wid.height != 0):
+                #if(not wid.disabled):
                     if SelectBehavior in wid.__class__.__bases__:
                         self.nodes.append(wid)
+                        wid.select = False
             except Exception as e:
                 print(e)
             self.max_index = len(self.nodes) - 1
 
+    async def get_nodes(self, *args):
+        await asyncio.sleep(2)
+        self.get_selectable_nodes()
 
     def on_enter(self, *args):
-        if platform != "android":
-            self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-            self._keyboard.bind(on_key_down=self._on_keyboard_down)
-            #self._keyboard.release()
-
-            self.get_selectable_nodes()
-
-
+        #if platform != "android":
+        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
+        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        #self._keyboard.release()
+        #self.get_selectable_nodes()
+        asyncio.gather(self.get_nodes())
 
     def on_leave(self, *args):
         self.nodes = []
@@ -57,36 +68,44 @@ class SelectClass(Screen):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         _, key = keycode
         print(key)
-        if key  == "down":
-            print(self.index)
-            print(self.nodes)
-            print(self.nodes[self.index])
-            self.nodes[self.index].select = False
-            if (self.index+1) <= self.max_index:
-                self.index += 1
-            else:
-                self.index = 0
-            self.nodes[self.index].select = True
-            #self.nodes[self.index-1].select = False
-        elif key  == "up":
-            self.nodes[self.index].select = False
-            if (self.index-1) >= 0:
-                self.index -= 1
-            else:
-                self.index = self.max_index
-            #self.index -= 1
-            self.nodes[self.index].select = True
-            #self.nodes[self.index + 1].select = False
-            #self.nodes[self.index - 1].select = False
-        elif key == 'enter':
-            wid = self.nodes[self.index]
-            if ButtonBehavior in wid.__class__.__bases__:
-                wid.dispatch("on_release")
-            elif TextInput in wid.__class__.__bases__:
-                wid.focus = True
+        if len(self.nodes) > self.index:
+            if key  == "down":
+                print(self.index)
+                print(self.nodes)
+                print(self.nodes[self.index])
+                self.nodes[self.index].select = False
+                if (self.index+1) <= self.max_index:
+                    self.index += 1
+                else:
+                    self.index = 0
+                self.nodes[self.index].select = True
+                #self.nodes[self.index-1].select = False
+            elif key  == "up":
+                self.nodes[self.index].select = False
+                if (self.index-1) >= 0:
+                    self.index -= 1
+                else:
+                    self.index = self.max_index
+                #self.index -= 1
+                self.nodes[self.index].select = True
+                #self.nodes[self.index + 1].select = False
+                #self.nodes[self.index - 1].select = False
+            elif key == 'enter':
+                wid = self.nodes[self.index]
+                #print(wid)
+                if Button in wid.__class__.__bases__:
+                    wid.dispatch("on_release")
+                elif ButtonBehavior in wid.__class__.__bases__:
+                    wid.dispatch("on_release")
+                elif TextInput in wid.__class__.__bases__:
+                    wid.focus = True
 
 class Screen_context(SelectClass):
     modal = ModalView_custom(size_hint_x=.9, size_hint_max_x=dp(400), size_hint_y=None, height=dp(400))
+    is_modal_open = False
+    _interval = None
+    add_action_content = None
+    add_trig_content = None
     data = DictProperty({
         "id_topic": "",
         "id_context": '',
@@ -98,21 +117,40 @@ class Screen_context(SelectClass):
         "type_property": "",
         "value": "0",
         "value_min": "0",
-        "value_max": "1"
+        "value_max": "1",
+        "value_hour": "0",
+        "value_minute": "0"
     })
 
     def open_modal(self, content, title="Info", auto_dismiss=True):
+        print(self.modal.children)
         if content != None:
+            print(content)
+            print(content.height)
             self.modal.content = content
             self.modal.title = title
-            self.modal.content.parent.parent.parent.height = content.height + dp(70)
+            self.modal.height = content.height + dp(70)
             self.modal.open(auto_dismiss=auto_dismiss)
+            self.is_modal_open = True
+            # clear old selectable widgets and replace with current modal widgets
+            app = App.get_running_app()
+            scr = app.screen_manager.get_screen(app.screen_manager.current)
+            scr.get_selectable_nodes(widget=self.modal)
 
     def close_modal(self, *args):
-        self.modal.title = ""
         self.modal.dismiss()
+        self.modal.title = ""
+        self.is_modal_open = False
 
-    def on_realease_add_btn(self, wid, *args):
+        # clear current modal selectable widgets and
+        # replace with old modal selectable widgets if that modal is open else
+        # replace with old screen selectable widgets
+        app = App.get_running_app()
+        scr = app.screen_manager.get_screen(app.screen_manager.current)
+        wid = app.modal if app.is_modal_open else self
+        scr.get_selectable_nodes(widget=wid)
+
+    def on_release_add_btn(self, wid, *args):
         app = App.get_running_app()
         #content = BoxLayout(size_hint_y=None, orientation="vertical")
         #content.height = content.minimum_height
@@ -129,41 +167,76 @@ class Screen_context(SelectClass):
             child.bind(on_release=self.open_add_action_trigger_modal)
         app.open_modal(content)
 
+    def on_data(self, *args):
+        if self.add_action_content != None:
+            self.add_action_content.data = self.data
+        if self.add_trig_content != None:
+            self.add_trig_content.data = self.data
+
     def open_add_action_trigger_modal(self, wid, *args):
         app = App.get_running_app()
         #app.close_modal()
         if wid.text == "Add Action":
-            content = BoxLayout_addActionContent()
-            content.data = self.data
-            content.ids["id_btn_sel_device"].bind(on_release=self.open_device_selection)
-            content.ids["id_btn_sel_property"].bind(on_release=self.open_property_selection)
-            content.ids["id_btn_sel_value"].bind(on_release=self.open_value_selection)
-            content.ids["id_btn_add_action"].bind(on_release=self.add_action)
-            app.open_modal(content=content, title='Add Action')
+            self.add_action_content = BoxLayout_addActionContent()
+            self.add_action_content.data = self.data
+            self.add_action_content.ids["id_btn_sel_device"].bind(on_release=self.open_device_selection)
+            self.add_action_content.ids["id_btn_sel_property"].bind(on_release=self.open_property_selection)
+            self.add_action_content.ids["id_btn_sel_value"].bind(on_release=self.open_value_selection)
+            self.add_action_content.ids["id_btn_add_action"].bind(on_release=self.add_action)
+            app.open_modal(content=self.add_action_content, title='Add Action')
         if wid.text == "Add Trigger":
-            content = BoxLayout_addTriggerContent()
-            content.data = self.data
-            content.ids["id_btn_sel_device"].bind(on_release=self.open_device_selection)
-            content.ids["id_btn_sel_property"].bind(on_release=self.open_property_selection)
-            content.ids["id_btn_sel_value"].bind(on_release=self.open_value_selection)
-            content.ids["id_btn_add_trigger"].bind(on_release=self.add_trigger)
-            app.open_modal(content=content, title="Add Trigger")
+            self.add_trig_content = BoxLayout_addTriggerContent()
+            self.add_trig_content.data = self.data
+            self.add_trig_content.ids["id_btn_sel_device"].bind(on_release=self.open_device_selection)
+            self.add_trig_content.ids["id_btn_sel_device1"].bind(on_release=self.open_device_selection)
+            self.add_trig_content.ids["id_btn_sel_property"].bind(on_release=self.open_property_selection)
+            self.add_trig_content.ids["id_btn_sel_value"].bind(on_release=self.open_value_selection)
+            self.add_trig_content.ids["id_btn_sel_hour"].bind(on_release=self.open_value_time_selection)
+            self.add_trig_content.ids["id_btn_sel_minute"].bind(on_release=self.open_value_time_selection)
+            self.add_trig_content.ids["id_btn_add_trigger"].bind(on_release=self.add_trigger)
+            app.open_modal(content=self.add_trig_content, title="Add Trigger")
 
     def add_trigger(self, wid, *args):
+        add_trigger_root = wid.parent
+        print(add_trigger_root)
+        type_trigger = smac_keys["TYPE_TRIGGER_PROP"]
+        for child in add_trigger_root.children:
+            print(child)
+            chkbox= child.ids.get("id_chkbox", None)
+            if (chkbox != None) and chkbox.active:
+                print("active", chkbox.active)
+                type_trigger = chkbox.value
         app = App.get_running_app()
         id_device = self.data["id_device"]
+        #id_device = self.data["id_device"]
+        id_property = self.data["id_property"]
+        value = self.data["value"]
+        if (id_device == None) or (id_device == ""):
+            app.open_modalInfo(text="Select A Device to Continue")
+            return
+        if (id_property == None) or (id_device == ""):
+            app.open_modalInfo(text="Select A Property to Continue")
+            return
+        if (value == None) or (value == ""):
+            app.open_modalInfo(text="Select A Value to Continue")
+            return
         if  id_device == app.ID_DEVICE:
-            id_context = generate_id_context(id_device)
-            db.add_context_trigger(id_context=id_context, id_topic=self.data["id_topic"], id_device=id_device, id_property=self.data["id_property"],  value=self.data["value"])
+            id_context = self.data['id_context']
+            value = self.data["value"]
+            id_property = self.data["id_property"] if(type_trigger == smac_keys["TYPE_TRIGGER_PROP"]) else ""
+            if type_trigger == smac_keys["TYPE_TRIGGER_TIME"]:
+                value = "{}:{}".format(self.data["value_hour"], self.data["value_minute"])
+            db.add_context_trigger(id_context=id_context, id_topic=self.data["id_topic"], id_device=id_device, id_property=id_property,  value=value, type_trigger=type_trigger)
             app.open_modalInfo(text="Context Trigger added")
         else:
             d = {}
             d[smac_keys["ID_TOPIC"]] = self.data["id_topic"]
             d[smac_keys["ID_DEVICE"]] = id_device
             d[smac_keys["ID_CONTEXT"]] = self.data["id_context"]
-            d[smac_keys["ID_PROPERTY"]] = self.data["id_property"]
+            d[smac_keys["ID_PROPERTY"]] = id_property
+            d[smac_keys["TYPE_TRIGGER"]] = type_trigger
             #d[smac_keys["NAME_CONTEXT"]] = self.data["name_context"]
-            d[smac_keys["VALUE"]] = self.data["value"]
+            d[smac_keys["VALUE"]] = value
             d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
             #id_topic, id_context, id_device, id_property, value
             client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_TRIGGER"], message=d, udp=True,
@@ -175,18 +248,30 @@ class Screen_context(SelectClass):
     def add_action(self, wid, *args):
         app = App.get_running_app()
         id_device = self.data["id_device"]
+        id_property = self.data["id_property"]
+        value = self.data["value"]
+        if(id_device == None) or (id_device == ""):
+            app.open_modalInfo(text="Select A Device to Continue")
+            return
+        if (id_property == None) or (id_device == ""):
+            app.open_modalInfo(text="Select A Property to Continue")
+            return
+        if (value == None) or (value == ""):
+            app.open_modalInfo(text="Select A Value to Continue")
+            return
         if  id_device == app.ID_DEVICE:
-            id_context = generate_id_context(id_device)
-            db.add_context_action(id_context=id_context, id_topic=self.data["id_topic"], id_device=id_device, id_property=self.data["id_property"], name_context=self.data["name_context"], value=self.data["value"])
+            #id_context = generate_id_context(id_device)
+            id_context = self.data["id_context"]
+            db.add_context_action(id_context=id_context, id_topic=self.data["id_topic"], id_device=id_device, id_property=id_property, name_context=self.data["name_context"], value=value)
             app.open_modalInfo(text="Context Action added")
         else:
             d = {}
             d[smac_keys["ID_TOPIC"]] = self.data["id_topic"]
             d[smac_keys["ID_DEVICE"]] = id_device
             d[smac_keys["ID_CONTEXT"]] = self.data["id_context"]
-            d[smac_keys["ID_PROPERTY"]] = self.data["id_property"]
+            d[smac_keys["ID_PROPERTY"]] = id_property
             d[smac_keys["NAME_CONTEXT"]] = self.data["name_context"]
-            d[smac_keys["VALUE"]] = self.data["value"]
+            d[smac_keys["VALUE"]] = value
             d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
             #id_topic, id_context, id_device, id_property, value, name_context
             client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_ACTION"], message=d, udp=True,
@@ -195,18 +280,72 @@ class Screen_context(SelectClass):
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
 
+
+    def remove_action(self, wid, *args):
+        app = App.get_running_app()
+        parent = wid.parent.parent
+        # id_topic, id_context, id_device, id_property
+        id_device = parent.id_device
+        id_context = parent.id_context
+        id_topic = self.data["id_topic"]
+        id_property = parent.id_property
+        if id_device == app.ID_DEVICE:
+            db.remove_action_by_property(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property)
+            app.remove_action_widget(id_context, id_device, id_property)
+            app.open_modalInfo(text="Context Action Removed")
+        else:
+            d = {}
+            d[smac_keys["ID_TOPIC"]] = id_topic
+            d[smac_keys["ID_DEVICE"]] = id_device
+            d[smac_keys["ID_CONTEXT"]] = id_context
+            d[smac_keys["ID_PROPERTY"]] = id_property
+            d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
+            # id_topic, id_context, id_device, id_property, value, name_context
+            client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_ACTION"], message=d, udp=True,
+                                tcp=True)
+            app.add_task(db.get_command_status, (id_topic, id_device,[smac_keys["CMD_STATUS_REMOVE_ACTION"], smac_keys["CMD_INVALID_PIN"]], "", id_context))
+            app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
+
+    def remove_trigger(self, wid, *args):
+        app = App.get_running_app()
+        parent = wid.parent.parent
+        # id_topic, id_context, id_device, id_property
+        id_device = parent.id_device
+        id_context = parent.id_context
+        id_topic = self.data["id_topic"]
+        id_property = parent.id_property
+        if id_device == app.ID_DEVICE:
+            db.remove_trigger_by_property(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property)
+            app.remove_trigger_widget(id_context, id_device, id_property)
+            app.open_modalInfo(text="Context Trigger Removed")
+        else:
+            d = {}
+            d[smac_keys["ID_TOPIC"]] = id_topic
+            d[smac_keys["ID_DEVICE"]] = id_device
+            d[smac_keys["ID_CONTEXT"]] = id_context
+            d[smac_keys["ID_PROPERTY"]] = id_property
+            d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
+            # id_topic, id_context, id_device, id_property, value, name_context
+            client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_TRIGGER"], message=d, udp=True,
+                                tcp=True)
+            app.add_task(db.get_command_status, (id_topic, id_device,[smac_keys["CMD_STATUS_REMOVE_TRIGGER"], smac_keys["CMD_INVALID_PIN"]], "", id_context))
+            app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
+
     def open_device_selection(self, *args):
         app = App.get_running_app()
-        content = BoxLayout_container()
-        content.height = content.minimum_height + app.grid_min
+        scroll = ScrollView(size_hint_y=None)
+        scroll.height = app.grid_min * 4
+        content = BoxLayout_container(spacing=0)
+        content.height = content.minimum_height
         for dev in db.get_device_list_by_topic(id_topic=app.APP_DATA["id_topic"]):
-            btn = Button(size_hint_y=None, height=app.grid_min, text=dev[1])
+            btn = Button_custom1(size_hint=(1,None), height=app.grid_min, text=dev[1])
             btn.id_device = dev[0]
             btn.name_device = dev[1]
             btn.type_device = dev[2]
             btn.bind(on_release=self.select_device)
             content.add_widget(btn)
-        self.open_modal(content=content, title="Select A Device")
+        scroll.add_widget(content)
+        self.open_modal(content=scroll, title="Select A Device")
 
     def select_device(self, wid,  *args):
         self.data["id_device"] = wid.id_device
@@ -216,19 +355,25 @@ class Screen_context(SelectClass):
 
     def open_property_selection(self, *args):
         app = App.get_running_app()
-        content = BoxLayout_container()
-        content.height = content.minimum_height + app.grid_min
+        scroll = ScrollView(size_hint_y=None)
+        scroll.height = app.grid_min * 4
+        content = BoxLayout_container(spacing=0)
+        content.height = content.minimum_height
         print(self.data)
-        for prop in db.get_property_list_by_device(id_device=self.data["id_device"]):
-            btn = Button(size_hint_y=None, height=app.grid_min, text=prop[1])
-            btn.id_property =prop[0]
-            btn.name_property = prop[1]
-            btn.type_property = prop[2]
-            btn.value_min = prop[3]
-            btn.value_max = prop[4]
-            btn.bind(on_release=self.select_property)
-            content.add_widget(btn)
-        self.open_modal(content=content, title="Select A Property")
+        if self.data["id_device"] != "":
+            for prop in db.get_property_list_by_device(id_device=self.data["id_device"]):
+                btn = Button_custom1(size_hint=(1,None), height=app.grid_min, text=prop[1])
+                btn.id_property =prop[0]
+                btn.name_property = prop[1]
+                btn.type_property = prop[2]
+                btn.value_min = prop[3]
+                btn.value_max = prop[4]
+                btn.bind(on_release=self.select_property)
+                content.add_widget(btn)
+            scroll.add_widget(content)
+            self.open_modal(content=scroll, title="Select A Property")
+        else:
+            app.open_modalInfo(text="Select A Device To Continue")
 
     def select_property(self, wid, *args):
         self.data["id_property"] = wid.id_property
@@ -238,75 +383,172 @@ class Screen_context(SelectClass):
         self.data["value_max"] = wid.value_max
         self.close_modal()
 
+    def open_value_time_selection(self, wid, *args):
+        app = App.get_running_app()
+        scroll = ScrollView(size_hint_y=None)
+        scroll.height = app.grid_min * 4
+        content = BoxLayout_container(spacing=0)
+        content.height = content.minimum_height
+        #content.size_hint_y = None
+
+        value_max = 60 if(wid.time_selection == "minute") else 24
+        for val in range(0, value_max, 1):
+            btn = Button_custom1(size_hint=(1,None), height=app.grid_min, text=str(val) )
+            btn.value = str(val)
+            btn.time_selection = wid.time_selection
+            btn.bind(on_release=self.select_value_time)
+            content.add_widget(btn)
+        scroll.add_widget(content)
+        self.open_modal(content=scroll, title="Select A Value")
+
+    def select_value_time(self, wid, *args):
+        if wid.time_selection == "hour":
+            self.data["value_hour"] = wid.value
+        elif wid.time_selection == "minute":
+            self.data["value_minute"] = wid.value
+        self.close_modal()
+
     def open_value_selection(self, *args):
         app = App.get_running_app()
-        content = BoxLayout_container()
-        content.height = content.minimum_height + app.grid_min
-        print(self.data)
-        for val in range(int(self.data["value_min"]), int(self.data["value_max"])+1, 1):
-            btn = Button(size_hint_y=None, height=app.grid_min, text=str(val) )
-            btn.value = str(val)
-            btn.bind(on_release=self.select_value)
-            content.add_widget(btn)
-        self.open_modal(content=content, title="Select A Value")
+        if self.data["id_property"] != "":
+            scroll = ScrollView(size_hint_y=None)
+            scroll.height = app.grid_min * 4
+            content = BoxLayout_container(spacing=0)
+            content.height = content.minimum_height
+            print(self.data)
+            value_max = int(self.data["value_max"])
+            step = 10 if(value_max >= 100) else 1
+            for val in range(int(self.data["value_min"]), value_max+1, step):
+                btn = Button_custom1(size_hint=(1,None), height=app.grid_min, text=str(val) )
+                btn.value = str(val)
+                btn.bind(on_release=self.select_value)
+                content.add_widget(btn)
+            scroll.add_widget(content)
+            self.open_modal(content=scroll, title="Select A Value")
+        else:
+            app.open_modalInfo(text="Select A Property To Continue")
 
     def select_value(self, wid, *args):
         self.data["value"] = wid.value
         self.close_modal()
 
-    def load_widgets(self, *args):
+    async def interval(self, timeout=5):
+        await asyncio.sleep(.5)
+        while 1:
+            await self.load_widgets()
+            await asyncio.sleep(timeout)
+
+    def on_enter(self, *args):
+        app = App.get_running_app()
+        #c = self.modal.children[0].children[0]
+        #c.add_widget(Label_custom(text="ge", size_hint=(None, None), size=(50, 50), pos=(c.right, c.y)))
+        #print(c.children)
+        #print(c.pos)
+        #print(c.children[0].pos)
+        print("id_topic", app.APP_DATA["id_topic"])
+        self._interval = asyncio.gather(self.interval(1))
+        super().on_enter()
+
+    def on_leave(self, *args):
+        #container = self.ids["id_context_container"]
+        #container.clear_widgets()
+        #if self._interval != None:
+        #    self._interval.cancel()
+        super().on_leave()
+        pass
+
+    async def load_widgets(self, *args):
+        await asyncio.sleep(0)
         app = App.get_running_app()
         id_topic = app.APP_DATA["id_topic"]
         container = self.ids["id_context_container"]
         for id_topic, id_context, name_context in db.get_context_by_topic(id_topic):
-            c = Widget_context(text=name_context)
-            c.id_topic = id_topic
-            c.id_context = id_context
+            if container.ids.get(id_context, None) == None:
+                c = Widget_context(text=name_context)
+                c.id_topic = id_topic
+                c.id_context = id_context
+                container.ids[id_context] = c
+                container.add_widget(c)
+                c.ids["id_icon2"].bind(on_release=self.on_release_add_btn)
+                c.ids["id_icon1"].bind(on_release=self.on_release_trigger_context)
+            else:
+                c = container.ids[id_context]
             c.name_context = name_context
-            container.add_widget(c)
-            c.ids["id_icon2"].bind(on_release=self.on_realease_add_btn)
             actions = db.get_action_by_context(id_context)
-            #print(c)
-            #print("actions", actions)
-            if len(actions) > 0:
-                label_act = Label_custom(size_hint_y=None, height=app.grid_min/5)
-                #label_act.size_hint_y = None
-                #label_act.text = "Actions"
-                #label_act.text_size = label_act.size
-                #label_act.halign = "left"
-                #label_act.padding = dp(2), dp(3)
-                #c.add_widget(label_act)
+            c.ids["id_label_act"].text = "Actions" if(len(actions) > 0) else ''
+            #label_act = Label_title(text="Actions")
+            #if (c.ids.get("label_act", None) == None) and (len(actions) > 0):
+            #    c.ids["label_act"] = label_act
+            #    c.add_widget(label_act)
+            #else:
+            #    if label_act in c.children:
+            #        c.remove_widget(label_act)
             for id_device, id_property, value, comparator, status, last_updated in actions:
-                try:
-                    if(id_device != None) and (id_device != ''):
+                #try:
+                if (id_device != None) and (id_device != ''):
+                    id = "act_{}:{}".format(id_device, id_property)
+                    if c.ids.get(id, None) == None:
                         a = BoxLayout_action()
-                        name_device = db.get_device_name(id_device)
                         np = db.get_property_name_by_property(id_device, id_property)
+                        a.name_property = ""
                         if np != None:
                             a.name_property = np[0]
                             a.type_property = np[1]
-                        a.text = "When device:{} property:{} value is {}".format(name_device, np[0], value)
-                        a.status = int(status)
-                        c.add_widget(a)
-                except Exception as e:
-                    print("exception while adding action: {}".format(e))
+                        a.id_context = id_context
+                        a.id_device = id_device
+                        a.id_property = id_property
+                        name_device = db.get_device_name(id_device)
+                        a.text = "When device: {} property: {} value is {}".format(name_device, a.name_property, value)
+                        a.ids["id_btn_remove_action"].bind(on_release=self.remove_action)
+                        c.ids[id] = a
+                        c.ids["id_action_container"].add_widget(a)
+                    else:
+                        a = c.ids[id]
+                    a.status = int(status)
+
+                #except Exception as e:
+                #    print("exception while adding action: {}".format(e))
             triggers = db.get_trigger_by_context(id_context)
-            for id_device, id_property, value,  status, last_updated in triggers:
-                try:
-                    if(id_device != None) and (id_device != ''):
+            c.ids["id_label_trig"].text = "Triggers" if(len(triggers) > 0) else ''
+            #print(triggers)
+            #label_trig = Label_title(text="Triggers")
+            #if (c.ids.get("label_trig", None) == None) and (len(triggers) > 0):
+            #    c.ids["label_trig"] = label_trig
+            #    c.add_widget(label_trig)
+            #else:
+            #    if label_trig in c.children:
+            #        c.remove_widget(label_trig)
+            for id_device, id_property, value,  status, last_updated, type_trigger in triggers:
+                #try:
+                if(id_device != None) and (id_device != ''):
+                    id_trig = "trig_{}:{}".format(id_device, id_property)
+                    if c.ids.get(id_trig, None) == None:
                         t = BoxLayout_trigger()
                         name_device = db.get_device_name(id_device)
-                        np = db.get_property_name_by_property(id_device, id_property)
-                        if np != None:
-                            t.name_property = np[0]
-                            t.type_property = np[1]
-                        t.text = "When device:{} property:{} value is {}".format(name_device, np[0], value)
-                        t.status = int(status)
-                        c.add_widget(t)
-                except Exception as e:
-                    print("exception while adding trigger: {}".format(e))
-
-
+                        t.name_property = ""
+                        if type_trigger == smac_keys["TYPE_TRIGGER_PROP"]:
+                            np = db.get_property_name_by_property(id_device, id_property)
+                            #print(id_device, id_property)
+                            #print("np", np)
+                            if np != None:
+                                t.name_property = np[0]
+                                t.type_property = np[1]
+                        elif type_trigger == smac_keys["TYPE_TRIGGER_TIME"]:
+                            t.name_property = "time"
+                            t.type_property = ""
+                        t.id_context = id_context
+                        t.id_device = id_device
+                        t.id_property = id_property
+                        t.type_trigger = type_trigger
+                        t.text = "When device: {} property: {} value is {}".format(name_device, t.name_property, value)
+                        t.ids["id_btn_remove_trigger"].bind(on_release=self.remove_trigger)
+                        c.ids[id_trig] = t
+                        c.ids["id_trigger_container"].add_widget(t)
+                    else:
+                        t = c.ids[id_trig]
+                    t.status = int(status)
+                #except Exception as e:
+                #    print("exception while adding trigger: {}".format(e))
 
 
     def open_add_context(self, *args):
@@ -317,6 +559,17 @@ class Screen_context(SelectClass):
         #content.ids["id_name_context"].text = ""
         app = App.get_running_app()
         app.open_modal(content=content, title="Add Context")
+
+    def on_release_trigger_context(self, wid, *args):
+        app = App.get_running_app()
+        cxt_obj = wid.parent.parent
+        app.open_modalInfo(text="Triggering context: {}".format(cxt_obj.name_context))
+        d1 = {}
+        d1[smac_keys["ID_CONTEXT"]] = cxt_obj.id_context
+        #d1[smac_keys["NAME_CONTEXT"]] = cxt_obj.name_context
+        #d1[smac_keys["ID_TOPIC"]] = app.APP_DATA["id_topic"]
+        client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_TRIGGER_CONTEXT"], message=d1)
+        app.trigger_context(cxt_obj.id_context)
 
     def add_context(self, wid, *args):
         content = wid.parent
@@ -344,20 +597,14 @@ class Screen_context(SelectClass):
         d1[smac_keys["ID_TOPIC"]] = app.APP_DATA["id_topic"]
         client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_REMOVE_CONTEXT"], message=d1)
 
-    def on_enter(self, *args):
-        app = App.get_running_app()
-        print("id_topic", app.APP_DATA["id_topic"])
-        self.load_widgets()
 
-    def on_leave(self, *args):
-        container = self.ids["id_context_container"]
-        container.clear_widgets()
 
 class Screen_network(SelectClass):
     TOPIC_IDS = {}
     RENDERING = False
     RENDERING_COUNT = 0
     CLEAR_WIDGETS = 0
+    _interval = None
 
     async def add_widgets(self, clear_widgets=False, *args):
         #print("RENDERING", self.RENDERING)
@@ -486,7 +733,7 @@ class Screen_network(SelectClass):
 
                 #print("\n")
             self.RENDERING = False
-            super().get_selectable_nodes()
+            #super().get_selectable_nodes()
         else:
             print("ALREADY RENDERING")
 
@@ -646,14 +893,15 @@ class Screen_network(SelectClass):
         #self.center_x = app.screen_manager.center_x
 
         self.add_menu_widgets()
-        asyncio.gather(self.interval(1))
+        self._interval = asyncio.gather(self.interval(1))
         super().on_enter()
 
     def on_leave(self, *args):
         #container = self.ids["id_network_container"]
         #container.clear_widgets()
         super().on_leave()
-        pass
+        #if self._interval != None:
+        #    self._interval.cancel()
 
     def open_close_menu(self,  *args):
         app = App.get_running_app()
@@ -665,6 +913,11 @@ class Screen_network(SelectClass):
         menu_bg.size_hint_x = 1 if(width >0) else 0
         anim = Animation(width=width, duration=.1)
         anim.start(menu_container)
+
+        if width > 0:
+            self.get_selectable_nodes(widget=menu_container)
+        else:
+            self.get_selectable_nodes()
 
 
 

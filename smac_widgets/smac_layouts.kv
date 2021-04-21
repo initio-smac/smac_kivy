@@ -1,5 +1,6 @@
 #: import get_color_from_hex kivy.utils.get_color_from_hex
 #: import Window kivy.core.window.Window
+#: import smac_keys smac_keys.smac_keys
 
 <ScreenManager>:
 
@@ -155,6 +156,7 @@
 	font_size: dp(20)
 	padding: dp(10), dp(10)
 	icon2: "PLUS.png"
+	icon1: 'CLOUD.png'
 	canvas.before:
         Color:
             rgba: app.colors["COLOR_THEME_BASIC"]
@@ -162,10 +164,22 @@
             size: self.size
             pos: self.pos
             radius: [ dp(5), ]
+    Label_title:
+        id: id_label_act
+        text: "Actions"
+    BoxLayout_container:
+        spacing: 0
+        id: id_action_container
+    Label_title:
+        id: id_label_trig
+        text: "Triggers"
+    BoxLayout_container:
+        spacing: 0
+        id: id_trigger_container
 
 <BoxLayout_action>:
     size_hint_y: None
-    height: app.grid_min
+    height: self.minimum_height
     source: 'CHECK.png'
     opacity: 1 if self.status else .5
     Image_iconButton:
@@ -180,7 +194,9 @@
                 radius: [ app.grid_min/2, ]
     Label_custom:
         text: root.text
-        text_size: self.size
+        #text_size: self.size
+        text_size: self.width, None
+        height: self.texture_size[1]
         halign: 'left'
         padding: dp(10), dp(15)
         canvas.before:
@@ -190,6 +206,10 @@
                 size: self.size
                 pos: self.pos
                 radius: [ dp(5), ]
+        Image_iconButton:
+            id: id_btn_remove_action
+            source: app.source_icon + "CLOSE.png"
+            pos: self.parent.right-self.width, self.parent.y
 
 
 <BoxLayout_trigger>:
@@ -209,7 +229,8 @@
                 radius: [ app.grid_min/2, ]
     Label_custom:
         text: root.text
-        text_size: self.size
+        text_size: self.width, None
+        height: self.texture_size[1]
         halign: 'left'
         padding: dp(10), dp(15)
         canvas.before:
@@ -219,6 +240,10 @@
                 size: self.size
                 pos: self.pos
                 radius: [ dp(5), ]
+        Image_iconButton:
+            id: id_btn_remove_trigger
+            source: app.source_icon + "CLOSE.png"
+            pos: self.parent.right-self.width, self.parent.y
 
 <Widget_device>:
 	size_hint: 1, None
@@ -408,6 +433,17 @@
     font_size: app.grid_min/4
     color: get_color_from_hex("#fefefe")
 
+<Button_link>:
+    size_hint: None, None
+    color: get_color_from_hex("#009acd")
+    #markup: True
+    #text_size: self.width, self.text_size[1]
+    size_hint_min_x: app.grid_min
+    size: self.texture_size[0]+dp(20), self.height
+    height: app.grid_min
+    #padding: dp(20), 0
+    underline: True
+
 <Dropdown_custom>:
     text: ""
     size_hint: 1, None
@@ -476,8 +512,52 @@
     color: app.colors["COLOR_TEXT"]
     #color: get_color_from_hex("#404040")
 
+<Label_title>:
+    size_hint: 1, None
+    height: app.grid_min/2
+    text_size: self.size
+    padding: dp(10), dp(10)
+
 <ModalView_custom>:
-    separator_color: app.colors["COLOR_THEME_HIGHLIGHT"]
+    separator_color: 1,0,0,1
+    separator_height: dp(2)
+    _container: container
+    GridLayout:
+        id: id_grid_container
+        padding: '12dp'
+        cols: 1
+        size_hint: None, None
+        pos: root.pos
+        size: root.size
+        Label:
+            text: root.title
+            color: root.title_color
+            size_hint_y: None
+            height: self.texture_size[1] + dp(16)
+            text_size: self.width - dp(16), None
+            font_size: root.title_size
+            font_name: root.title_font
+            halign: root.title_align
+            Image_iconButton:
+                id: id_btn_close
+                pos: self.parent.right-self.width+dp(5), self.parent.y-dp(5)
+                source: 'icons/DARK/CLOSE.png'
+                on_release:
+                    #print("dismiss")
+                    root.dismiss()
+        Widget:
+            size_hint_y: None
+            height: dp(4)
+            canvas:
+                Color:
+                    rgba: root.separator_color
+                Rectangle:
+                    pos: self.x, self.y + root.separator_height / 2.
+                    size: self.width, root.separator_height
+        BoxLayout:
+            id: container
+
+
 
 <BoxLayout_updatePropNameContent>:
     orientation: 'vertical'
@@ -540,51 +620,140 @@
         size: app.grid_min, app.grid_min
         id: id_chkbox
         active: root.active
+        group: 'type_trigger'
+        value: root.type_trigger
     Label_custom:
         text_size: self.size
         halign: 'left'
         padding: dp(10), dp(15)
         text: root.text
 
+<StackLayout_block>:
+    size_hint_y: None
+    #height: self.minimum_height
+    minimum_height: app.grid_min
+    height: app.grid_min*2
+    active: True
+    orientation: 'lr-tb'
+    canvas.before:
+        Color:
+            rgba: app.colors["COLOR_THEME_BASIC"]
+        RoundedRectangle:
+            size: self.size
+            pos: self.pos
+            radius: [ dp(5), ]
+    CheckBox:
+        size_hint: None, None
+        size: app.grid_min, app.grid_min
+        id: id_chkbox
+        active: root.active
+        group: 'type_trigger'
+        value: root.type_trigger
+
 
 
 <BoxLayout_addActionContent>:
     size_hint_y: None
-    height: self.minimum_height + app.grid_min*2
+    height: id_stack_container.minimum_height + app.grid_min*2
     orientation: 'vertical'
-    BoxLayout_block:
+    StackLayout_block:
+        id: id_stack_container
+        #height: self.minimum_height
+        #minimum_height: app.grid_min
+        #height: app.grid_min
         text: ""
-        Button_custom1:
+        Label_custom:
+            text: "When "
+            size_hint_x:  None
+            width: self.texture_size[0]
+            #size: self.texture_size[0], self.height
+        Button_link:
             text: root.data["name_device"]
             id: id_btn_sel_device
-        Button_custom1:
+            size_hint_x: None
+        Label_custom:
+            text: " and "
+            size_hint_x: None
+            width: self.texture_size[0]
+        Button_link:
             text: root.data["name_property"]
             id: id_btn_sel_property
-        Button_custom1:
+            size_hint_x: None
+        Label_custom:
+            text: " and "
+            size_hint_x: None
+            width: self.texture_size[0]
+            width: self.texture_size[0]
+        Button_link:
             text: root.data["value"]
             id: id_btn_sel_value
+            size_hint_x: None
+        #Widget:
     Button_custom1:
         text: "Add Action"
+        size_hint_x: 1
         id: id_btn_add_action
 
 
 <BoxLayout_addTriggerContent>:
     size_hint_y: None
-    height: self.minimum_height+ app.grid_min*2
+    height: app.grid_min * 5
     orientation: 'vertical'
-    BoxLayout_block:
+    StackLayout_block:
         text: ""
-        Button_custom1:
+        type_trigger: smac_keys["TYPE_TRIGGER_PROP"]
+        Label_custom:
+            text: "When "
+            size_hint_x:  None
+            width: self.texture_size[0]
+        Button_link:
             text: root.data["name_device"]
             id: id_btn_sel_device
-        Button_custom1:
+        Label_custom:
+            text: " and "
+            size_hint_x:  None
+            width: self.texture_size[0]
+        Button_link:
             text: root.data["name_property"]
             id: id_btn_sel_property
-        Button_custom1:
+        Label_custom:
+            text: " and "
+            size_hint_x:  None
+            width: self.texture_size[0]
+        Button_link:
             text: root.data["value"]
             id: id_btn_sel_value
+    StackLayout_block:
+        text: ""
+        type_trigger: smac_keys["TYPE_TRIGGER_TIME"]
+        Label_custom:
+            text: "When"
+            size_hint_x:  None
+            width: self.texture_size[0]
+        Button_link:
+            text: root.data["name_device"]
+            id: id_btn_sel_device1
+        Label_custom:
+            text: "time :"
+            size_hint_x:  None
+            width: self.texture_size[0]
+            #id: id_btn_sel_property
+        Button_link:
+            text: root.data["value_hour"]
+            time_selection: "hour"
+            id: id_btn_sel_hour
+        Label_custom:
+            text: " : "
+            size_hint_x:  None
+            width: self.texture_size[0]
+        Button_link:
+            text: root.data["value_minute"]
+            time_selection: "minute"
+            id: id_btn_sel_minute
+        #Widget:
     Button_custom1:
         text: "Add Trigger"
+        size_hint_x: 1
         id: id_btn_add_trigger
 
 <BoxLayout_addHomeContent>:

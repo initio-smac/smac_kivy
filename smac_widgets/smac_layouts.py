@@ -1,17 +1,21 @@
 from kivy.animation import Animation
 from kivy.app import App
+from kivy.core.text import DEFAULT_FONT
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.button import Button
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.uix.popup import Popup
 from kivy.uix.slider import Slider
+from kivy.uix.stacklayout import StackLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
-from kivy.properties import StringProperty, ColorProperty, NumericProperty, BooleanProperty, DictProperty
+from kivy.properties import StringProperty, ColorProperty, NumericProperty, BooleanProperty, DictProperty, \
+    OptionProperty, ObjectProperty
 from kivy.utils import get_color_from_hex
 
 from smac_behaviors import SelectBehavior
@@ -206,13 +210,19 @@ class BoxLayout_container( BoxLayout):
     pass
 
 
-class Button_custom1(SelectBehavior, Button):
+class Button_custom1(Button, SelectBehavior):
+    pass
+
+class Button_link(SelectBehavior, ButtonBehavior, Label):
     pass
 
 class Label_button(SelectBehavior, ButtonBehavior, Label):
     bg_color = ColorProperty([1,1,1,1])
 
 class Label_dropDown(Label_button):
+    pass
+
+class Label_title(Label):
     pass
 
 class Dropdown_custom(SelectBehavior, BoxLayout):
@@ -228,10 +238,50 @@ class Label_menuItem(SelectBehavior, ButtonBehavior, Label):
 class Label_custom(Label):
     pass
 
-class ModalView_custom(Popup):
+class PopupException(Exception):
+    '''Popup exception, fired when multiple content widgets are added to the
+    popup.
+    .. versionadded:: 1.4.0
+    '''
+
+class ModalView_custom(ModalView):
     text = StringProperty("hello")
-    separator_height = dp(2)
-    #separator_color = get_color_from_hex("#4af343")
+    title = StringProperty('No title')
+    title_size = NumericProperty('14sp')
+    title_align = OptionProperty('left', options=['left', 'center', 'right', 'justify'])
+    title_font = StringProperty(DEFAULT_FONT)
+    content = ObjectProperty(None)
+    title_color = ColorProperty([1, 1, 1, 1])
+    #separator_color = ColorProperty([47 / 255., 167 / 255., 212 / 255., 1.])
+    separator_height = NumericProperty('2dp')
+    # Internal properties used for graphical representation.
+    _container = ObjectProperty(None)
+
+    def add_widget(self, widget, *args, **kwargs):
+        if self._container:
+            if self.content:
+                raise PopupException(
+                    'Popup can have only one widget as content')
+            self.content = widget
+        else:
+            super(ModalView_custom, self).add_widget(widget, *args, **kwargs)
+
+    def on_content(self, instance, value):
+        if self._container:
+            self._container.clear_widgets()
+            self._container.add_widget(value)
+
+    def on__container(self, instance, value):
+        if value is None or self.content is None:
+            return
+        self._container.clear_widgets()
+        self._container.add_widget(self.content)
+
+    def on_touch_down(self, touch):
+        if self.disabled and self.collide_point(*touch.pos):
+            return True
+        return super(ModalView_custom, self).on_touch_down(touch)
+
 
 class Image_icon(Widget):
     source = StringProperty("")
@@ -262,7 +312,9 @@ class BoxLayout_addActionContent(BoxLayout):
         "id_property": "",
         "name_property": "Prop",
         "type_property": "",
-        "value": "0"
+        "value": "0",
+        "value_hour": "0",
+        "value_minute": "0"
     })
 
 class BoxLayout_addTriggerContent(BoxLayout):
@@ -276,11 +328,19 @@ class BoxLayout_addTriggerContent(BoxLayout):
         "id_property": "",
         "name_property": "Prop",
         "type_property": "",
-        "value": "0"
+        "value": "0",
+        "value_hour":"0",
+        "value_minute":"0"
     })
 
 class BoxLayout_block(BoxLayout):
     text = StringProperty("")
+    type_trigger = StringProperty("")
+
+class StackLayout_block(StackLayout):
+    text = StringProperty("")
+    active = BooleanProperty(False)
+    type_trigger = StringProperty("")
 
 class Widget_menuBG(ButtonBehavior, Widget):
     pass

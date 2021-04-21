@@ -24,7 +24,7 @@ class Database():
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_property(id INTEGER PRIMARY KEY AUTOINCREMENT, id_device STR, id_property STR, type_property STR, name_property STR, value STR, value_min STR, value_max STR, value_step STR, value_unit STR , remove INT, value_temp STR, value_last_updated STR)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_command_status(id INTEGER PRIMARY KEY AUTOINCREMENT, id_topic STR, id_device STR, id_property STR, id_context, cmd STR, time INT)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS smac_context_action(id INTEGER PRIMARY KEY AUTOINCREMENT, id_context STR, name_context STR, id_topic STR, id_device STR, id_property STR, value STR, comparator STR, last_updated INT, status INT, remove INT )")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS smac_context_trigger(id INTEGER PRIMARY KEY AUTOINCREMENT, id_context STR, id_topic STR, id_device STR, id_property STR, value STR, last_updated INT, status INT, remove INT )")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS smac_context_trigger(id INTEGER PRIMARY KEY AUTOINCREMENT, id_context STR, id_topic STR, id_device STR, id_property STR, value STR, last_updated INT, status INT, remove INT, type_trigger )")
 
     def create_indexes(self, *args):
         try:
@@ -107,14 +107,36 @@ class Database():
         finally:
             lock.release()
 
-    def get_action_by_device(self, id_device):
+    def get_action_by_device(self, id_device, id_context):
         try:
             lock.acquire(True)
             return self.cur.execute(
-                'SELECT id_topic, id_context, id_device, id_property, value, name_context FROM smac_context_action WHERE id_device=? AND remove=0',(id_device,)).fetchall()
+                'SELECT id_topic, id_context, id_device, id_property, value, name_context FROM smac_context_action WHERE id_device=? AND id_context=? AND remove=0',(id_device,id_context)).fetchall()
             # return self.cur.fetchall()
         except Exception as e:
             print(e)
+        finally:
+            lock.release()
+
+    def get_action_by_device_only(self, id_device):
+        try:
+            lock.acquire(True)
+            self.cur.execute(
+                'SELECT id_topic, id_context, id_device, id_property, value, name_context FROM smac_context_action WHERE id_device=? AND remove=0',(id_device,))
+            return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+        finally:
+            lock.release()
+
+    def get_action_by_property_value(self, id_device, id_property, value):
+        try:
+            lock.acquire(True)
+            self.cur.execute(
+                'SELECT id_topic, id_context, id_device, id_property, value FROM smac_context_action WHERE id_device=? AND id_property=? AND value=? AND remove=0',(str(id_device), str(id_property), value))
+            return self.cur.fetchall()
+        except Exception as e:
+            print("e action", e)
         finally:
             lock.release()
 
@@ -128,13 +150,13 @@ class Database():
         finally:
             lock.release()
 
-    def update_action_status(self, id_topic, id_context, id_device, id_property, status=0):
+    def update_action_status(self, id_device, id_property, status=0):
         try:
             lock.acquire(True)
-            self.cur.execute('UPDATE smac_context_action SET status=? WHERE id_topic=? AND id_context=? AND id_device=? AND id_property=?', (status, id_topic, id_context, id_device, id_property))
+            self.cur.execute('UPDATE smac_context_action SET status=? WHERE  id_device=? AND id_property=?', (status, id_device, id_property))
             self.connection.commit()
         except Exception as e:
-            print(e)
+            print("ee:", e)
         finally:
             lock.release()
 
@@ -159,12 +181,16 @@ class Database():
             lock.release()
 
     # context trigger
-    def add_context_trigger(self, id_context, id_topic, id_device, id_property, value):
+    # type_trigger values -->
+    # 0 --> property based
+    # 1 --> time based
+    # 2 --> location based
+    def add_context_trigger(self, id_context, id_topic, id_device, id_property, value, remove=0, status=0, type_trigger="0"):
         try:
             lock.acquire(True)
             self.cur.execute(
-                'REPLACE INTO smac_context_trigger ( id_topic, id_context, id_device, id_property, value, status, last_updated, remove) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                (id_topic, id_context, id_device, id_property, value,  0, int(time.time()), 0))
+                'REPLACE INTO smac_context_trigger ( id_topic, id_context, id_device, id_property, value, status, last_updated, remove, type_trigger) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (id_topic, id_context, id_device, id_property, value,  status, int(time.time()), remove, type_trigger ))
             self.connection.commit()
         except Exception as e:
             print("eg: {}".format(e))
@@ -174,7 +200,7 @@ class Database():
     def get_trigger_by_context(self, id_context):
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT id_device, id_property, value, status, last_updated FROM smac_context_trigger WHERE id_context=? AND remove=0', (id_context,))
+            self.cur.execute('SELECT id_device, id_property, value, status, last_updated, type_trigger FROM smac_context_trigger WHERE id_context=? AND remove=0', (id_context,))
             return self.cur.fetchall()
             # return self.cur.fetchall()
         except Exception as e:
@@ -187,10 +213,21 @@ class Database():
         try:
             lock.acquire(True)
             return self.cur.execute(
-                'SELECT id_topic, id_context, id_device, id_property, value FROM smac_context_trigger WHERE id_device=? AND remove=0',(id_device,)).fetchall()
+                'SELECT id_topic, id_context, id_device, id_property, value, type_trigger FROM smac_context_trigger WHERE id_device=? AND remove=0',(id_device,)).fetchall()
             # return self.cur.fetchall()
         except Exception as e:
             print(e)
+        finally:
+            lock.release()
+
+    def get_trigger_by_property_value(self, id_device, id_property, value):
+        try:
+            lock.acquire(True)
+            self.cur.execute(
+                'SELECT id_topic, id_context, id_device, id_property, value, type_trigger FROM smac_context_trigger WHERE id_device=? AND id_property=? AND value=? AND remove=0',( str(id_device), str(id_property), value))
+            return self.cur.fetchall()
+        except Exception as e:
+            print(print("e trig", e))
         finally:
             lock.release()
 
@@ -206,13 +243,16 @@ class Database():
         finally:
             lock.release()
 
-    def update_trigger_status(self, id_topic, id_context, id_device, id_property, status=0):
+    def update_trigger_status(self, id_device, id_property, status=0):
+        print("type(status)", status)
+        print(id_device)
+        print(id_property)
         try:
             lock.acquire(True)
-            self.cur.execute('UPDATE smac_context_trigger SET status=? WHERE id_topic=? AND id_context=? AND id_device=? AND id_property=?', (status, id_topic, id_context, id_device, id_property))
+            self.cur.execute('UPDATE smac_context_trigger SET status=? WHERE id_device=? AND id_property=? AND remove=0', (status, id_device, id_property))
             self.connection.commit()
         except Exception as e:
-            print(e)
+            print("e2", e)
         finally:
             lock.release()
 
@@ -589,14 +629,15 @@ class Database():
     def get_property_name_by_property(self, id_device, id_property):
         try:
             lock.acquire(True)
-            return self.cur.execute('SELECT name_property, type_property FROM smac_property WHERE id_device=? AND id_property=? AND remove=0', (id_device, id_property)).fetchone()
+            self.cur.execute('SELECT name_property, type_property FROM smac_property WHERE id_device=? AND id_property=? AND remove=0', (id_device, id_property))
             #print(d)
             #print(a)
-            #return self.cur.fetchall()
+            return self.cur.fetchone()
         except Exception as e:
             print(e)
         finally:
             lock.release()
+
 
     # add a property
     def add_property(self, id_device, id_property, type_property, name_property, value=0, value_temp=0, value_min=0, value_max=1, value_step=1, value_unit="" ,remove=0 ):
@@ -629,7 +670,7 @@ class Database():
                 'UPDATE smac_property SET value=? WHERE id_device=? AND id_property=?', (value, id_device, id_property))
             self.connection.commit()
         except Exception as e:
-            print(e)
+            print("e1", e)
         finally:
             lock.release()
 
