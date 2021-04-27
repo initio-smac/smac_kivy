@@ -1163,7 +1163,7 @@ class SmacApp(App):
                                 self.open_modalInfo(title="Info", text=text)
                                 self.remove_task(t_id)
                                 for c in cmd:
-                                    db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c, id_context=id_context)
+                                    db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c, id_context=id_context, id_property=id_property)
                         #else:
                         #    for c in cmd:
                         #        db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c)
@@ -1172,7 +1172,7 @@ class SmacApp(App):
                     if TASK_COUNT[t_id] == 10:
                         self.remove_task(task_id=t_id)
                         for c in cmd:
-                            db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c)
+                            db.remove_command_status(id_topic=id_topic, id_device=id_device, cmd=c, id_context=id_context, id_property=id_property)
                         text = "Timeout: No response from the device"
                         if self.is_modal_open:
                             self.close_modal()

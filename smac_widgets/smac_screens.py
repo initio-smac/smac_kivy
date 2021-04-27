@@ -206,11 +206,15 @@ class Screen_context(SelectClass):
             if (chkbox != None) and chkbox.active:
                 print("active", chkbox.active)
                 type_trigger = chkbox.value
+                break
         app = App.get_running_app()
         id_device = self.data["id_device"]
         #id_device = self.data["id_device"]
-        id_property = self.data["id_property"]
         value = self.data["value"]
+        id_context = self.data['id_context']
+        id_property = self.data["id_property"] if (type_trigger == smac_keys["TYPE_TRIGGER_PROP"]) else ""
+        if type_trigger == smac_keys["TYPE_TRIGGER_TIME"]:
+            value = "{}:{}".format(self.data["value_hour"], self.data["value_minute"])
         if (id_device == None) or (id_device == ""):
             app.open_modalInfo(text="Select A Device to Continue")
             return
@@ -221,11 +225,7 @@ class Screen_context(SelectClass):
             app.open_modalInfo(text="Select A Value to Continue")
             return
         if  id_device == app.ID_DEVICE:
-            id_context = self.data['id_context']
-            value = self.data["value"]
-            id_property = self.data["id_property"] if(type_trigger == smac_keys["TYPE_TRIGGER_PROP"]) else ""
-            if type_trigger == smac_keys["TYPE_TRIGGER_TIME"]:
-                value = "{}:{}".format(self.data["value_hour"], self.data["value_minute"])
+
             db.add_context_trigger(id_context=id_context, id_topic=self.data["id_topic"], id_device=id_device, id_property=id_property,  value=value, type_trigger=type_trigger)
             app.open_modalInfo(text="Context Trigger added")
         else:
@@ -314,6 +314,8 @@ class Screen_context(SelectClass):
         id_context = parent.id_context
         id_topic = self.data["id_topic"]
         id_property = parent.id_property
+        type_trigger = parent.type_trigger
+        print("type_trig", type_trigger)
         if id_device == app.ID_DEVICE:
             db.remove_trigger_by_property(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property)
             app.remove_trigger_widget(id_context, id_device, id_property)
@@ -324,6 +326,7 @@ class Screen_context(SelectClass):
             d[smac_keys["ID_DEVICE"]] = id_device
             d[smac_keys["ID_CONTEXT"]] = id_context
             d[smac_keys["ID_PROPERTY"]] = id_property
+            d[smac_keys["TYPE_TRIGGER"]] = type_trigger
             d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
             # id_topic, id_context, id_device, id_property, value, name_context
             client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_TRIGGER"], message=d, udp=True,
