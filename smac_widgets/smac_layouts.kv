@@ -697,64 +697,153 @@
 
 <BoxLayout_addTriggerContent>:
     size_hint_y: None
-    height: app.grid_min * 5
+    height: app.grid_min * 6
     orientation: 'vertical'
-    StackLayout_block:
-        text: ""
-        type_trigger: smac_keys["TYPE_TRIGGER_PROP"]
-        Label_custom:
-            text: "When "
-            size_hint_x:  None
-            width: self.texture_size[0]
-        Button_link:
-            text: root.data["name_device"]
-            id: id_btn_sel_device
-        Label_custom:
-            text: " and "
-            size_hint_x:  None
-            width: self.texture_size[0]
-        Button_link:
-            text: root.data["name_property"]
-            id: id_btn_sel_property
-        Label_custom:
-            text: " and "
-            size_hint_x:  None
-            width: self.texture_size[0]
-        Button_link:
-            text: root.data["value"]
-            id: id_btn_sel_value
-    StackLayout_block:
-        text: ""
-        type_trigger: smac_keys["TYPE_TRIGGER_TIME"]
-        Label_custom:
-            text: "When"
-            size_hint_x:  None
-            width: self.texture_size[0]
-        Button_link:
-            text: root.data["name_device"]
-            id: id_btn_sel_device1
-        Label_custom:
-            text: "time :"
-            size_hint_x:  None
-            width: self.texture_size[0]
-            #id: id_btn_sel_property
-        Button_link:
-            text: root.data["value_hour"]
-            time_selection: "hour"
-            id: id_btn_sel_hour
-        Label_custom:
-            text: " : "
-            size_hint_x:  None
-            width: self.texture_size[0]
-        Button_link:
-            text: root.data["value_minute"]
-            time_selection: "minute"
-            id: id_btn_sel_minute
-        #Widget:
-    Button_custom1:
-        text: "Add Trigger"
-        size_hint_x: 1
-        id: id_btn_add_trigger
+    on_DOW:
+        print(self.DOW)
+    BoxLayout_container:
+        StackLayout_block:
+            text: ""
+            type_trigger: smac_keys["TYPE_TRIGGER_PROP"]
+            Label_custom:
+                text: "When "
+                size_hint_x:  None
+                width: self.texture_size[0]
+            Button_link:
+                text: root.data["name_device"]
+                id: id_btn_sel_device
+            Label_custom:
+                text: " and "
+                size_hint_x:  None
+                width: self.texture_size[0]
+            Button_link:
+                text: root.data["name_property"]
+                id: id_btn_sel_property
+            Label_custom:
+                text: " and "
+                size_hint_x:  None
+                width: self.texture_size[0]
+            Button_link:
+                text: root.data["value"]
+                id: id_btn_sel_value
+        StackLayout_block:
+            height: app.grid_min*5
+            type_trigger: smac_keys["TYPE_TRIGGER_TIME"]
+            Label_custom:
+                text: "When"
+                size_hint_x:  None
+                width: self.texture_size[0]
+            Button_link:
+                text: root.data["name_device"]
+                id: id_btn_sel_device1
+            Label_custom:
+                text: "time :"
+                size_hint_x:  None
+                width: self.texture_size[0]
+                #id: id_btn_sel_property
+            Button_link:
+                text: root.data["value_hour"]
+                time_selection: "hour"
+                id: id_btn_sel_hour
+            Label_custom:
+                text: " : "
+                size_hint_x:  None
+                width: self.texture_size[0]
+            Button_link:
+                text: root.data["value_minute"]
+                time_selection: "minute"
+                id: id_btn_sel_minute
+            BoxLayout_container:
+                size_hint_y: None
+                height: app.grid_min
+                orientation: "horizontal"
+                CheckBox_custom:
+                    on_active:
+                        id_dow_container.opacity = .5 if(self.active) else 1
+                        id_dow_container.disabled = 1 if(self.active) else 0
+                        root.DOW = [1,1,1,1,1,1,1] if(self.active) else [0,0,0,0,0,0,0]
+                Label_custom2:
+                    text: "All Days"
+            StackLayout:
+                id: id_dow_container
+                size_hint_y: None
+                minimum_height: app.grid_min
+                height: app.grid_min*2
+                orientation: 'lr-tb'
+                spacing: dp(10)
+                CheckBox_custom:
+                    index: 0
+                    on_active:
+                        del root.DOW[self.index]
+                        root.DOW.insert(self.index, (1 if self.active else 0) )
+                Label_custom2:
+                    text: "Mon"
+
+                CheckBox_custom:
+                    index: 1
+                    on_active:
+                        del root.DOW[self.index]
+                        root.DOW.insert(self.index, (1 if self.active else 0) )
+                Label_custom2:
+                    text: "Tue"
+
+                CheckBox_custom:
+                    index: 2
+                    on_active:
+                        del root.DOW[self.index]
+                        root.DOW.insert(self.index, (1 if self.active else 0) )
+                Label_custom2:
+                    text: "Wed"
+
+                CheckBox_custom:
+                    index: 3
+                    on_active:
+                        del root.DOW[self.index]
+                        root.DOW.insert(self.index, (1 if self.active else 0) )
+                Label_custom2:
+                    text: "Thu"
+
+                CheckBox_custom:
+                    index: 4
+                    on_active:
+                        del root.DOW[self.index]
+                        root.DOW.insert(self.index, (1 if self.active else 0) )
+                Label_custom2:
+                    text: "Fri"
+
+                CheckBox_custom:
+                    index: 5
+                    on_active:
+                        del root.DOW[self.index]
+                        root.DOW.insert(self.index, (1 if self.active else 0) )
+                Label_custom2:
+                    text: "Sat"
+
+                CheckBox_custom:
+                    index: 6
+                    on_active:
+                        del root.DOW[self.index]
+                        root.DOW.insert(self.index, (1 if self.active else 0) )
+                Label_custom2:
+                    text: "Sun"
+
+            #Widget:
+        Button_custom1:
+            text: "Add Trigger"
+            size_hint_x: 1
+            id: id_btn_add_trigger
+
+<Label_custom2@Label_custom>:
+    size_hint_x:  None
+    width: self.texture_size[0]
+
+<CheckBox_custom@CheckBox>:
+    size_hint: None, None
+    size: app.grid_min/2, app.grid_min
+    #id: id_chkbox
+    #active: root.active
+    #group: 'type_trigger'
+    #value: root.type_trigger
 
 <BoxLayout_addHomeContent>:
     orientation: 'vertical'

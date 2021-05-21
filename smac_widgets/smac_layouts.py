@@ -10,12 +10,13 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.uix.popup import Popup
+from kivy.uix.scrollview import ScrollView
 from kivy.uix.slider import Slider
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivy.properties import StringProperty, ColorProperty, NumericProperty, BooleanProperty, DictProperty, \
-    OptionProperty, ObjectProperty
+    OptionProperty, ObjectProperty, ListProperty
 from kivy.utils import get_color_from_hex
 
 from smac_behaviors import SelectBehavior
@@ -317,8 +318,9 @@ class BoxLayout_addActionContent(BoxLayout):
         "value_minute": "0"
     })
 
-class BoxLayout_addTriggerContent(BoxLayout):
+class BoxLayout_addTriggerContent(ScrollView):
     active = BooleanProperty(False)
+    DOW = ListProperty([0,0,0,0,0,0,0])
     data = DictProperty({
         "id_topic": "",
         "id_context": '',

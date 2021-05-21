@@ -1,6 +1,6 @@
 import asyncio
 
-from kivy import platform
+#from kivy import platform
 from kivy.core.window import Window
 from kivy.properties import DictProperty
 from kivy.uix.screenmanager import Screen
@@ -197,16 +197,21 @@ class Screen_context(SelectClass):
             app.open_modal(content=self.add_trig_content, title="Add Trigger")
 
     def add_trigger(self, wid, *args):
-        add_trigger_root = wid.parent
-        print(add_trigger_root)
+        add_trigger_root = wid.parent.parent
+        add_trigger_container = wid.parent
+        #print(wid)
+        #print(add_trigger_root)
+        #print(add_trigger_container)
         type_trigger = smac_keys["TYPE_TRIGGER_PROP"]
-        for child in add_trigger_root.children:
+        print("child")
+        for child in add_trigger_container.children:
             print(child)
             chkbox= child.ids.get("id_chkbox", None)
             if (chkbox != None) and chkbox.active:
                 print("active", chkbox.active)
                 type_trigger = chkbox.value
                 break
+        print(type_trigger)
         app = App.get_running_app()
         id_device = self.data["id_device"]
         #id_device = self.data["id_device"]
@@ -214,7 +219,7 @@ class Screen_context(SelectClass):
         id_context = self.data['id_context']
         id_property = self.data["id_property"] if (type_trigger == smac_keys["TYPE_TRIGGER_PROP"]) else ""
         if type_trigger == smac_keys["TYPE_TRIGGER_TIME"]:
-            value = "{}:{}".format(self.data["value_hour"], self.data["value_minute"])
+            value = "{}:{}:{}".format(self.data["value_hour"], self.data["value_minute"], ",".join( [str(i) for i in add_trigger_root.DOW ]) )
         if (id_device == None) or (id_device == ""):
             app.open_modalInfo(text="Select A Device to Continue")
             return
@@ -490,6 +495,7 @@ class Screen_context(SelectClass):
                 #try:
                 if (id_device != None) and (id_device != ''):
                     id = "act_{}:{}".format(id_device, id_property)
+                    name_device = db.get_device_name(id_device)
                     if c.ids.get(id, None) == None:
                         a = BoxLayout_action()
                         np = db.get_property_name_by_property(id_device, id_property)
@@ -500,13 +506,12 @@ class Screen_context(SelectClass):
                         a.id_context = id_context
                         a.id_device = id_device
                         a.id_property = id_property
-                        name_device = db.get_device_name(id_device)
-                        a.text = "When device: {} property: {} value is {}".format(name_device, a.name_property, value)
                         a.ids["id_btn_remove_action"].bind(on_release=self.remove_action)
                         c.ids[id] = a
                         c.ids["id_action_container"].add_widget(a)
                     else:
                         a = c.ids[id]
+                    a.text = "When device: {} property: {} value is {}".format(name_device, a.name_property, value)
                     a.status = int(status)
 
                 #except Exception as e:
@@ -525,9 +530,9 @@ class Screen_context(SelectClass):
                 #try:
                 if(id_device != None) and (id_device != ''):
                     id_trig = "trig_{}:{}".format(id_device, id_property)
+                    name_device = db.get_device_name(id_device)
                     if c.ids.get(id_trig, None) == None:
                         t = BoxLayout_trigger()
-                        name_device = db.get_device_name(id_device)
                         t.name_property = ""
                         if type_trigger == smac_keys["TYPE_TRIGGER_PROP"]:
                             np = db.get_property_name_by_property(id_device, id_property)
@@ -549,6 +554,17 @@ class Screen_context(SelectClass):
                         c.ids["id_trigger_container"].add_widget(t)
                     else:
                         t = c.ids[id_trig]
+                    t.text = "When device: {} property: {} value is {}".format(name_device, t.name_property, value)
+                    #print(type_trigger)
+                    #print(smac_keys["TYPE_TRIGGER_TIME"])
+                    #print(type_trigger == smac_keys["TYPE_TRIGGER_TIME"])
+                    if type_trigger == smac_keys["TYPE_TRIGGER_TIME"]:
+                        hh, mm, DOW = value.split(":")
+                        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                        #print(DOW)
+                        DOW = [ days[num] for num, i in enumerate(DOW.split(",")) if(int(i)) ]
+                        #print(DOW)
+                        t.text = "When device: {} property: {} value is {}:{} {}".format(name_device, t.name_property, hh, mm, DOW)
                     t.status = int(status)
                 #except Exception as e:
                 #    print("exception while adding trigger: {}".format(e))

@@ -1,20 +1,20 @@
 import os
 import time
 
-from kivy import platform
+#from kivy import platform
 from kivy.app import App
 
 from smac_client import client
 from smac_db import db
 from smac_device_keys import SMAC_DEVICES, SMAC_PROPERTY
 from smac_keys import smac_keys
-from smac_platform import SMAC_PLATFORM
+from smac_platform import SMAC_PLATFORM, TEST_DEVICE
 
 from plyer import battery, brightness, flash
 from plyer import bluetooth
 from plyer import uniqueid
 
-if platform == "android":
+if SMAC_PLATFORM == "android":
     from android.permissions import check_permission, Permission
     from jnius import autoclass
 
@@ -32,7 +32,9 @@ def generate_id_context(id_device):
     return id_device+".C{}".format( int(time.time()) )
 
 def get_device_name():
-    if platform == "android":
+    if TEST_DEVICE:
+        return SMAC_PLATFORM+"_{}".format( int(time.time()) )
+    if SMAC_PLATFORM == "android":
         from jnius import autoclass
         BUILD = autoclass('android.os.Build')
         return BUILD.MODEL
@@ -44,9 +46,9 @@ def get_device_type():
     if SMAC_PLATFORM == "ESP":
         return SMAC_DEVICES["ESP"]
     else:
-        if platform == "android":
+        if SMAC_PLATFORM == "android":
             return SMAC_DEVICES["SMART_PHONE"]
-        elif (platform == "linux") or (platform == "win"):
+        elif (SMAC_PLATFORM == "linux") or (SMAC_PLATFORM == "win"):
             return SMAC_DEVICES["COMPUTER"]
 
 def get_property_min_max(prop):
@@ -66,10 +68,10 @@ def get_property_min_max(prop):
 def get_device_property(id_device=None):
     props = []
     arr = []
-    if platform == "android":
+    if SMAC_PLATFORM == "android":
         arr = [ SMAC_PROPERTY["BLUETOOTH"], SMAC_PROPERTY["BATTERY"], SMAC_PROPERTY["FLASH"], SMAC_PROPERTY["BRIGHTNESS"] ]
         #arr = [ SMAC_PROPERTY["BLUETOOTH"], SMAC_PROPERTY["BATTERY"], SMAC_PROPERTY["FLASH"] ]
-    elif ( platform == "linux") or (platform == "win"):
+    elif ( SMAC_PLATFORM == "linux") or (SMAC_PLATFORM == "win"):
         arr =  [ SMAC_PROPERTY["SHUTDOWN"], SMAC_PROPERTY["RESTART"] ]
     for num, p in enumerate(arr):
         p1 = {}
@@ -145,7 +147,7 @@ def set_property(type_property, value, id_property=None):
             return False
     elif type_property == SMAC_PROPERTY["BRIGHTNESS"]:
         print("btihtness")
-        if platform == "android":
+        if SMAC_PLATFORM == "android":
             #print(check_permission(Permission.WRITE_SETTINGS))
             #if check_permission(Permission.WRITE_SETTINGS):
             try:
@@ -170,11 +172,11 @@ def set_property(type_property, value, id_property=None):
             print("Flash control err; {}".format(e))
             return False
     elif type_property == SMAC_PROPERTY["SHUTDOWN"]:
-        if (platform == "linux") or (platform == "win"):
+        if (SMAC_PLATFORM == "linux") or (SMAC_PLATFORM == "win"):
             print("shutting down system")
             os.system("sudo shutdown")
     elif type_property == SMAC_PROPERTY["RESTART"]:
-        if (platform == "linux") or (platform == "win"):
+        if (SMAC_PLATFORM == "linux") or (SMAC_PLATFORM == "win"):
             print("rebooting system")
             os.system("sudo reboot")
 

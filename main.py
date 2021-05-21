@@ -9,6 +9,7 @@ from kivy.uix.screenmanager import ScreenManager, NoTransition
 #from kivy.core.window import Window
 
 from smac_device import set_property, get_device_property, get_property_value, property_listener
+from smac_platform import SMAC_PLATFORM
 from smac_theme_colors import THEME_LIGHT, THEME_DARK
 
 #Window.clearcolor = get_color_from_hex("#e0e0e0")
@@ -1098,14 +1099,14 @@ class SmacApp(App):
                 if busy_period == int(time.time()):
                     db.update_device_busy(id_device=id_device, is_busy=0, busy_period=0)
 
-            if(platform == "android") and ((COUNTER % 5) == 0):
+            if(SMAC_PLATFORM == "android") and ((COUNTER % 5) == 0):
                 await property_listener(self.ID_DEVICE)
             #print("interval", interval_online)
             #print("COUNTER", COUNTER)
             if (COUNTER % self.INTERVAL_ONLINE) == 0:
                 #COUNTER = 0
                 print("Sending CMD_ONLINE")
-                print("Sending CMD_ONLINE")
+                #print("Sending CMD_ONLINE")
                 client.send_message(frm=self.ID_DEVICE, to="#", cmd=smac_keys["CMD_ONLINE"], message={})
                 await  asyncio.sleep(0)
 
@@ -1120,9 +1121,13 @@ class SmacApp(App):
                             self.trigger_context(id_context)
                             #self.send_trigger_context(id_context)
                     elif type_trigger == smac_keys["TYPE_TRIGGER_TIME"]:
-                        value_hour, value_min = value.split(":")
+                        value_hour, value_min, DOW = value.split(":")
+                        DOW = DOW.split(",")
                         time1 = datetime.now()
-                        if(value_hour == str(time1.hour)) and (value_min == str(time1.minute)):
+                        print("DOW", time1.weekday())
+                        print(DOW)
+                        print("is DOW ", int(DOW[time1.weekday()]))
+                        if(value_hour == str(time1.hour)) and (value_min == str(time1.minute)) and ( int( DOW[time1.weekday()] ) ):
                             self.trigger_context(id_context)
                             #self.send_trigger_context(id_context)
 
@@ -1215,6 +1220,11 @@ class SmacApp(App):
         except:
             return "127.0.0.1"
 
+    def get_config_variable(self, key):
+        with open('config.json', 'r') as f:
+            fd = json.load(f)
+            return fd.get(key, None)
+
 
     def update_config_variable(self, key, value, arr_op="ADD"):
         with open('config.json', 'r') as f:
@@ -1246,6 +1256,7 @@ class SmacApp(App):
             d["LIMIT_TOPIC"] = 10
             d["LIMIT_DEVICE"] = 10
             d["INTERVAL_ONLINE"] = 30
+            #d["PLATFORM"] = SMAC_PLATFORM
             f.write(json.dumps(d))
             f.close()
 
@@ -1286,6 +1297,8 @@ class SmacApp(App):
             if fd.get("INTERVAL_ONLINE", None) != None:
                 self.INTERVAL_ONLINE = int(fd["INTERVAL_ONLINE"])
             self.theme = fd.get("theme", "LIGHT")
+            #if fd.get("PLATFORM", None) != None:
+             #   self.PLATFORM = fd.get("PLATFORM")
             f.close()
 
         print("fd", fd)
@@ -1340,7 +1353,7 @@ class SmacApp(App):
                 db.add_property(id_device=self.ID_DEVICE, id_property=i["id_property"], type_property=i["type_property"], name_property=i["name_property"], value_min=i["value_min"], value_max=i["value_max"], value=i["value"])
 
         print("kivy started few seconds ago")
-        if platform == "android":
+        if SMAC_PLATFORM == "android":
             from android.permissions import request_permissions, check_permission, Permission
             print("permision", check_permission(Permission.CAMERA))
             if not check_permission(Permission.CAMERA):
