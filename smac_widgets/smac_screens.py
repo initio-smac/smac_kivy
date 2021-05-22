@@ -11,6 +11,7 @@ from smac_client import client
 from smac_device import set_property, generate_id_topic, generate_id_context
 from smac_device_keys import SMAC_PROPERTY, SMAC_DEVICES
 from smac_keys import smac_keys
+from smac_requests import SMAC_SERVER, rest_call
 from smac_widgets.smac_layouts import *
 
 from kivy.lang import Builder
@@ -887,7 +888,7 @@ class Screen_network(SelectClass):
 
     def add_menu_widgets(self, *args):
         app = App.get_running_app()
-        menu = self.ids["id_menu"]
+        menu = self.ids["id_menu_home_container"]
         #menu.clear_widgets()
         for name_home, id_topic in db.get_home_list():
             if (name_home not in menu.ids.keys()):
@@ -897,7 +898,7 @@ class Screen_network(SelectClass):
                     wid = Label_menuItem(text=name_home)
                     wid.id_topic = id_topic
                     wid.padding = ( dp(10), dp(15))
-                    wid.bg_color = app.colors["COLOR_THEME"]
+                    #wid.bg_color = app.colors["COLOR_THEME"]
                     wid.bind(on_release=self.on_menu_item_release)
                     menu.ids[name_home] = wid
                     menu.add_widget(wid)
@@ -1281,3 +1282,148 @@ class Screen_deviceSetting(SelectClass):
         #app.add_task(db.get_command_status, ("", id_device,[smac_keys["CMD_STATUS_UPDATE_WIFI_CONFIG"], smac_keys["CMD_INVALID_PIN"]]))
         #app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         app.open_modalInfo(text="Request sending to check for Updates...")
+
+
+class Screen_register(SelectClass):
+    content_register = None
+    STATE = OptionProperty("", options=["", "SEND_PIN", "SEND_PIN_SUCCESS", "SEND_PIN_FAILURE", \
+                                        "VERIFY_PIN", "VERIFY_PIN_SUCCESS", "VERIFY_PIN_FAILURE"])
+
+    def on_STATE(self, val, *args):
+        if (self.STATE == "SEND_PIN") or (self.STATE == "VERIFY_PIN_FAILURE") or (self.STATE == "SEND_PIN_SUCCESS"):
+            self.content_register.ids["id_btn_send_pin"].disabled = True
+            self.content_register.ids["id_btn_verify_pin"].disabled = False
+            self.content_register.ids["id_text_email"].disabled = True
+            self.content_register.ids["id_text_email_pin"].disabled = False
+        elif (self.STATE == "VERIFY_PIN") :
+            self.content_register.ids["id_btn_send_pin"].disabled = True
+            self.content_register.ids["id_btn_verify_pin"].disabled = True
+            self.content_register.ids["id_text_email"].disabled = True
+            self.content_register.ids["id_text_email_pin"].disabled = True
+        elif (self.STATE == "VERIFY_PIN_SUCCESS") or (self.STATE == "") or (self.STATE == "SEND_PIN_FAILURE"):
+            if self.content_register != None:
+                self.content_register.ids["id_btn_send_pin"].disabled = False
+                self.content_register.ids["id_btn_verify_pin"].disabled = False
+                self.content_register.ids["id_text_email"].disabled = False
+                self.content_register.ids["id_text_email_pin"].disabled = False
+
+
+    def on_enter(self, *args):
+        #app = App.get_running_app()
+        #self.ids["id_text_email"].text = app.EMAIL
+        #print("app.EMAIL", app.EMAIL)
+        #EMAIL_VERIFIED = app.get_config_variable(key="EMAIL_VERIFIED")
+        #if EMAIL_VERIFIED:
+        #    app.change_screen(screen="Screen_network")
+        #else:
+            self.content_register = BoxLayout_register()
+            print("on_enter", self.content_register.children)
+            if self.content_register.ids.get("id_btn_send_pin", None) != None:
+                self.content_register.ids["id_btn_send_pin"].bind(on_release=self.request_login_pin)
+                self.content_register.ids["id_btn_verify_pin"].bind(on_release=self.verify_login_pin_server)
+
+    def on_leave(self, *args):
+        if self.content_register.ids.get("id_btn_send_pin", None) != None:
+            self.content_register.ids["id_btn_send_pin"].unbind(on_release=self.request_login_pin)
+            self.content_register.ids["id_btn_verify_pin"].unbind(on_release=self.verify_login_pin_server)
+        self.content_register = None
+        self.STATE = ""
+
+    def open_register_modal(self, *args):
+        print(self.content_register.children)
+        self.content_register.ids["id_label_info"].text = ""
+        app = App.get_running_app()
+        app.open_modal(title="Register/Forgot Password", content=self.content_register, auto_dismiss=False)
+
+
+    def request_login_pin(self, *args):
+        app = App.get_running_app()
+        email = self.content_register.ids["id_text_email"].text
+        if email == "":
+            app.open_modalInfo(title="Info", text="Enter Email Address")
+            return
+        self.STATE = "SEND_PIN"
+        label = self.content_register.ids["id_label_info"]
+        label.text = "Sending Email..."
+        request = "request_send_pin"
+        url = SMAC_SERVER + request
+        data = {}
+        data["email"] = email
+        #data["pin"] = pin
+        data["id_device"] = app.ID_DEVICE
+        r = rest_call(url=url, method="POST", request=request, json_data=data)
+        if r != None:
+            status_code = r[0]
+            res = r[1]
+            if status_code == 200:
+                label.text = "PIN sent to email"
+                self.STATE = "SEND_PIN_SUCCESS"
+            else:
+                label.text = res
+                self.STATE = "SEND_PIN_FAILURE"
+
+    def check_syntax_email(self, email):
+        pass
+
+    #def _verify_pin_local(self, entered_pin, saved_pin):
+
+
+    def verify_login_pin(self, *args):
+        app = App.get_running_app()
+        email = self.ids["id_text_email"].text
+        if email == "":
+            app.open_modalInfo(title="Info", text="Enter Email Address")
+            return
+        pin = self.ids["id_text_email_pin"].text
+        if pin == "":
+            app.open_modalInfo(title="Info", text="Enter PIN")
+            return
+
+        saved_pin = app.get_config_variable(key="LOGIN_PIN")
+        if str(saved_pin) == str(pin):
+            app.change_screen(screen="Screen_network")
+            app.update_config_variable(key="EMAIL_VERIFIED", value=1)
+        else:
+            app.open_modalInfo(title="Info", text="Incorrect PIND")
+            app.update_config_variable(key="EMAIL_VERIFIED", value=0)
+
+
+    def verify_login_pin_server(self, *args):
+        app = App.get_running_app()
+        email = self.content_register.ids["id_text_email"].text
+        label = self.content_register.ids["id_label_info"]
+        label.text = ""
+        if email == "":
+            #app.open_modalInfo(title="Info", text="Enter Email Address")
+            label.text = "Enter Email Address"
+            return
+        pin = self.content_register.ids["id_text_email_pin"].text
+        if pin == "":
+            #app.open_modalInfo(title="Info", text="Enter PIN")
+            label.text = "Enter PIN"
+            return
+        self.STATE = "VERIFY_PIN"
+        label.text = "Verifying PIN..."
+        request = "request_verify_pin"
+        url = SMAC_SERVER + request
+        data = {}
+        data["email"] = email
+        data["pin"] = pin
+        data["id_device"] = app.ID_DEVICE
+        #app.open_modal(content=BoxLayout_loader())
+        r = rest_call(url=url, method="POST", request=request, json_data=data)
+        if r != None:
+            status_code, res = r[0], r[1]
+            if status_code == 200:
+                app.open_modalInfo(title="Info", text="PIN verified.\nLogin to Continue")
+                app.update_config_variable(key="EMAIL", value=email)
+                app.update_config_variable(key="LOGIN_PIN", value=pin)
+                self.STATE = "VERIFY_PIN_SUCCESS"
+                #app.update_config_variable(key="EMAIL_VERIFIED", value=True)
+            else:
+                #app.open_modalInfo(title="Info", text=res)
+                label = self.content_register.ids["id_label_info"]
+                label.text = res
+                self.STATE = "VERIFY_PIN_FAILURE"
+                #app.update_config_variable(key="EMAIL_VERIFIED", value=False)
+

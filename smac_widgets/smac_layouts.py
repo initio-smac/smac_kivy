@@ -236,6 +236,9 @@ class BoxLayout_menu(BoxLayout):
 class Label_menuItem(SelectBehavior, ButtonBehavior, Label):
     bg_color = ColorProperty([1, 1, 1, 1])
 
+class Label_menuItem2(SelectBehavior, ButtonBehavior, Label):
+    bg_color = ColorProperty([1, 1, 1, 1])
+
 class Label_custom(Label):
     pass
 
@@ -334,6 +337,9 @@ class BoxLayout_addTriggerContent(ScrollView):
         "value_hour":"0",
         "value_minute":"0"
     })
+
+class BoxLayout_register(BoxLayout_container):
+    pass
 
 class BoxLayout_block(BoxLayout):
     text = StringProperty("")

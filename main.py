@@ -10,6 +10,7 @@ from kivy.uix.screenmanager import ScreenManager, NoTransition
 
 from smac_device import set_property, get_device_property, get_property_value, property_listener
 from smac_platform import SMAC_PLATFORM
+from smac_requests import req_get_device_id
 from smac_theme_colors import THEME_LIGHT, THEME_DARK
 
 #Window.clearcolor = get_color_from_hex("#e0e0e0")
@@ -66,6 +67,8 @@ class SmacApp(App):
     theme = OptionProperty("LIGHT", options=["LIGHT", "DARK"])
     colors = DictProperty(THEME_LIGHT)
     source_icon = StringProperty("icons/LIGHT/")
+    DEBUG = False
+    EMAIL = StringProperty("")
 
     def on_theme(self, *args):
         if self.theme == "DARK":
@@ -76,6 +79,8 @@ class SmacApp(App):
             self.colors = THEME_LIGHT
             self.source_icon = "icons/LIGHT/"
             self.update_config_variable(key="theme", value="LIGHT")
+        Window.clearcolor = self.colors["COLOR_THEME"]
+
 
     def add_task(self,  func, args):
         self.TASKS[ str(self.TASK_ID) ] = (func, args)
@@ -88,11 +93,14 @@ class SmacApp(App):
     def build(self):
         Builder.load_file('smac_widgets/smac_screens.kv')
         Builder.load_file('smac_widgets/smac_layouts.kv')
+        if not self.DEBUG:
+            self.screen_manager.add_widget(Screen_register(name="Screen_register"))
         self.screen_manager.add_widget(Screen_network(name='Screen_network'))
         self.screen_manager.add_widget(Screen_deviceSetting(name='Screen_deviceSetting'))
         self.screen_manager.add_widget(Screen_context(name='Screen_context'))
         #self.screen_manager.add_widget(Screen_devices(name='Screen_devices'))
         #self.screen_manager.add_widget(Screen_property(name='Screen_deviceSetting'))
+
         return self.screen_manager
 
     def change_screen(self, screen, *args):
@@ -1256,6 +1264,9 @@ class SmacApp(App):
             d["LIMIT_TOPIC"] = 10
             d["LIMIT_DEVICE"] = 10
             d["INTERVAL_ONLINE"] = 30
+            d["EMAIL"] = ""
+            d["LOGIN_PIN"] = ""
+            d["EMAIL_VERIFIED"] = False
             #d["PLATFORM"] = SMAC_PLATFORM
             f.write(json.dumps(d))
             f.close()
@@ -1265,13 +1276,15 @@ class SmacApp(App):
             print("fd", fd)
             if fd["ID_DEVICE"] == "":
                 #d_id = self.get_local_ip()
-                #d_id = req_get_device_id()
-                from smac_device import get_id_device
-                d_id = get_id_device()
+                d_id = req_get_device_id()
+                #from smac_device import get_id_device
+                #d_id = get_id_device()
                 print("d_id", d_id)
                 if (d_id != "") and (d_id != None):
                     fd["ID_DEVICE"] = d_id
-                changed = True
+                    changed = True
+                else:
+                    self.open_modalInfo(title="Info", text="Could not get the Device Id.\nCheck the Network Connection.")
             self.ID_DEVICE = fd["ID_DEVICE"]
             if fd["NAME_DEVICE"] == "":
                 fd["NAME_DEVICE"] = get_device_name()
@@ -1296,6 +1309,8 @@ class SmacApp(App):
                 self.LIMITS["LIMIT_TOPIC"] = fd["LIMIT_TOPIC"]
             if fd.get("INTERVAL_ONLINE", None) != None:
                 self.INTERVAL_ONLINE = int(fd["INTERVAL_ONLINE"])
+            if fd.get("EMAIL", None) != None:
+                self.EMAIL = fd.get("EMAIL")
             self.theme = fd.get("theme", "LIGHT")
             #if fd.get("PLATFORM", None) != None:
              #   self.PLATFORM = fd.get("PLATFORM")
@@ -1327,6 +1342,8 @@ class SmacApp(App):
         print("starting smac_client...")
 
         self.load_config_variables()
+        if self.get_config_variable(key="EMAIL_VERIFIED"):
+            self.change_screen(screen="Screen_network")
         #topics = [ i[0] for i in  db.get_topic_list()]
         topics = self.SUB_TOPIC
         print("subscribing to: {}".format(["#", self.ID_DEVICE] + topics))

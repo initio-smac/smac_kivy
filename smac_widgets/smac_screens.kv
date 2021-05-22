@@ -83,27 +83,10 @@
                 id: id_menu
                 padding: dp(2)
                 spacing: dp(2)
-                Label_menuItem:
-                    text: "Theme"
-                    bg_color: app.colors["COLOR_THEME_BASIC_2"]
-                    Widget_switch:
-                        pos: self.parent.right - self.width - dp(10), self.parent.y
-                        #value: 1 if(app.theme == "DARK") else 0
-                        on_value:
-                            app.theme = "LIGHT" if(app.theme=="DARK") else "DARK"
-                Label_menuItem:
-                    text: "Select Home"
-                    bg_color: app.colors["COLOR_THEME"]
 
-                #Widget:
-                #    size_hint: 1, None
-                #    height: app.grid_min
-                    #pos: root.pos
-                #    Label_custom:
-                #        text: "Theme"
-                #        pos: self.parent.pos
-                #        id: id_theme
-                #        color: app.colors["COLOR_TEXT"]
+                Label_menuItem2:
+                    text: "Homes"
+                    bg_color: app.colors["COLOR_THEME"]
 
                 Label_menuItem:
                     text: "Local"
@@ -112,6 +95,22 @@
                     on_release:
                         #self.bg_color: get_color_from_hex("#c9c9c9")
                         root.on_menu_item_release(self)
+                BoxLayout_container:
+                    id: id_menu_home_container
+
+                Label_menuItem2:
+                    text: "Device"
+                    bg_color: app.colors["COLOR_THEME"]
+                Label_menuItem:
+                    text: app.EMAIL
+                Label_menuItem:
+                    text: "Theme"
+                    bg_color: app.colors["COLOR_THEME_BASIC_2"]
+                    Widget_switch:
+                        pos: self.parent.right - self.width - dp(10), self.parent.y
+                        #value: 1 if(app.theme == "DARK") else 0
+                        on_value:
+                            app.theme = "LIGHT" if(app.theme=="DARK") else "DARK"
 
 <Screen_context>:
     BoxLayout:
@@ -287,5 +286,34 @@
                             #height: 0 if root.disabled else app.grid_min
                             on_release:
                                 root.update_software(app.APP_DATA["id_device"])
+
+
+<Screen_register>:
+    ScrollView:
+        BoxLayout_container:
+            spacing: app.grid_min/5
+            padding: app.grid_min
+            Label_custom:
+                text: "LOGIN"
+                bold: True
+            TextInput_custom:
+                hint_text: "Email"
+                size_hint_y: None
+                height: app.grid_min
+                id: id_text_email
+                text: app.EMAIL
+            TextInput_custom:
+                hint_text: "PIN"
+                size_hint_y: None
+                height: app.grid_min
+                id: id_text_email_pin
+            Button_custom1:
+                text: "LOGIN"
+                on_release:
+                    root.verify_login_pin()
+            Button_link:
+                text: "Register/Forgot Password"
+                on_release:
+                    root.open_register_modal()
 
 

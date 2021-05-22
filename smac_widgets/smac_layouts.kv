@@ -4,7 +4,6 @@
 
 <ScreenManager>:
 
-
 <Screen>:
     size_hint_max_x: dp(800)
     #on_children:
@@ -15,12 +14,8 @@
         self.center_x = app.screen_manager.center_x
     on_size:
         self.center_x = app.screen_manager.center_x
-    canvas.before:
-        Color:
-            rgba: app.colors["COLOR_THEME"]
-        Rectangle:
-            size: Window.size
-            pos: 0,0
+
+
 
 
 <Label>:
@@ -506,6 +501,23 @@
             size: self.size
             pos: self.pos
 
+<Label_menuItem2>:
+    color: app.colors["COLOR_TEXT"]
+    bg_color: app.colors["COLOR_THEME_BASIC_2"]
+    size_hint: 1, None
+    height: app.grid_min/2
+    text_size:  self.size
+    bold: True
+    padding: dp(10), dp(5)
+    line_height: 1
+    halign: 'left'
+    canvas.before:
+        Color:
+            rgba: self.bg_color
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
 <Label_custom>:
     size_hint: 1, None
     height: app.grid_min
@@ -603,6 +615,37 @@
     Button_custom1:
         size_hint_x: 1
         text: "Add Trigger"
+
+<BoxLayout_register>:
+    #BoxLayout_container:
+    spacing: dp(10)
+    height: app.grid_min * 4
+    TextInput_custom:
+        size_hint_y: None
+        height: app.grid_min
+        hint_text: "Email"
+        id: id_text_email
+        text: app.EMAIL
+    TextInput_custom:
+        size_hint_y: None
+        height: app.grid_min
+        hint_text: "PIN"
+        id: id_text_email_pin
+    Label_custom:
+        id: id_label_info
+        text: ""
+        color: app.colors["COLOR_TEXT"]
+    BoxLayout_container:
+        orientation: 'horizontal'
+        Button_custom1:
+            text: "SEND PIN"
+            size_hint_x: 1
+            id: id_btn_send_pin
+        Button_custom1:
+            text: "VERIFY PIN"
+            size_hint_x: 1
+            id: id_btn_verify_pin
+
 
 <BoxLayout_block>:
     size_hint_y: None
