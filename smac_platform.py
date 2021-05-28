@@ -2,7 +2,7 @@ from kivy import platform
 import json
 import random
 
-TEST_DEVICE = True
+TEST_DEVICE = False
 SMAC_PLATFORM = None
 
 # platform options

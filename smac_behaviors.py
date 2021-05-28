@@ -1,10 +1,12 @@
 from kivy.animation import Animation
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.core.window import Window
 from kivy.graphics.context_instructions import Color
 from kivy.graphics.vertex_instructions import Line
 from kivy.metrics import dp
 from kivy.properties import BooleanProperty, NumericProperty, StringProperty
+from kivy.uix.textinput import TextInput
 
 
 class SelectBehavior(object):
@@ -30,7 +32,7 @@ class SelectBehavior(object):
         if app != None:
             self.border_color = app.colors["COLOR_THEME_HIGHLIGHT"]
 
-    def _border(self, *args):
+    '''def _border(self, *args):
         w = round(self.border_line.width, 1)
         width = self.max_border_width if w <= self.min_border_width else self.min_border_width
         anim = Animation(
@@ -39,21 +41,25 @@ class SelectBehavior(object):
             width = width,
             duration=self.anime_duration
         )
-        anim.start(self.border_line)
+        anim.start(self.border_line)'''
 
     def on_pos(self, *args):
         #print(args)
         #print(self.is_border_animating)
         self.update_points()
-        if self.is_border_animating:
-            self.stop_border_animation()
-            self.start_border_animation()
+        if TextInput in self.__class__.__bases__:
+            self.cursor = 0,0
+
+
+        #if self.is_border_animating:
+        #    self.stop_border_animation()
+        #    self.start_border_animation()
 
     def on_size(self, *args):
         self.update_points()
-        if self.is_border_animating:
-            self.stop_border_animation()
-            self.start_border_animation()
+        #if self.is_border_animating:
+        #    self.stop_border_animation()
+        #    self.start_border_animation()
 
     def start_border_animation(self, *args):
         if not self.is_border_animating:
@@ -102,17 +108,22 @@ class SelectBehavior(object):
             self.border_width = self.max_border_width
             self.border_line.width = self.border_width
         else:
-            points = self.get_points()
-            with node.canvas.after:
-                #self.border_color = Color(rgba=[1,1,1,1])
-                Color(rgba=self.border_color)
-                self.border_line = Line(points=points, width=self.max_border_width, group=group)
+            self.initialize_border_line(width=self.max_border_width)
         #node.canvas.ask_update()
+
+    def initialize_border_line(self, group="border_group", width=0, *args):
+        points = self.get_points()
+        with self.canvas:
+            # self.border_color = Color(rgba=[1,1,1,1])
+            Color(rgba=self.border_color)
+            self.border_line = Line(points=points, width=self.max_border_width, group=group)
 
     def update_points(self):
         if self.border_line != None:
             self.border_line.points = self.get_points()
             #self.canvas.ask_update()
+        #else:
+        #    self.initialize_border_line()
 
     def hide_border(self, node=None, *args):
         if self.border_line != None:

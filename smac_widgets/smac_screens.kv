@@ -111,6 +111,11 @@
                         #value: 1 if(app.theme == "DARK") else 0
                         on_value:
                             app.theme = "LIGHT" if(app.theme=="DARK") else "DARK"
+                Label_menuItem:
+                    text: "Log out"
+                    on_release:
+                        app.logout()
+
 
 <Screen_context>:
     BoxLayout:
@@ -170,23 +175,26 @@
 				    height: self.minimum_height
 				    orientation: 'vertical'
 				    spacing: dp(2)
-				    #BoxLayout:
-				    #    size_hint: 1, None
-				    #    height: self.minimum_height
-				    #    orientation: 'vertical'
-                    Dropdown_custom:
-                        text: "select Home"
-                        id: id_dropdown_home_container
-                        height: app.grid_min
+				    BoxLayout_container:
+				        size_hint: 1, None
+				        height: self.minimum_height
+				        orientation: 'vertical'
+                        id: id_topic_container
+
+
+                    #Dropdown_custom:
+                    #    text: "select Home"
+                    #    id: id_dropdown_home_container
+                    #    height: app.grid_min
+                    #Dropdown_custom:
+                    #    text: "select Room"
+                    #    id: id_dropdown_room_container
+                    #    height: app.grid_min
+
                     #Button_custom1:
-                    Dropdown_custom:
-                        text: "select Room"
-                        id: id_dropdown_room_container
-                        height: app.grid_min
-                    Button_custom1:
-                        text: 'Add Device'
-                        on_release:
-                            root.subscribe_topic(id_dropdown_home_container, id_dropdown_room_container)
+                    #    text: 'Add Device'
+                    #    on_release:
+                    #        root.subscribe_topic(id_dropdown_home_container, id_dropdown_room_container)
                             #app.send_req_delete_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
                             #app.send_req_add_topic(id_ip_topic.text, id_ip_device.text, id_ip_passkey.text)
                 #Widget_block:
@@ -206,10 +214,7 @@
                 #                root.add_home(id_name_home.text, id_name_room.text)
                 Widget_block:
 				    text: "Remove this device from a Home"
-                    BoxLayout:
-                        orientation: 'vertical'
-				        size_hint: 1, None
-				        height: self.minimum_height
+                    BoxLayout_container:
 				        id: id_device_container
                 Widget_block:
 				    text: "Update Passkey of the device"

@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 #import time
-
+from kivy.base import EventLoop
 from kivy.properties import *
 #from kivy.utils import get_color_from_hex, platform
 #from kivy.uix.screenmanager import ScreenManager, Screen, CardTransition, NoTransition, SlideTransition, SwapTransition, FadeTransition, WipeTransition, FallOutTransition, RiseInTransition
@@ -64,13 +64,16 @@ class SmacApp(App):
     SENDING_INFO = 0
     TEST_VAL = 0
     INTERVAL_ONLINE = 30
-    theme = OptionProperty("LIGHT", options=["LIGHT", "DARK"])
+    theme = OptionProperty("", options=["", "LIGHT", "DARK"])
     colors = DictProperty(THEME_LIGHT)
     source_icon = StringProperty("icons/LIGHT/")
     DEBUG = False
     EMAIL = StringProperty("")
+    _KEYBOARD = None
 
     def on_theme(self, *args):
+        print("on_theme", self.theme)
+
         if self.theme == "DARK":
             self.colors = THEME_DARK
             self.source_icon = "icons/DARK/"
@@ -79,8 +82,12 @@ class SmacApp(App):
             self.colors = THEME_LIGHT
             self.source_icon = "icons/LIGHT/"
             self.update_config_variable(key="theme", value="LIGHT")
+        print(self.colors["COLOR_THEME"])
         Window.clearcolor = self.colors["COLOR_THEME"]
 
+    def logout(self, *args):
+        self.update_config_variable(key="EMAIL_VERIFIED", value=0)
+        self.change_screen(screen="Screen_register")
 
     def add_task(self,  func, args):
         self.TASKS[ str(self.TASK_ID) ] = (func, args)
@@ -1243,6 +1250,7 @@ class SmacApp(App):
                 elif arr_op == "REM":
                     if value in fd[key]:
                         fd[key].remove(value)
+                self.SUB_TOPIC = fd[key]
             else:
                 fd[key] = value
             f.close()
@@ -1267,6 +1275,7 @@ class SmacApp(App):
             d["EMAIL"] = ""
             d["LOGIN_PIN"] = ""
             d["EMAIL_VERIFIED"] = False
+            d['theme'] = "LIGHT"
             #d["PLATFORM"] = SMAC_PLATFORM
             f.write(json.dumps(d))
             f.close()
@@ -1311,15 +1320,18 @@ class SmacApp(App):
                 self.INTERVAL_ONLINE = int(fd["INTERVAL_ONLINE"])
             if fd.get("EMAIL", None) != None:
                 self.EMAIL = fd.get("EMAIL")
+            print(self.theme)
             self.theme = fd.get("theme", "LIGHT")
             #if fd.get("PLATFORM", None) != None:
              #   self.PLATFORM = fd.get("PLATFORM")
             f.close()
 
         print("fd", fd)
+        print(self.theme)
         if changed:
             with open('config.json', 'w') as f:
                 f.write( json.dumps(fd) )
+                f.close()
 
 
 
@@ -1337,9 +1349,81 @@ class SmacApp(App):
         print(args)
         self.send_info(tcp=True, udp=False)
 
+    def initialise_keyboard(self, *args):
+        self._KEYBOARD = EventLoop.window.request_keyboard(
+            self._keyboard_released,
+            self.screen_manager
+        )
+
+    def _bind_keyboard(self):
+        self.initialise_keyboard()
+        self._KEYBOARD.bind(on_key_down=self._on_keyboard_down)
+
+    def _unbind_keyboard(self):
+        self._KEYBOARD.unbind(on_key_down=self._on_keyboard_down)
+        self._KEYBOARD.release()
+
+    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        _, key = keycode
+        #print(key)
+        scr = self.screen_manager.get_screen(name=self.screen_manager.current)
+        if len(scr.nodes) > scr.index:
+            if key  == "down":
+                print(scr.index)
+                print(scr.nodes)
+                print(scr.nodes[scr.index])
+                scr.nodes[scr.index].select = False
+                if (scr.index+1) <= scr.max_index:
+                    scr.index += 1
+                else:
+                    scr.index = 0
+                scr.nodes[scr.index].select = True
+                wid = scr.nodes[scr.index]
+                #if wid.y >= Window.size[1]:
+                #print("hasattr", hasattr(wid, "scroll_container") )
+                print("wid pos", self.screen_manager.collide_point(*wid.pos))
+
+                if hasattr(wid, "scroll_container"):
+                    print(wid.scroll_container.scroll_y)
+                    wid.scroll_container.scroll_to(wid)
+                #self.nodes[self.index-1].select = False
+            elif key  == "up":
+                scr.nodes[scr.index].select = False
+                if (scr.index-1) >= 0:
+                    scr.index -= 1
+                else:
+                    scr.index = scr.max_index
+                #self.index -= 1
+                scr.nodes[scr.index].select = True
+                #self.nodes[self.index + 1].select = False
+                #self.nodes[self.index - 1].select = False
+                wid = scr.nodes[scr.index]
+                if hasattr(wid, "scroll_container"):
+                    wid.scroll_container.scroll_to(wid)
+            elif key == 'enter':
+                wid = scr.nodes[scr.index]
+                if wid.__class__.__name__ == "Widget_switch":
+                    wid.dispatch("on_press")
+                if Button in wid.__class__.__bases__:
+                    wid.dispatch("on_release")
+                elif CheckBox in wid.__class__.__bases__:
+                    wid.active = not wid.active
+                elif ButtonBehavior in wid.__class__.__bases__:
+                    wid.dispatch("on_release")
+                elif TextInput in wid.__class__.__bases__:
+                    wid.focus = not wid.focus
+
+
+    def _keyboard_released(self, *args):
+        print("keyboard_released", args)
+
+
+
     def on_start(self):
         print("kivy started")
         print("starting smac_client...")
+        Window.softinput_mode = "below_target"
+        self._bind_keyboard()
 
         self.load_config_variables()
         if self.get_config_variable(key="EMAIL_VERIFIED"):

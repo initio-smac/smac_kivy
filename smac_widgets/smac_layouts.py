@@ -5,6 +5,7 @@ from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.button import Button
+from kivy.uix.checkbox import CheckBox
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
@@ -76,6 +77,8 @@ class Widget_slider(SelectBehavior, Slider):
     def on_value_max(self, *args):
         self.max = self.value_max
 
+class CheckBox_custom(SelectBehavior, CheckBox):
+    pass
 
 class Widget_switch(SelectBehavior, ButtonBehavior, Widget):
     value = NumericProperty(0)
@@ -100,6 +103,7 @@ class Widget_switch(SelectBehavior, ButtonBehavior, Widget):
 
     def on_release(self):
         #self.value = 1-self.value
+        self.select = not self.select
         pass
 
     def start_animation(self, wid, x, color_bg, *args):
@@ -180,7 +184,7 @@ class Widget_device( Widget_base ):
 
 class Widget_block(BoxLayout):
     text = StringProperty("")
-    bg_color = ColorProperty([1,1,1,1])
+    bg_color = ListProperty([1,1,1,1])
 
 
 class Widget_block2( BoxLayout):
@@ -293,8 +297,12 @@ class Image_icon(Widget):
 class BoxLayout_addHomeContent(BoxLayout):
     name_home = StringProperty("")
 
+class BoxLayout_addRoomContent(BoxLayout):
+    name_room = StringProperty("")
+
 class BoxLayout_addTopicContent(BoxLayout):
-    name_topic = StringProperty("")
+    name_home = StringProperty("")
+    name_room = StringProperty("")
 
 class BoxLayout_updatePropNameContent(BoxLayout):
     name_property = StringProperty("")
@@ -359,3 +367,28 @@ class BoxLayout_loader(BoxLayout):
 
 class TextInput_custom(SelectBehavior, TextInput):
     pass
+
+    '''def __init__(self, *args, **kwargs):
+        self.next = kwargs.pop('next', None)
+        super(TextInput_custom, self).__init__(*args, **kwargs)
+
+    def _keyboard_on_key_down(self, window, keycode, text, modifiers):
+        key, key_str = keycode
+        print(key)
+        if (key == "enter"):
+            #if self.next != None:
+            #    self.next.select = True
+            self.select = not self.select
+            self.focus = not self.focus
+
+        else:
+            super(TextInput_custom, self)._keyboard_on_key_down(window, keycode, text, modifiers)
+
+    def on_text_validate(self, *args):
+        print(self.focus)
+        from kivy.core.window import Window
+        print("window focus", Window.focus)
+        self.select = self.focus
+        self.focus = not self.focus
+        print("sel", self.select)
+        print("focus", self.focus)'''

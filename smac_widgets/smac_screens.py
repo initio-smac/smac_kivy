@@ -24,6 +24,7 @@ class SelectClass(Screen):
     nodes = []
     index = 0
     max_index = 0
+    #scroll_containers = []
 
     def get_selectable_nodes(self, widget=None, *args):
         self.nodes = []
@@ -32,29 +33,37 @@ class SelectClass(Screen):
         w = widget if(widget != None) else self
         #print(widget)
         #print(w)
+        scroll_container = None
+        #print("wid", [ a for a in w.walk()])
         for wid in w.walk():
             #print(wid)
+
+            if "ScrollView" == wid.__class__.__name__:
+                scroll_container = wid
+            #print("scroll_con", scroll_container)
             try:
                 #print(wid.__class__.__bases__)
                 #print(SelectBehavior in wid.__class__.__bases__)
                 #print(wid.width)
-                if(not wid.disabled) and (wid.width != 0) and (wid.height != 0):
-                #if(not wid.disabled):
+                #if(not wid.disabled) and (wid.width > 0) and (wid.height >= 0):
+                if(not wid.disabled):
                     if SelectBehavior in wid.__class__.__bases__:
                         self.nodes.append(wid)
+                        if scroll_container != None:
+                            wid.scroll_container = scroll_container
                         wid.select = False
             except Exception as e:
                 print(e)
             self.max_index = len(self.nodes) - 1
 
     async def get_nodes(self, *args):
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
         self.get_selectable_nodes()
 
     def on_enter(self, *args):
         #if platform != "android":
-        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        #self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
+        #self._keyboard.bind(on_key_down=self._on_keyboard_down)
         #self._keyboard.release()
         #self.get_selectable_nodes()
         asyncio.gather(self.get_nodes())
@@ -887,9 +896,10 @@ class Screen_network(SelectClass):
             await asyncio.sleep(timeout)
 
     def add_menu_widgets(self, *args):
-        app = App.get_running_app()
+        #app = App.get_running_app()
         menu = self.ids["id_menu_home_container"]
-        #menu.clear_widgets()
+        menu.clear_widgets()
+        menu.ids ={}
         for name_home, id_topic in db.get_home_list():
             if (name_home not in menu.ids.keys()):
                 if (name_home != "") and (name_home != None):
@@ -903,6 +913,11 @@ class Screen_network(SelectClass):
                     menu.ids[name_home] = wid
                     menu.add_widget(wid)
 
+    def clear_menu_widgets(self, *args):
+        menu = self.ids["id_menu_home_container"]
+        menu.clear_widgets()
+        menu.ids = {}
+
     def on_enter(self, *args):
 
         #self.add_widgets()
@@ -912,7 +927,7 @@ class Screen_network(SelectClass):
         #app = App.get_running_app()
         #self.center_x = app.screen_manager.center_x
 
-        self.add_menu_widgets()
+
         self._interval = asyncio.gather(self.interval(1))
         super().on_enter()
 
@@ -927,16 +942,22 @@ class Screen_network(SelectClass):
         app = App.get_running_app()
         menu_container = self.ids["id_menu_container"]
         menu_bg = self.ids["id_menu_bg"]
+        #print("menu pos", menu_container.pos)
+        #print(app.screen_manager.collide_point(*menu_container.pos))
         width = 0 if(menu_container.width > 0) else app.grid_min * 6
         #menu_bg.disabled = 0 if(width > 0) else 1
         #menu_bg.opacity = 0.5 if(width > 0) else 0
         menu_bg.size_hint_x = 1 if(width >0) else 0
         anim = Animation(width=width, duration=.1)
         anim.start(menu_container)
-
+        #self.get_selectable_nodes(widget=self.modal)
+        print(width)
         if width > 0:
-            self.get_selectable_nodes(widget=menu_container)
+            #self.get_selectable_nodes(widget=menu_container)
+            self.add_menu_widgets()
+            self.get_selectable_nodes(widget=self.ids["id_menu_container"])
         else:
+            self.clear_menu_widgets()
             self.get_selectable_nodes()
 
 
@@ -997,13 +1018,13 @@ class Screen_deviceSetting(SelectClass):
     #modal.content = None
 
     def load_widgets(self, clear=True, *args):
-        dd_home_container = self.ids["id_dropdown_home_container"]
+        '''dd_home_container = self.ids["id_dropdown_home_container"]
         dd_home = dd_home_container.ids["id_dropdown"]
         dd_room_container = self.ids["id_dropdown_room_container"]
         dd_room = dd_room_container.ids["id_dropdown"]
         if clear:
             dd_home.clear_widgets()
-            dd_room.clear_widgets()
+            dd_room.clear_widgets()'''
             #for child in dd_home.children:
             #	dd_home.remove(child)
             #for child in dd_room.children:
@@ -1012,10 +1033,19 @@ class Screen_deviceSetting(SelectClass):
         id_device = app.APP_DATA["id_device"]
         # get the topic list which are not subscribed and append to the
         # dropdown list
-        for id_topic, name_home, name_topic in db.get_topic_list_not_by_device(id_device=id_device):
+        print("ID_DEV", id_device)
+        print("DEVS", db.get_topic_list_not_by_device(id_device=id_device))
+        btn = Button_custom1(text="Add Home/Room")
+        btn.size_hint_x=1
+        #btn.background_color = app.colors["COLOR_THEME_BASIC"]
+        btn.bind(on_release=self.create_topic)
+        self.ids["id_topic_container"].clear_widgets()
+        self.ids["id_topic_container"].add_widget(btn)
+        DEVS = db.get_topic_list_not_by_device(id_device=id_device)
+        for id_topic, name_home, name_topic in DEVS:
             print(id_topic)
-            if (id_topic != None) and (id_topic != ""):
-                label = Label_dropDown(text=name_home)
+            if (id_topic != None) and (id_topic != "") and (id_topic not in app.SUB_TOPIC):
+                '''label = Label_dropDown(text=name_home)
                 label.id_topic = id_topic
                 label.bind(on_release=self.on_dropdown_homeitem_release)
                 dd_home.add_widget(label)
@@ -1023,15 +1053,35 @@ class Screen_deviceSetting(SelectClass):
                 label = Label_dropDown(text=name_topic)
                 label.id_topic = id_topic
                 label.bind(on_release=self.on_dropdown_roomitem_release)
-                dd_room.add_widget(label)
+                dd_room.add_widget(label)'''
 
-        label = Label_dropDown(text="Add Home")
-        label.bind(on_release=self.create_home)
-        dd_home.add_widget(label)
+                label = Widget_block(text=name_home+"/"+name_topic)
+                label.orientation = "horizontal"
+                label.bg_color = app.colors["COLOR_THEME_BASIC"]
+                label.id_topic = id_topic
+                label.name_home= name_home
+                label.name_room = name_topic
+                self.ids["id_topic_container"].add_widget(label)
+                btn = Image_iconButton(source=app.source_icon + 'CHECK.png')
+                btn.bind(on_release=self.subscribe_topic)
+                btn.pos = label.pos
+                label.add_widget(btn)
+        if len(DEVS) == 0:
+            label = Label_custom(text="No Homes", size_hint_y=None, height=app.grid_min)
+            self.ids["id_topic_container"].add_widget(label)
 
-        label = Label_dropDown(text="Add Room")
-        label.bind(on_release=self.create_room)
-        dd_room.add_widget(label)
+        #if (len(devs) == 1) and ( ('','','') in devs ):
+        #    label = Label_custom(text="No Homes", size_hint_y=None, height=app.grid_min)
+        #    self.ids["id_topic_container"].add_widget(label)
+
+
+        #label = Label_dropDown(text="Add Home")
+        #label.bind(on_release=self.create_home)
+        #dd_home.add_widget(label)
+
+        #label = Label_dropDown(text="Add Room")
+        #label.bind(on_release=self.create_room)
+        #dd_room.add_widget(label)
 
         # get the topic list which are subscribed by the device
         # and add it to a list
@@ -1039,11 +1089,13 @@ class Screen_deviceSetting(SelectClass):
         if clear:
             device_container.clear_widgets()
         devs = db.get_topic_list_by_device(id_device=id_device)
+        print("devs", devs)
         if len(devs) > 0:
             for id_topic, name_home, name_topic in devs:
                 if (id_topic != None) and (id_topic != ""):
                     label = Widget_block(text=name_home + "/" + name_topic, orientation="horizontal",
-                                         bg_color=app.colors["COLOR_THEME_BASIC"])
+                                         height=app.grid_min)
+                    label.bg_color = app.colors["COLOR_THEME_BASIC"]
                     label.id_topic = id_topic
                     btn = Image_iconButton(source=app.source_icon + 'CLOSE.png')
                     btn.bind(on_release=self.unsunbscribe_topic)
@@ -1052,7 +1104,11 @@ class Screen_deviceSetting(SelectClass):
                     # label.bind(on_release=self.on_dropdown_item_release)
                     device_container.add_widget(label)
         else:
-            label = Label_custom(text="No Homes")
+            label = Label_custom(text="No Homes", size_hint_y=None, height=app.grid_min)
+            device_container.add_widget(label)
+
+        if (len(devs) == 1) and ( ('','','') in devs ):
+            label = Label_custom(text="No Homes", size_hint_y=None, height=app.grid_min)
             device_container.add_widget(label)
 
     def get_device_interval(self, id_device):
@@ -1062,6 +1118,22 @@ class Screen_deviceSetting(SelectClass):
         else:
             return str(30)
 
+    def create_topic(self, *args):
+        content = BoxLayout_addTopicContent(spacing='2dp')
+        content.ids["id_btn"].bind(on_release=self.add_topic_widget)
+        app = App.get_running_app()
+        app.open_modal(content=content, title="Add Home")
+
+    def add_topic_widget(self, wid, *args):
+        print(args)
+        print(wid.parent)
+        app = App.get_running_app()
+        name_home = wid.parent.name_home
+        name_room = wid.parent.name_room
+        id_topic = generate_id_topic(app.ID_DEVICE)
+        self.subscribe_topic(name_home, name_room, id_topic)
+
+
     def create_home(self, *args):
         content = BoxLayout_addHomeContent()
         content.ids["id_btn"].bind(on_release=self.add_home_widget)
@@ -1069,8 +1141,8 @@ class Screen_deviceSetting(SelectClass):
         app.open_modal(content=content, title="Add home")
 
     def create_room(self, *args):
-        content = BoxLayout_addTopicContent()
-        content.ids["id_btn"].bind(on_release=self.add_topic_widget)
+        content = BoxLayout_addRoomContent()
+        content.ids["id_btn"].bind(on_release=self.add_room_widget)
         app = App.get_running_app()
         app.open_modal(content=content, title="Add room")
 
@@ -1086,7 +1158,7 @@ class Screen_deviceSetting(SelectClass):
         app = App.get_running_app()
         app.close_modal()
 
-    def add_topic_widget(self, wid, *args):
+    def add_room_widget(self, wid, *args):
         app = App.get_running_app()
         #dd_home_container = self.ids["id_dropdown_home_container"]
         dd_room_container = self.ids["id_dropdown_room_container"]
@@ -1141,7 +1213,33 @@ class Screen_deviceSetting(SelectClass):
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         self.load_widgets()
 
-    def subscribe_topic(self, home_dropdown_container, topic_dropdown_container, *args):
+    def subscribe_topic(self, wid,*args):
+        name_home, name_room, id_topic = wid.parent.name_home, wid.parent.name_room, wid.parent.id_topic
+        app = App.get_running_app()
+        id_device = app.APP_DATA["id_device"]
+        passkey = db.get_pin_device(id_device=id_device)
+        if id_device == app.ID_DEVICE:
+            app.add_topic(frm=app.ID_DEVICE, id_topic=id_topic, name_home=name_home, name_topic=name_room, id_device=id_device, passkey=passkey)
+            app.open_modalInfo(text="New Home added")
+        else:
+            d = {}
+            d[smac_keys["ID_TOPIC"]] = id_topic
+            d[smac_keys["ID_DEVICE"]] = id_device
+            d[smac_keys["PASSKEY"]] = passkey
+            d[smac_keys["NAME_HOME"]] = name_home
+            d[smac_keys["NAME_TOPIC"]] = name_room
+            client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_TOPIC"], message=d, udp=True,
+                                tcp=True)
+            app.add_task(db.get_command_status, (id_topic, id_device, [ smac_keys["CMD_STATUS_ADD_TOPIC"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_TOPIC_LIMIT_EXCEEDED"] ]) )
+            app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
+            # if this device is not added then add it to the Topic
+            topics = [ i[0] for i in db.get_device_list_by_topic(id_topic=id_topic) ]
+            if app.ID_DEVICE not in topics:
+                db.add_network_entry(name_home=name_home, name_topic=name_room, id_topic=id_topic, id_device=app.ID_DEVICE,
+                                 name_device=app.NAME_DEVICE, type_device=app.TYPE_DEVICE)
+        self.load_widgets()
+
+    '''def subscribe_topic(self, home_dropdown_container, topic_dropdown_container, *args):
         app = App.get_running_app()
         id_device = app.APP_DATA["id_device"]
         try:
@@ -1172,7 +1270,7 @@ class Screen_deviceSetting(SelectClass):
             if app.ID_DEVICE not in topics:
                 db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=app.ID_DEVICE,
                                  name_device=app.NAME_DEVICE, type_device=app.TYPE_DEVICE)
-        self.load_widgets()
+        self.load_widgets()'''
 
 
     def on_dropdown_homeitem_release(self, wid, *args):

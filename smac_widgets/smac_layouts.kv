@@ -597,6 +597,7 @@
         size_hint_y: None
         height: app.grid_min
         hint_text: "Context Name"
+        next: id_btn
         on_text:
             root.name_context = self.text
     Button_custom1:
@@ -658,7 +659,7 @@
             size: self.size
             pos: self.pos
             radius: [ dp(5), ]
-    CheckBox:
+    CheckBox_custom:
         size_hint: None, None
         size: app.grid_min, app.grid_min
         id: id_chkbox
@@ -685,7 +686,7 @@
             size: self.size
             pos: self.pos
             radius: [ dp(5), ]
-    CheckBox:
+    CheckBox_custom:
         size_hint: None, None
         size: app.grid_min, app.grid_min
         id: id_chkbox
@@ -880,7 +881,7 @@
     size_hint_x:  None
     width: self.texture_size[0]
 
-<CheckBox_custom@CheckBox>:
+<CheckBox_custom>:
     size_hint: None, None
     size: app.grid_min/2, app.grid_min
     #id: id_chkbox
@@ -905,7 +906,7 @@
         height: app.grid_min
         text: "Add Home"
 
-<BoxLayout_addTopicContent>:
+<BoxLayout_addRoomContent>:
     orientation: 'vertical'
     size_hint: 1, None
     height: app.grid_min*2
@@ -922,6 +923,31 @@
         size_hint_y: None
         height: app.grid_min
         text: "Add Room"
+
+<BoxLayout_addTopicContent>:
+    orientation: 'vertical'
+    size_hint: 1, None
+    height: app.grid_min*3
+    TextInput_custom:
+        id: id_name_home
+        hint_text: "Home Name"
+        size_hint_y: None
+        height: app.grid_min
+        on_text:
+            root.name_home = self.text
+    TextInput_custom:
+        id: id_name_room
+        hint_text: "Room Name"
+        size_hint_y: None
+        height: app.grid_min
+        on_text:
+            root.name_room = self.text
+    Button_custom1:
+        id: id_btn
+        size_hint_x: 1
+        size_hint_y: None
+        height: app.grid_min
+        text: "Add Home"
 
 <Widget_menuBG>:
 
@@ -951,7 +977,9 @@
     #foreground_color: [0,1,0,1]
     multiline: False
     background_color: app.colors["COLOR_TEXTINPUT"]
-    padding_y: self.line_height
+    height: app.grid_min
+    line_height: self.height
+    padding:0, self.line_height/1.5
     #line_spacing: dp(10)
     background_normal: ''
     background_disabled_normal: ''

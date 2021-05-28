@@ -585,7 +585,8 @@ class Database():
         set = set * self.ELEMENTS_PER_PAGE
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic FROM smac_network WHERE id_device!=? AND remove=0 ORDER BY name_topic DESC LIMIT ?,?', (id_device, set, self.ELEMENTS_PER_PAGE))
+            #print(id_device)
+            self.cur.execute('SELECT DISTINCT id_topic, name_home, name_topic FROM smac_network WHERE id_device!=?', (id_device,))
             return self.cur.fetchall()
         except Exception as e:
             print(e)
@@ -629,7 +630,7 @@ class Database():
     def get_property_name_by_property(self, id_device, id_property):
         try:
             lock.acquire(True)
-            self.cur.execute('SELECT name_property, type_property FROM smac_property WHERE id_device=? AND id_property=? AND remove=0', (id_device, id_property))
+            self.cur.execute('SELECT name_property, type_property FROM smac_property WHERE id_device=? AND id_property=?', (id_device, id_property))
             #print(d)
             #print(a)
             return self.cur.fetchone()
