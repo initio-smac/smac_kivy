@@ -802,6 +802,7 @@
                 height: app.grid_min
                 orientation: "horizontal"
                 CheckBox_custom:
+                    #active: True
                     on_active:
                         id_dow_container.opacity = .5 if(self.active) else 1
                         id_dow_container.disabled = 1 if(self.active) else 0

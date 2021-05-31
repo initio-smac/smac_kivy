@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 #import time
 from kivy.base import EventLoop
+from kivy.core.window import Window
 from kivy.properties import *
 #from kivy.utils import get_color_from_hex, platform
 #from kivy.uix.screenmanager import ScreenManager, Screen, CardTransition, NoTransition, SlideTransition, SwapTransition, FadeTransition, WipeTransition, FallOutTransition, RiseInTransition

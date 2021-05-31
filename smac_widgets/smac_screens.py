@@ -1,11 +1,11 @@
 import asyncio
 
 #from kivy import platform
-from kivy.core.window import Window
-from kivy.properties import DictProperty
+#from kivy.core.window import Window
+#from kivy.properties import DictProperty
 from kivy.uix.screenmanager import Screen
-from kivy.app import App
-from kivy.uix.scrollview import ScrollView
+#from kivy.app import App
+#from kivy.uix.scrollview import ScrollView
 
 from smac_client import client
 from smac_device import set_property, generate_id_topic, generate_id_context
@@ -227,13 +227,18 @@ class Screen_context(SelectClass):
         #id_device = self.data["id_device"]
         value = self.data["value"]
         id_context = self.data['id_context']
-        id_property = self.data["id_property"] if (type_trigger == smac_keys["TYPE_TRIGGER_PROP"]) else ""
+        id_property = self.data["id_property"] if (type_trigger == smac_keys["TYPE_TRIGGER_PROP"]) else "TIME"
+        print( type_trigger == smac_keys["TYPE_TRIGGER_TIME"] )
+        print("DOW", add_trigger_root.DOW)
         if type_trigger == smac_keys["TYPE_TRIGGER_TIME"]:
+            if "".join( [ str(i) for i in  add_trigger_root.DOW] ) == "0000000":
+                app.open_modalInfo(title="Info", text="Select a Timer Repetition")
+                return
             value = "{}:{}:{}".format(self.data["value_hour"], self.data["value_minute"], ",".join( [str(i) for i in add_trigger_root.DOW ]) )
         if (id_device == None) or (id_device == ""):
             app.open_modalInfo(text="Select A Device to Continue")
             return
-        if (id_property == None) or (id_device == ""):
+        if (id_property == None) or (id_property == ""):
             app.open_modalInfo(text="Select A Property to Continue")
             return
         if (value == None) or (value == ""):
@@ -259,6 +264,7 @@ class Screen_context(SelectClass):
             #app.add_task(db.get_command_status, (self.data["id_topic"], id_device, [smac_keys["CMD_STATUS_ADD_TRIGGER"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_TRIGGER_LIMIT_EXCEEDED"]]))
             app.add_task(db.get_command_status, (self.data["id_topic"], id_device, [smac_keys["CMD_STATUS_ADD_TRIGGER"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_ACTION_LIMIT_EXCEEDED"]], "", self.data["id_context"]))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
+        self.set_context_data_default_values()
 
     def add_action(self, wid, *args):
         app = App.get_running_app()
@@ -268,7 +274,7 @@ class Screen_context(SelectClass):
         if(id_device == None) or (id_device == ""):
             app.open_modalInfo(text="Select A Device to Continue")
             return
-        if (id_property == None) or (id_device == ""):
+        if (id_property == None) or (id_property == ""):
             app.open_modalInfo(text="Select A Property to Continue")
             return
         if (value == None) or (value == ""):
@@ -293,8 +299,24 @@ class Screen_context(SelectClass):
                                 tcp=True)
             app.add_task(db.get_command_status, (self.data["id_topic"], id_device, [smac_keys["CMD_STATUS_ADD_ACTION"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_ACTION_LIMIT_EXCEEDED"]], "", self.data["id_context"]))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
+        self.set_context_data_default_values()
 
-
+    def set_context_data_default_values(self, *args):
+        self.data = {
+            "id_topic": "",
+            "id_context": '',
+            'name_context': '',
+            "id_device": "",
+            "name_device": "Device",
+            "id_property": "",
+            "name_property": "Prop",
+            "type_property": "",
+            "value": "0",
+            "value_min": "0",
+            "value_max": "1",
+            "value_hour": "0",
+            "value_minute": "0"
+        }
 
     def remove_action(self, wid, *args):
         app = App.get_running_app()
@@ -408,7 +430,6 @@ class Screen_context(SelectClass):
         content = BoxLayout_container(spacing=0)
         content.height = content.minimum_height
         #content.size_hint_y = None
-
         value_max = 60 if(wid.time_selection == "minute") else 24
         for val in range(0, value_max, 1):
             btn = Button_custom1(size_hint=(1,None), height=app.grid_min, text=str(val) )
@@ -606,6 +627,9 @@ class Screen_context(SelectClass):
         app = App.get_running_app()
         id_context = generate_id_context( app.ID_DEVICE )
         name_context = content.ids["id_name_context"].text
+        if name_context == "":
+            app.open_modalInfo(title="Info", text="Context Name Cannot Be empty.")
+            return
         db.add_context(id_context=id_context, name_context=name_context, id_topic=app.APP_DATA["id_topic"])
         app.open_modalInfo(text="Context added")
         d1 = {}
@@ -1129,7 +1153,13 @@ class Screen_deviceSetting(SelectClass):
         print(wid.parent)
         app = App.get_running_app()
         name_home = wid.parent.name_home
+        if(name_home == "") or (name_home == None):
+            app.open_modalInfo(title="Info", text="Home Name Should Not Be Empty.")
+            return
         name_room = wid.parent.name_room
+        if (name_room == "") or (name_room == None):
+            app.open_modalInfo(title="Info", text="Room Name Should Not Be Empty.")
+            return
         id_topic = generate_id_topic(app.ID_DEVICE)
         self.subscribe_topic(name_home, name_room, id_topic)
 
@@ -1461,7 +1491,11 @@ class Screen_register(SelectClass):
                 self.STATE = "SEND_PIN_FAILURE"
 
     def check_syntax_email(self, email):
-        pass
+        app = App.get_running_app()
+        if len(email.split("@")) < 2:
+            app.open_modalInfo(title="Info", text="Enter Valid Email Address.")
+            return False
+        return True
 
     #def _verify_pin_local(self, entered_pin, saved_pin):
 
@@ -1478,11 +1512,11 @@ class Screen_register(SelectClass):
             return
 
         saved_pin = app.get_config_variable(key="LOGIN_PIN")
-        if str(saved_pin) == str(pin):
+        if (email == app.EMAIL) and (str(saved_pin) == str(pin) ):
             app.change_screen(screen="Screen_network")
             app.update_config_variable(key="EMAIL_VERIFIED", value=1)
         else:
-            app.open_modalInfo(title="Info", text="Incorrect PIND")
+            app.open_modalInfo(title="Info", text="Incorrect PIN (or) Email Is Not Valid")
             app.update_config_variable(key="EMAIL_VERIFIED", value=0)
 
 
@@ -1491,6 +1525,8 @@ class Screen_register(SelectClass):
         email = self.content_register.ids["id_text_email"].text
         label = self.content_register.ids["id_label_info"]
         label.text = ""
+        if not self.check_syntax_email(email=email):
+            return
         if email == "":
             #app.open_modalInfo(title="Info", text="Enter Email Address")
             label.text = "Enter Email Address"
