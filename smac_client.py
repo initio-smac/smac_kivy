@@ -1,4 +1,4 @@
-
+import errno
 import socket
 import json
 import time
@@ -36,7 +36,7 @@ class SMACClient():
     ZMQ_LONG_FRAME = True
     #_zmq_pub_connected = 0
     #_zmq_sub_connected = 0
-    MAX_BUFFER = 256
+    MAX_BUFFER = 512
     zmq_pub_reader = None
     zmq_pub_writer = None
     zmq_sub_reader = None
@@ -91,13 +91,14 @@ class SMACClient():
     # consturctor
     # set udp socket
     def __init__(self, *args):
-        #self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
-        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
+        #self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
         self.udp_sock.setblocking(False)
         try:
             self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        except:
-            pass
+            print("Set BROADCAST option")
+        except Exception as e:
+            print("cant set BROADCAST option", e)
         #self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         #self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.udp_sock.bind(("",self.UDP_PORT))
@@ -122,6 +123,7 @@ class SMACClient():
             msg = "{} {}".format(topic, message)
             msg = msg.encode("utf-8")
             self.udp_sock.sendto(msg, (addr, self.UDP_PORT))
+            #print("Sent UDP message", msg)
         except Exception as e:
             print("UDP message send err: {}".format(e))
 
@@ -405,10 +407,16 @@ class SMACClient():
         while True:
             try:        
                 data, addr = self.udp_sock.recvfrom(self.MAX_BUFFER)
+                #print("ADATA", data)
                 d = data.decode("utf-8")
+                #print("DDATA", d)
                 self.UDP_REQ.append(d)
-            except:
-                pass
+            except Exception as e:
+                #print("ERR while listening UDP port", e)
+                if e.errno == errno.EAGAIN:
+                    #print("EAGAIN")
+                    pass
+            #print("DA", data)
             await asyncio.sleep(0)
 
     # wait for messages on ZMQ port and append to self.ZMQ_REQ
@@ -481,14 +489,13 @@ class SMACClient():
         print("main")
         #zmq_pub_start = asyncio.create_task( self.initialize_zmq_publish() )
         #zmq_sub_start = asyncio.create_task( self.initialize_zmq_subscribe() )
-        zmq_con = asyncio.create_task( self.initialize_zmq_connections() )
-        
+        udp_t1 = asyncio.create_task(self.listen_udp())
+        udp_t2 = asyncio.create_task(self.on_message_udp())
 
+        zmq_con = asyncio.create_task( self.initialize_zmq_connections() )
         zmq_t1 = asyncio.create_task(self.listen_zmq())
         zmq_t2 = asyncio.create_task(self.on_message_zmq())
         zmq_t3 = asyncio.create_task(self.send_message_listener_zmq())
-        udp_t1 = asyncio.create_task(self.listen_udp())
-        udp_t2 = asyncio.create_task(self.on_message_udp())
         #test1 = asyncio.create_task(self.test_pub())
 
         #await test1

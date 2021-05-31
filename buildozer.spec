@@ -1,13 +1,13 @@
 [app]
 
 # (str) Title of your application
-title = Kivy Async
+title = Smac NEW
 
 # (str) Package name
-package.name = myapp
+package.name = smacapp
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.test
+package.domain = com.smacsystem
 
 # (str) Source code where the main.py live
 source.dir = .
@@ -47,9 +47,11 @@ requirements = python3==3.7.4, hostpython3==3.7.4, kivy==2.0.0, requests, urllib
 
 # (str) Presplash of the application
 #presplash.filename = %(source.dir)s/data/presplash.png
+presplash.filename = %(source.dir)s/smac_logo.png
 
 # (str) Icon of the application
 #icon.filename = %(source.dir)s/data/icon.png
+icon.filename = %(source.dir)s/smac_logo.png
 
 # (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
@@ -82,7 +84,7 @@ fullscreen = 0
 # red, blue, green, black, white, gray, cyan, magenta, yellow, lightgray,
 # darkgray, grey, lightgrey, darkgrey, aqua, fuchsia, lime, maroon, navy,
 # olive, purple, silver, teal.
-#android.presplash_color = #FFFFFF
+android.presplash_color = #E0E0E0
 
 # (list) Permissions
 android.permissions = INTERNET, ACCESS_NETWORK_STATE,  BLUETOOTH, BLUETOOTH_ADMIN, CAMERA, WRITE_SETTINGS

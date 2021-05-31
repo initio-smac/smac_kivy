@@ -368,7 +368,7 @@ class SmacApp(App):
                 m[ smac_keys["NAME_TOPIC"] ] = name_topic if(name_topic != None) else ""
                 m[ smac_keys["NAME_HOME"] ] = name_home if(name_home != None) else ""
                 m[ smac_keys["NAME_DEVICE"] ] = self.NAME_DEVICE
-                m[ smac_keys["TYPE_DEVICE"] ] = self.TYPE_DEVICE
+                m[ smac_keys["TYPE_DEVICE"] ] = str(self.TYPE_DEVICE)
                 #print(m)
                 #time.sleep(.1)
                 client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=m, udp=udp, tcp=tcp)
@@ -389,7 +389,7 @@ class SmacApp(App):
             p1[smac_keys["PROPERTY"]] = 1
             p1[smac_keys["ID_DEVICE"]] = self.ID_DEVICE
             p1[smac_keys["ID_PROPERTY"]] = p[2]
-            p1[smac_keys["TYPE_PROPERTY"]] = p[3]
+            p1[smac_keys["TYPE_PROPERTY"]] = str(p[3])
             p1[smac_keys["NAME_PROPERTY"]] = p[4]
             p1[smac_keys["VALUE"]] = p[5]
             p1[smac_keys["VALUE_MIN"]] = p[6]
@@ -544,6 +544,7 @@ class SmacApp(App):
                         id_device = data.get(smac_keys["ID_DEVICE"])
                         id_prop = data.get(smac_keys["ID_PROPERTY"])
                         type_prop = data.get(smac_keys["TYPE_PROPERTY"], "")
+                        type_prop = str(type_prop)
                         name_prop = data.get(smac_keys["NAME_PROPERTY"], "")
                         value = data.get(smac_keys["VALUE"], 0)
                         value_min = data.get(smac_keys["VALUE_MIN"], 0)
@@ -1273,8 +1274,8 @@ class SmacApp(App):
             d["LIMIT_TOPIC"] = 10
             d["LIMIT_DEVICE"] = 10
             d["INTERVAL_ONLINE"] = 30
-            d["EMAIL"] = ""
-            d["LOGIN_PIN"] = ""
+            d["EMAIL"] = "manjunathls13@gmail.com"
+            d["LOGIN_PIN"] = "1234"
             d["EMAIL_VERIFIED"] = False
             d['theme'] = "LIGHT"
             #d["PLATFORM"] = SMAC_PLATFORM

@@ -3,6 +3,8 @@ import asyncio
 #from kivy import platform
 #from kivy.core.window import Window
 #from kivy.properties import DictProperty
+from functools import partial
+
 from kivy.uix.screenmanager import Screen
 #from kivy.app import App
 #from kivy.uix.scrollview import ScrollView
@@ -1087,7 +1089,7 @@ class Screen_deviceSetting(SelectClass):
                 label.name_room = name_topic
                 self.ids["id_topic_container"].add_widget(label)
                 btn = Image_iconButton(source=app.source_icon + 'CHECK.png')
-                btn.bind(on_release=self.subscribe_topic)
+                btn.bind(on_release=partial(self.subscribe_topic, name_home, name_topic, id_topic) )
                 btn.pos = label.pos
                 label.add_widget(btn)
         if len(DEVS) == 0:
@@ -1243,8 +1245,8 @@ class Screen_deviceSetting(SelectClass):
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         self.load_widgets()
 
-    def subscribe_topic(self, wid,*args):
-        name_home, name_room, id_topic = wid.parent.name_home, wid.parent.name_room, wid.parent.id_topic
+    def subscribe_topic(self, name_home, name_room, id_topic,*args):
+        #name_home, name_room, id_topic = wid.parent.name_home, wid.parent.name_room, wid.parent.id_topic
         app = App.get_running_app()
         id_device = app.APP_DATA["id_device"]
         passkey = db.get_pin_device(id_device=id_device)
@@ -1512,7 +1514,8 @@ class Screen_register(SelectClass):
             return
 
         saved_pin = app.get_config_variable(key="LOGIN_PIN")
-        if (email == app.EMAIL) and (str(saved_pin) == str(pin) ):
+        #if (email == app.EMAIL) and (str(saved_pin) == str(pin) ):
+        if str(saved_pin) == str(pin):
             app.change_screen(screen="Screen_network")
             app.update_config_variable(key="EMAIL_VERIFIED", value=1)
         else:
