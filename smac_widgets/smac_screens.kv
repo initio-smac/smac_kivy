@@ -154,6 +154,9 @@
 			BoxLayout_container:
 				spacing: dp(5)
 				padding: dp(5)
+				id: id_container
+				Widget_block:
+				    text: "Device ID: {}".format(app.APP_DATA["id_device"])
 				Widget_block:
 				    text: "Device Name"
                     BoxLayout:
@@ -246,51 +249,24 @@
                                 root.update_device_interval_online(app.APP_DATA["id_device"], id_interval_online.text)
 
 
-                Widget_block:
-				    text: "Update Wifi Config"
-				    disabled: 0 if(str(app.APP_DATA["type_device"]) == SMAC_DEVICES["ESP"]) else 1
-				    #opacity: 1 - self.disabled
-				    height:  self.minimum_height
-                    BoxLayout:
-                        orientation: 'vertical'
-				        size_hint: 1, None
-				        height: self.minimum_height
-				        TextInput_custom:
-                            hint_text: "SSID"
-                            id: id_ssid
-                            size_hint_y: None
-                            height: app.grid_min
-                        TextInput_custom:
-                            hint_text: "Password"
-                            id: id_password
-                            size_hint_y: None
-                            height: app.grid_min
-                        Button_custom1:
-                            text: 'Update Wifi Config'
-                            width: app.grid_min*3
-                            #height: 0 if root.disabled else  app.grid_min
-                            on_release:
-                                root.update_device_wifi_config(app.APP_DATA["id_device"], id_ssid.text, id_password.text)
+                #Widget_block:
+				#    text: "Update Wifi Config"
+				#    disabled: 0 if(str(app.APP_DATA["type_device"]) == SMAC_DEVICES["ESP"]) else 1
+				#    height:  self.minimum_height
 
-                Widget_block:
-				    text: "Device Updates and Downloads"
-				    disabled: 0 if( str(app.APP_DATA["type_device"]) == SMAC_DEVICES["ESP"]) else 1
-				    #opacity: 1 - self.disabled
-				    #height: 0 if self.disabled else self.minimum_height
-				    on_parent:
-				        print("on child")
-				        print(app.APP_DATA['type_device'])
-				        print(SMAC_DEVICES["ESP"])
-                    BoxLayout:
-                        orientation: 'vertical'
-				        size_hint: 1, None
-				        height: self.minimum_height
-                        Button_custom1:
-                            text: 'Check for Updates and Download'
-                            width: '200dp'
-                            #height: 0 if root.disabled else app.grid_min
-                            on_release:
-                                root.update_software(app.APP_DATA["id_device"])
+
+                #Widget_block:
+				#    text: "Device Updates and Downloads"
+				#    disabled: 0 if( str(app.APP_DATA["type_device"]) == SMAC_DEVICES["ESP"]) else 1
+                #    BoxLayout:
+                #        orientation: 'vertical'
+				#        size_hint: 1, None
+				#        height: self.minimum_height
+                #        Button_custom1:
+                #            text: 'Check for Updates and Download'
+                #            width: app.grid_min * 4
+                #            on_release:
+                #                root.update_software(app.APP_DATA["id_device"])
 
 
 <Screen_register>:
@@ -302,11 +278,11 @@
                 text: "LOGIN"
                 bold: True
             TextInput_custom:
-                hint_text: "Email"
+                hint_text: "Email/Mobile Number"
                 size_hint_y: None
                 height: app.grid_min
                 id: id_text_email
-                text: app.EMAIL
+                text: app.EMAIL if(app.EMAIL != "") else app.MOBILE_NUMBER
             TextInput_custom:
                 hint_text: "PIN"
                 size_hint_y: None

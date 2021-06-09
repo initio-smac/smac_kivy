@@ -630,6 +630,12 @@
     TextInput_custom:
         size_hint_y: None
         height: app.grid_min
+        hint_text: "Mobile Number"
+        id: id_text_mobile_number
+        text: app.MOBILE_NUMBER
+    TextInput_custom:
+        size_hint_y: None
+        height: app.grid_min
         hint_text: "PIN"
         id: id_text_email_pin
     Label_custom:
@@ -973,6 +979,44 @@
         height: app.grid_min
     Widget:
 
+<BoxLayout_downloadUpdateContent>:
+    orientation: 'vertical'
+    size_hint: 1, None
+    height: self.minimum_height
+    Label_custom:
+        height: app.grid_min*2
+        text: "New Updates Available. Do You Want to Update to New Version?"
+    BoxLayout:
+        size_hint: 1, None
+        height: app.grid_min
+        Button_custom1:
+            text: "Cancel"
+            on_release:
+                app.close_modal()
+        Button_custom1:
+            text: "Download"
+            on_release:
+                app.download_app()
+<BoxLayout_updateWifiContent>:
+    orientation: 'vertical'
+    size_hint: 1, None
+    height: self.minimum_height
+    TextInput_custom:
+        hint_text: "SSID"
+        id: id_ssid
+        size_hint_y: None
+        height: app.grid_min
+    TextInput_custom:
+        hint_text: "Password"
+        id: id_password
+        size_hint_y: None
+        height: app.grid_min
+    Button_custom1:
+        text: 'Update Wifi Config'
+        width: app.grid_min*3
+        id: id_btn_update_wifi
+        #on_release:
+        #    root.update_device_wifi_config(app.APP_DATA["id_device"], id_ssid.text, id_password.text)
 
 <TextInput_custom>:
     #foreground_color: [0,1,0,1]

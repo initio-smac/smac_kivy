@@ -3,8 +3,10 @@ import asyncio
 #from kivy import platform
 #from kivy.core.window import Window
 #from kivy.properties import DictProperty
+import random
 from functools import partial
 
+from kivy.network.urlrequest import UrlRequest
 from kivy.uix.screenmanager import Screen
 #from kivy.app import App
 #from kivy.uix.scrollview import ScrollView
@@ -13,7 +15,8 @@ from smac_client import client
 from smac_device import set_property, generate_id_topic, generate_id_context
 from smac_device_keys import SMAC_PROPERTY, SMAC_DEVICES
 from smac_keys import smac_keys
-from smac_requests import SMAC_SERVER, rest_call
+from smac_platform import SMAC_PLATFORM
+from smac_requests import SMAC_SERVER, restapi
 from smac_widgets.smac_layouts import *
 
 from kivy.lang import Builder
@@ -1209,6 +1212,41 @@ class Screen_deviceSetting(SelectClass):
         app.close_modal()
         #self.add_home(name_home, name_topic, show_popup=True)
 
+    def add_device_specific_widgets(self):
+        container = self.ids["id_container"]
+        app = App.get_running_app()
+        if app.ID_DEVICE == app.APP_DATA["id_device"]:
+            wid = Widget_block()
+            wid.text = "Reconfigure Device"
+            btn = Button_custom1(text="Reconfigure")
+            btn.bind( on_release=self.reconfigure_device )
+            wid.add_widget( btn)
+            container.add_widget(wid)
+
+        if str( app.APP_DATA["type_device"] ) == SMAC_DEVICES["ESP"]:
+            w1 = Widget_block()
+            w1.text = "Update Wifi Config"
+            w1.height = w1.minimum_height
+            b1 = BoxLayout_updateWifiContent()
+            b1.ids["id_btn_wifi_config"].bind(on_release=self.update_device_wifi_config )
+            w1.add_widget( b1)
+            container.add_widget(w1)
+
+            w2 = Widget_block()
+            w2.text = "Device Updates and Downloads"
+            b2 = Button_custom1(text="Check for Updates")
+            b2.width = app.grid_min*4
+            b2.bind(on_release=self.update_software)
+            w2.add_widget(b2)
+            container.add_widget(w2)
+
+
+        
+    def reconfigure_device(self, *args):
+        app = App.get_running_app()
+        app.set_default_config()
+        app.load_config_variables()
+        app.open_modalInfo(text="Device Reconfigured.")
 
     def on_enter(self, *args):
         super().on_enter()
@@ -1216,6 +1254,8 @@ class Screen_deviceSetting(SelectClass):
         app = App.get_running_app()
         interval = db.get_device_interval_online(id_device=app.APP_DATA["id_device"])
         self.data["interval_online"] = interval
+        self.add_device_specific_widgets()
+
         print(self.data)
         print(app.APP_DATA["type_device"])
         print( type(app.APP_DATA["type_device"]) )
@@ -1348,6 +1388,10 @@ class Screen_deviceSetting(SelectClass):
             return
         if id_device == app.ID_DEVICE:
             db.update_device_name(id_device, name_device)
+            app.update_config_variable(key="NAME_DEVICE", value=name_device)
+            req = "request_update_name_device"
+            url = SMAC_SERVER + req
+            restapi.rest_call(url, method="POST", request=req, data={"id_device": app.ID_DEVICE, "name_device": name_device})
             print("Device Name updated")
             app.open_modalInfo(text="Device Name Updated")
         else:
@@ -1382,8 +1426,11 @@ class Screen_deviceSetting(SelectClass):
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
 
-    def update_device_wifi_config(self, id_device, ssid, password):
+    def update_device_wifi_config(self, wid, *args):
         app = App.get_running_app()
+        id_device = app.APP_DATA["id_device"]
+        ssid = wid.parent.ids["id_ssid"].text
+        password = wid.parent.ids["id_password"].text
         if (ssid == "") or (ssid == None):
             app.open_modalInfo(title="Info", text="SSID cannot be empty.")
             return
@@ -1401,8 +1448,9 @@ class Screen_deviceSetting(SelectClass):
         app.add_task(db.get_command_status, ("", id_device,[smac_keys["CMD_STATUS_UPDATE_WIFI_CONFIG"], smac_keys["CMD_INVALID_PIN"]]))
         app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
-    def update_software(self, id_device):
+    def update_software(self, wid, *args):
         app = App.get_running_app()
+        id_device = app.APP_DATA["id_device"]
         passkey = db.get_pin_device(id_device=id_device)
         d = {}
         d[smac_keys["ID_DEVICE"]] = id_device
@@ -1415,7 +1463,11 @@ class Screen_deviceSetting(SelectClass):
 
 
 class Screen_register(SelectClass):
+    br = None
     content_register = None
+    LOGIN_BLOCKED = BooleanProperty(False)
+    LOGIN_ATTEMPT_FAIL_COUNT = 0
+    LOGIN_ATTEMPT_FAIL_COUNT_MAX = 3
     STATE = OptionProperty("", options=["", "SEND_PIN", "SEND_PIN_SUCCESS", "SEND_PIN_FAILURE", \
                                         "VERIFY_PIN", "VERIFY_PIN_SUCCESS", "VERIFY_PIN_FAILURE"])
 
@@ -1424,17 +1476,20 @@ class Screen_register(SelectClass):
             self.content_register.ids["id_btn_send_pin"].disabled = True
             self.content_register.ids["id_btn_verify_pin"].disabled = False
             self.content_register.ids["id_text_email"].disabled = True
+            self.content_register.ids["id_text_mobile_number"].disabled = True
             self.content_register.ids["id_text_email_pin"].disabled = False
         elif (self.STATE == "VERIFY_PIN") :
             self.content_register.ids["id_btn_send_pin"].disabled = True
             self.content_register.ids["id_btn_verify_pin"].disabled = True
             self.content_register.ids["id_text_email"].disabled = True
+            self.content_register.ids["id_text_mobile_number"].disabled = True
             self.content_register.ids["id_text_email_pin"].disabled = True
         elif (self.STATE == "VERIFY_PIN_SUCCESS") or (self.STATE == "") or (self.STATE == "SEND_PIN_FAILURE"):
             if self.content_register != None:
                 self.content_register.ids["id_btn_send_pin"].disabled = False
                 self.content_register.ids["id_btn_verify_pin"].disabled = False
                 self.content_register.ids["id_text_email"].disabled = False
+                self.content_register.ids["id_text_mobile_number"].disabled = False
                 self.content_register.ids["id_text_email_pin"].disabled = False
 
 
@@ -1446,11 +1501,45 @@ class Screen_register(SelectClass):
         #if EMAIL_VERIFIED:
         #    app.change_screen(screen="Screen_network")
         #else:
-            self.content_register = BoxLayout_register()
-            print("on_enter", self.content_register.children)
-            if self.content_register.ids.get("id_btn_send_pin", None) != None:
-                self.content_register.ids["id_btn_send_pin"].bind(on_release=self.request_login_pin)
-                self.content_register.ids["id_btn_verify_pin"].bind(on_release=self.verify_login_pin_server)
+        app = App.get_running_app()
+        LOGIN_BLOCKED = app.get_config_variable(key="LOGIN_BLOCKED")
+        if LOGIN_BLOCKED != None:
+            self.LOGIN_BLOCKED = True
+        self.content_register = BoxLayout_register()
+        print("on_enter", self.content_register.children)
+        if self.content_register.ids.get("id_btn_send_pin", None) != None:
+            self.content_register.ids["id_btn_send_pin"].bind(on_release=self.request_login_pin)
+            self.content_register.ids["id_btn_verify_pin"].bind(on_release=self.verify_login_pin_server)
+
+
+    def start_msg_listener(self):
+        if SMAC_PLATFORM == "android":
+            from android.broadcast import BroadcastReceiver
+            self.br = BroadcastReceiver( self.on_broadcast, actions=["android.provider.Telephony.SMS_RECEIVED"] )
+            self.br.start()
+            print("BR started")
+
+    def stop_msg_listener(self):
+        if SMAC_PLATFORM == "android":
+            if self.br != None:
+                self.br.stop()
+
+    def on_broadcast(self, context, intent):
+        print("on-broadcast")
+        print(context)
+        print(intent)
+        if intent.getAction() == "android.provider.Telephony.SMS_RECEIVED":
+            bundle = intent.getExtras()
+            msgs = []
+            msg_from = None
+            if bundle != None:
+                try:
+                    pdus = bundle.get("pdus")
+                    print(pdus)
+
+                except Exception as e:
+                    print("BR cast error", e)
+
 
     def on_leave(self, *args):
         if self.content_register.ids.get("id_btn_send_pin", None) != None:
@@ -1469,8 +1558,12 @@ class Screen_register(SelectClass):
     def request_login_pin(self, *args):
         app = App.get_running_app()
         email = self.content_register.ids["id_text_email"].text
+        mobile_number = self.content_register.ids["id_text_mobile_number"].text
         if email == "":
             app.open_modalInfo(title="Info", text="Enter Email Address")
+            return
+        if (mobile_number == "") or (len(mobile_number) < 10):
+            app.open_modalInfo(title="Info", text="Enter Valid Mobile Number")
             return
         self.STATE = "SEND_PIN"
         label = self.content_register.ids["id_label_info"]
@@ -1480,17 +1573,38 @@ class Screen_register(SelectClass):
         data = {}
         data["email"] = email
         #data["pin"] = pin
+        data["mobile_number"] = mobile_number
         data["id_device"] = app.ID_DEVICE
-        r = rest_call(url=url, method="POST", request=request, json_data=data)
-        if r != None:
+        OTP = str( random.randint(1000, 9999) )
+        data["pin"] = OTP
+        data["name_device"] = app.NAME_DEVICE
+        #otp_url = "https://2factor.in/API/V1/{api_key}/SMS/{phone_number}/{otp}".format(api_key=app.OTP_API_KEY, phone_number=mobile_number, otp=OTP)
+        r = restapi.rest_call(url=url, method="POST", request=request, data=data, on_success=self.on_req_otp_success, on_failure=self.on_req_otp_failure)
+        '''if r != None:
             status_code = r[0]
             res = r[1]
             if status_code == 200:
-                label.text = "PIN sent to email"
+                label.text = "PIN sent to Email and Mobile Number"
                 self.STATE = "SEND_PIN_SUCCESS"
             else:
                 label.text = res
-                self.STATE = "SEND_PIN_FAILURE"
+                self.STATE = "SEND_PIN_FAILURE"'''
+
+    def on_req_otp_success(self, *args):
+        print(args)
+        label = self.content_register.ids["id_label_info"]
+        label.text = "PIN sent to Email and Mobile Number"
+        self.STATE = "SEND_PIN_SUCCESS"
+
+    def on_req_otp_failure(self, res, data, *args):
+        print(res)
+        print(data)
+        try:
+            label = self.content_register.ids["id_label_info"]
+            label.text = data["error"]
+            self.STATE = "SEND_PIN_FAILURE"
+        except Exception as e:
+            print(e)
 
     def check_syntax_email(self, email):
         app = App.get_running_app()
@@ -1504,28 +1618,36 @@ class Screen_register(SelectClass):
 
     def verify_login_pin(self, *args):
         app = App.get_running_app()
-        email = self.ids["id_text_email"].text
-        if email == "":
-            app.open_modalInfo(title="Info", text="Enter Email Address")
-            return
-        pin = self.ids["id_text_email_pin"].text
-        if pin == "":
-            app.open_modalInfo(title="Info", text="Enter PIN")
-            return
+        if not self.LOGIN_BLOCKED:
+            email = self.ids["id_text_email"].text
+            if email == "":
+                app.open_modalInfo(title="Info", text="Enter Email Address")
+                return
+            pin = self.ids["id_text_email_pin"].text
+            if pin == "":
+                app.open_modalInfo(title="Info", text="Enter PIN")
+                return
 
-        saved_pin = app.get_config_variable(key="LOGIN_PIN")
-        #if (email == app.EMAIL) and (str(saved_pin) == str(pin) ):
-        if str(saved_pin) == str(pin):
-            app.change_screen(screen="Screen_network")
-            app.update_config_variable(key="EMAIL_VERIFIED", value=1)
+            saved_pin = app.get_config_variable(key="LOGIN_PIN")
+            #if (email == app.EMAIL) and (str(saved_pin) == str(pin) ):
+            if str(saved_pin) == str(pin):
+                app.change_screen(screen="Screen_network")
+                app.update_config_variable(key="EMAIL_VERIFIED", value=1)
+            else:
+                app.open_modalInfo(title="Info", text="Incorrect PIN (or) Email Is Not Valid")
+                app.update_config_variable(key="EMAIL_VERIFIED", value=0)
+                self.LOGIN_ATTEMPT_FAIL_COUNT += 1
+                if self.LOGIN_ATTEMPT_FAIL_COUNT >= self.LOGIN_ATTEMPT_FAIL_COUNT_MAX:
+                    self.LOGIN_BLOCKED = True
+                    app.update_config_variable(key="LOGIN_BLOCKED", value=time.time())
         else:
-            app.open_modalInfo(title="Info", text="Incorrect PIN (or) Email Is Not Valid")
-            app.update_config_variable(key="EMAIL_VERIFIED", value=0)
+            app.open_modalInfo(title="Info", text="Login Blocked. Try After Some Time.")
 
 
     def verify_login_pin_server(self, *args):
         app = App.get_running_app()
         email = self.content_register.ids["id_text_email"].text
+        mobile_number = self.content_register.ids["id_text_mobile_number"].text
         label = self.content_register.ids["id_label_info"]
         label.text = ""
         if not self.check_syntax_email(email=email):
@@ -1545,22 +1667,29 @@ class Screen_register(SelectClass):
         url = SMAC_SERVER + request
         data = {}
         data["email"] = email
+        data["mobile_number"] = mobile_number
         data["pin"] = pin
         data["id_device"] = app.ID_DEVICE
         #app.open_modal(content=BoxLayout_loader())
-        r = rest_call(url=url, method="POST", request=request, json_data=data)
-        if r != None:
-            status_code, res = r[0], r[1]
-            if status_code == 200:
-                app.open_modalInfo(title="Info", text="PIN verified.\nLogin to Continue")
-                app.update_config_variable(key="EMAIL", value=email)
-                app.update_config_variable(key="LOGIN_PIN", value=pin)
-                self.STATE = "VERIFY_PIN_SUCCESS"
-                #app.update_config_variable(key="EMAIL_VERIFIED", value=True)
-            else:
-                #app.open_modalInfo(title="Info", text=res)
-                label = self.content_register.ids["id_label_info"]
-                label.text = res
-                self.STATE = "VERIFY_PIN_FAILURE"
-                #app.update_config_variable(key="EMAIL_VERIFIED", value=False)
+        r = restapi.rest_call(url=url, method="POST", request=request, data=data, on_success=self.on_verify_otp_succeed, on_failure=self.on_verify_otp_failure)
+
+    def on_verify_otp_succeed(self, res, data):
+        print(res)
+        print(data)
+        app = App.get_running_app()
+        email = self.content_register.ids["id_text_email"].text
+        mobile_number = self.content_register.ids["id_text_mobile_number"].text
+        pin = self.content_register.ids["id_text_email_pin"].text
+        app.open_modalInfo(title="Info", text="PIN verified.\nLogin to Continue")
+        app.update_config_variable(key="EMAIL", value=email)
+        app.update_config_variable(key="MOBILE_NUMBER", value=mobile_number)
+        app.update_config_variable(key="LOGIN_PIN", value=pin)
+        self.STATE = "VERIFY_PIN_SUCCESS"
+        app.delete_config_variable(key="LOGIN_BLOCKED")
+
+    def on_verify_otp_failure(self, res, data):
+        print(res)
+        label = self.content_register.ids["id_label_info"]
+        label.text = data
+        self.STATE = "VERIFY_PIN_FAILURE"
 

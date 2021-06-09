@@ -365,6 +365,12 @@ class BoxLayout_loader(BoxLayout):
     icon = StringProperty("")
     text = StringProperty("Loading...")
 
+class BoxLayout_updateWifiContent(BoxLayout):
+    pass
+
+class BoxLayout_downloadUpdateContent(BoxLayout):
+    pass
+
 class TextInput_custom(SelectBehavior, TextInput):
     pass
 

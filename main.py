@@ -1,6 +1,9 @@
+import base64
 import os
 from datetime import datetime
 #import time
+from os.path import join
+
 from kivy.base import EventLoop
 from kivy.core.window import Window
 from kivy.properties import *
@@ -11,7 +14,7 @@ from kivy.uix.screenmanager import ScreenManager, NoTransition
 
 from smac_device import set_property, get_device_property, get_property_value, property_listener
 from smac_platform import SMAC_PLATFORM
-from smac_requests import req_get_device_id
+from smac_requests import restapi
 from smac_theme_colors import THEME_LIGHT, THEME_DARK
 
 #Window.clearcolor = get_color_from_hex("#e0e0e0")
@@ -70,7 +73,10 @@ class SmacApp(App):
     source_icon = StringProperty("icons/LIGHT/")
     DEBUG = False
     EMAIL = StringProperty("")
+    MOBILE_NUMBER = StringProperty('')
+    OTP_API_KEY = "68a846d4-c386-11eb-8089-0200cd936042"
     _KEYBOARD = None
+    VERSION = 0.1
 
     def on_theme(self, *args):
         print("on_theme", self.theme)
@@ -992,12 +998,16 @@ class SmacApp(App):
             passkey = str(passkey)
             if passkey == self.PIN_DEVICE:
                 db.update_device_name(id_device, name_device)
+                self.update_config_variable(key="NAME_DEVICE", value=name_device)
                 d1 = {}
                 d1[smac_keys["MESSAGE"]] = "Device Name updated"
                 d1[smac_keys["ID_DEVICE"]] = id_device
                 d1[smac_keys["NAME_DEVICE"]] = name_device
                 print(d1[smac_keys["MESSAGE"]])
                 client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_UPDATE_NAME_DEVICE"], message=d1)
+                req = "request_update_name_device"
+                url = SMAC_SERVER + req
+                restapi.rest_call(url, method="POST", request=req, data={"id_device": self.ID_DEVICE , "name_device": name_device})
             else:
                 d1 = {}
                 d1[smac_keys["MESSAGE"]] = "Device Name not updated. Passkey Error"
@@ -1055,7 +1065,9 @@ class SmacApp(App):
         task2 = asyncio.ensure_future( client.main() )
         task3 = asyncio.ensure_future( self.UI_loop() )
         task4 = asyncio.ensure_future( self.UI_loop2() )
+        #if SMAC_PLATFORM != "android":
         self._TASKS = [ task2, task3, task4 ]
+        #self._TASKS = [task3, task4]
         #task3 = asyncio.ensure_future( self.send_test() )
 
         #return asyncio.gather( start_app(),zmq_sub_start, zmq_pub_start, task1, zmq_t1, zmq_t2, udp_t1, udp_t2, test1 )
@@ -1238,9 +1250,29 @@ class SmacApp(App):
             return "127.0.0.1"
 
     def get_config_variable(self, key):
+        try:
+            with open('config.json', 'r') as f:
+                fd = json.load(f)
+                d = fd.get(key, None)
+                if (d != None) and ( key in ["LIMIT_DEVICE", "LIMIT_TOPIC", "LIMIT_CONTEXT"] ):
+                    d = self.decode_word(d)
+                f.close()
+                return d
+        except:
+            return None
+
+    def delete_config_variable(self, key):
         with open('config.json', 'r') as f:
             fd = json.load(f)
-            return fd.get(key, None)
+            d = fd.get(key, None)
+            f.close()
+        if d != None:
+            with open('config.json', 'w') as f1:
+                fd = json.load(f1)
+                del fd[key]
+                f1.write( json.dumps(fd) )
+                f1.close()
+
 
 
     def update_config_variable(self, key, value, arr_op="ADD"):
@@ -1253,50 +1285,70 @@ class SmacApp(App):
                     if value in fd[key]:
                         fd[key].remove(value)
                 self.SUB_TOPIC = fd[key]
+            elif key in ["LIMIT_DEVICE", "LIMIT_TOPIC", "LIMIT_CONTEXT"]:
+                fd[key] = self.encode_word( value)
             else:
                 fd[key] = value
+                if key == "ID_DEVICE":
+                    self.ID_DEVICE = value
+                elif key == "theme":
+                    self.theme = value
             f.close()
         with open('config.json', 'w') as f:
             f.write(json.dumps(fd))
-            f.flush()
+            f.close()
+
+    def set_default_config(self):
+        f = open("config.json", "w")
+        d = {}
+        d["ID_DEVICE"] =""
+        d["TYPE_DEVICE"] = "0"
+        d["NAME_DEVICE"] = ""
+        d["PIN_DEVICE"] = "1234"
+        d["SUB_TOPIC"] = ["#"]
+        d["LIMIT_TOPIC"] = 10
+        d["LIMIT_DEVICE"] = 10
+        d["INTERVAL_ONLINE"] = 30
+        d["EMAIL"] = "manjunathls13@gmail.com"
+        d["MOBILE_NUMBER"] = ""
+        d["LOGIN_PIN"] = "1234"
+        d["EMAIL_VERIFIED"] = False
+        d["VERSION"] = 0.1
+        d['theme'] = "LIGHT"
+        #d["PLATFORM"] = SMAC_PLATFORM
+        f.write(json.dumps(d))
+        f.close()
+
+        self.ID_DEVICE = ""
 
     def load_config_variables(self, *args):
         from smac_device import get_device_name, get_device_type
         changed = False
         if not os.path.isfile('config.json'):
-            f = open("config.json", "w")
-            d = {}
-            d["ID_DEVICE"] =""
-            d["TYPE_DEVICE"] = "0"
-            d["NAME_DEVICE"] = ""
-            d["PIN_DEVICE"] = "1234"
-            d["SUB_TOPIC"] = ["#"]
-            d["LIMIT_TOPIC"] = 10
-            d["LIMIT_DEVICE"] = 10
-            d["INTERVAL_ONLINE"] = 30
-            d["EMAIL"] = "manjunathls13@gmail.com"
-            d["LOGIN_PIN"] = "1234"
-            d["EMAIL_VERIFIED"] = False
-            d['theme'] = "LIGHT"
-            #d["PLATFORM"] = SMAC_PLATFORM
-            f.write(json.dumps(d))
-            f.close()
+            self.set_default_config()
+
+        f = open('config.json', 'r')
+        if len(f.read()) == 0:
+            self.set_default_config()
 
         with open('config.json', 'r') as f:
             fd = json.load(f)
             print("fd", fd)
             if fd["ID_DEVICE"] == "":
                 #d_id = self.get_local_ip()
-                d_id = req_get_device_id()
+                d_id = restapi.req_get_device_id()
+                #while self.get_config_variable("ID_DEVICE") == "":
+                #    pass
                 #from smac_device import get_id_device
                 #d_id = get_id_device()
-                print("d_id", d_id)
-                if (d_id != "") and (d_id != None):
-                    fd["ID_DEVICE"] = d_id
-                    changed = True
-                else:
-                    self.open_modalInfo(title="Info", text="Could not get the Device Id.\nCheck the Network Connection.")
-            self.ID_DEVICE = fd["ID_DEVICE"]
+                #print("d_id", d_id)
+                #if (d_id != "") and (d_id != None):
+                #    fd["ID_DEVICE"] = d_id
+                #    changed = True
+                #else:
+                #    self.open_modalInfo(title="Info", text="Could not get the Device Id.\nCheck the Network Connection.")
+            else:
+                self.ID_DEVICE = fd["ID_DEVICE"]
             if fd["NAME_DEVICE"] == "":
                 fd["NAME_DEVICE"] = get_device_name()
                 changed = True
@@ -1322,6 +1374,8 @@ class SmacApp(App):
                 self.INTERVAL_ONLINE = int(fd["INTERVAL_ONLINE"])
             if fd.get("EMAIL", None) != None:
                 self.EMAIL = fd.get("EMAIL")
+            if fd.get("MOBILE_NUMBER", None) != None:
+                self.MOBILE_NUMBER = fd.get("MOBILE_NUMBER")
             print(self.theme)
             self.theme = fd.get("theme", "LIGHT")
             #if fd.get("PLATFORM", None) != None:
@@ -1335,13 +1389,9 @@ class SmacApp(App):
                 f.write( json.dumps(fd) )
                 f.close()
 
-
-
-
     def on_stop(self, *args):
         for task in self._TASKS:
             task.cancel()
-
 
     def on_resume(self):
         return True
@@ -1419,14 +1469,84 @@ class SmacApp(App):
     def _keyboard_released(self, *args):
         print("keyboard_released", args)
 
+    def encode_word(self, string):
+        try:
+            t = base64.b64encode( str(string).encode(encoding="utf-8") ).decode("utf-8")
+            #print("BASE64", t)
+            return str(t)
+        except:
+            return None
 
+    def decode_word(self, code):
+        try:
+            #print(code)
+            #print(type(code))
+            t = base64.b64decode( str(code).encode(encoding="utf-8") ).decode(encoding="utf-8")
+            #print(type(t))
+            #print("BASE64a", t)
+            return t
+        except:
+            return None
+
+
+    def load_device_data(self, *args):
+        #self.decode_word( b'NQ=')
+        req = "request_device_data"
+        url = SMAC_SERVER + req
+        print("ID_DEV", self.ID_DEVICE)
+        r = restapi.rest_call(url, method="GET", data={"id_device": self.ID_DEVICE}, request=req, on_success=self.on_req_device_data)
+        if SMAC_PLATFORM == "android":
+            check_update_url = "https://github.com/initio-smac/smac_kivy/blob/main/download.json"
+            restapi.rest_call(check_update_url, method="GET", request="check_for_update", on_success=self.on_update_available)
+
+    def on_update_available(self, req, data):
+        try:
+            NEW_VERSION = data.get("VERSION", None)
+            if (NEW_VERSION != None) and (NEW_VERSION > self.VERSION):
+                content = BoxLayout_downloadUpdateContent()
+                self.open_modal(title="Updates", content=content)
+
+        except Exception as e:
+            print(e)
+
+    def download_app(self):
+        url = "https://github.com/initio-smac/smac_kivy/blob/main/bin/smacapp-0.1-armeabi-v7a-debug.apk"
+        download_path =  '/sdcard/Download/smac.apk'
+        UrlRequest(url=url, method="GET", file_path=download_path, on_success=self.install_app)
+
+    def install_app_success(self, req, data):
+        from jnius import autoclass, cast
+        Intent = autoclass("android.content.Intent")
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        intent = Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType("/sdcard/Download/smac.apk", "application/vnd.android.package-archive");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
+        currentActivity.startActivity(intent)
+        #startActivity(intent);
+
+    def install_app_failure(self, req, data):
+        print(data)
+
+
+    def on_req_device_data(self, res, data):
+        try:
+            if data.get("limit_topic", None) != None:
+                self.update_config_variable(key="LIMIT_TOPIC", value=data.get("limit_topic"))
+            if data.get("limit_device", None) != None:
+                self.update_config_variable(key="LIMIT_DEVICE", value=data.get("limit_device"))
+        except Exception as e:
+            print("on_req_err", e)
 
     def on_start(self):
         print("kivy started")
         print("starting smac_client...")
         Window.softinput_mode = "below_target"
         self._bind_keyboard()
+        self.load_app_data()
+        self.load_device_data()
 
+    def load_app_data(self):
         self.load_config_variables()
         if self.get_config_variable(key="EMAIL_VERIFIED"):
             self.change_screen(screen="Screen_network")
@@ -1455,14 +1575,23 @@ class SmacApp(App):
                 print(i)
                 db.add_property(id_device=self.ID_DEVICE, id_property=i["id_property"], type_property=i["type_property"], name_property=i["name_property"], value_min=i["value_min"], value_max=i["value_max"], value=i["value"])
 
+
+
+
         print("kivy started few seconds ago")
         if SMAC_PLATFORM == "android":
+            from jnius import autoclass, cast
+            service = autoclass('com.smacsystem.smacapp.ServiceMyservice')
+            mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+            argument = ''
+            service.start(mActivity, argument)
+
             from android.permissions import request_permissions, check_permission, Permission
             print("permision", check_permission(Permission.CAMERA))
             if not check_permission(Permission.CAMERA):
-                request_permissions([Permission.CAMERA])
+                request_permissions([Permission.CAMERA, Permission.WRITE_EXTERNAL_STORAGE])
 
-            from jnius import autoclass, cast
+
             Intent = autoclass('android.content.Intent')
             System = autoclass('android.provider.Settings$System')
             Settings = autoclass('android.provider.Settings')
@@ -1491,6 +1620,7 @@ class SmacApp(App):
 
         self.text1 = "message: {}".format("kivy started")
         self.send_info(udp=True, tcp=False)
+
         
 
 

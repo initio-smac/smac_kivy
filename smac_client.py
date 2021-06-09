@@ -101,7 +101,10 @@ class SMACClient():
             print("cant set BROADCAST option", e)
         #self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         #self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.udp_sock.bind(("",self.UDP_PORT))
+        try:
+            self.udp_sock.bind(("",self.UDP_PORT))
+        except Exception as e:
+            print(e)
 
     # subscribe to a topic
     def subscribe(self, topic):
@@ -484,9 +487,18 @@ class SMACClient():
         #t = {"F": "Dcf", "K": "P0", "L": 8, "M": "SHUTDOWN_1", "N": 0, "O": 0, "P": 0, "5": "D_cf", "6": "T1", "7": "4", "9": 91}
         #await self.send_zmq("D1", json.dumps(t) )
 
+    async def start_android_service(self, *args):
+        await asyncio.sleep(1)
+        if SMAC_PLATFORM == "android":
+            from jnius import autoclass
+            PythonService = autoclass('org.kivy.android.PythonService')
+            PythonService.mService.setAutoRestartService(True)
+            print("SERVICE RESTART CODE RUN")
+
     # main function
     async def main(self, *args):
         print("main")
+        #await self.start_android_service()
         #zmq_pub_start = asyncio.create_task( self.initialize_zmq_publish() )
         #zmq_sub_start = asyncio.create_task( self.initialize_zmq_subscribe() )
         udp_t1 = asyncio.create_task(self.listen_udp())
@@ -497,6 +509,10 @@ class SMACClient():
         zmq_t2 = asyncio.create_task(self.on_message_zmq())
         zmq_t3 = asyncio.create_task(self.send_message_listener_zmq())
         #test1 = asyncio.create_task(self.test_pub())
+
+        '''from test.sender import send
+        t = asyncio.create_task(send())
+        await t'''
 
         #await test1
         await udp_t1
@@ -510,9 +526,18 @@ class SMACClient():
         #await asyncio.gather(self.test_pub(), self.listen_udp(), self.on_message_udp(),  self.initialize_zmq_connections(), self.send_message_listener_zmq(), self.listen_zmq(), self.on_message_zmq() )
 
         print("task created")
-    
 
 client = SMACClient()
 #print(time.time())
 #asyncio.run(client.main())
 #print("exited")
+
+#if SMAC_PLATFORM == "android":
+#    from jnius import autoclass
+#    PythonService = autoclass('org.kivy.android.PythonService')
+#    PythonService.mService.setAutoRestartService(True)
+#    print("SERVICE RESTART CODE RUN")
+#    asyncio.run( client.main() )
+
+
+

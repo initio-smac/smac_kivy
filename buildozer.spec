@@ -36,7 +36,8 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3==3.7.4, hostpython3==3.7.4, kivy==2.0.0, requests, urllib3, chardet, idna, plyer
+#requirements = python3==3.7.4, hostpython3==3.7.4, kivy==2.0.0, requests, urllib3, chardet, idna, plyer
+requirements = python3==3.7.4, hostpython3==3.7.4, kivy==2.0.0, plyer
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -58,6 +59,7 @@ orientation = portrait
 
 # (list) List of service to declare
 #services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
+#services = myservice:%(source.dir)s/service_test.py
 
 #
 # OSX Specific
@@ -87,7 +89,7 @@ fullscreen = 0
 android.presplash_color = #E0E0E0
 
 # (list) Permissions
-android.permissions = INTERNET, ACCESS_NETWORK_STATE,  BLUETOOTH, BLUETOOTH_ADMIN, CAMERA, WRITE_SETTINGS
+android.permissions = INTERNET, ACCESS_NETWORK_STATE,  BLUETOOTH, BLUETOOTH_ADMIN, CAMERA, WRITE_SETTINGS, WRITE_EXTERNAL_STORAGE
 
 # (int) Target Android API, should be as high as possible.
 #android.api = 27
@@ -215,7 +217,8 @@ android.permissions = INTERNET, ACCESS_NETWORK_STATE,  BLUETOOTH, BLUETOOTH_ADMI
 #android.uses_library =
 
 # (str) Android logcat filters to use
-android.logcat_filters = *:S python:D
+#android.logcat_filters = *:S python:D
+android.logcat_filters = *:S python:D, *:S myservice:D
 
 # (bool) Copy library instead of making a libpymodules.so
 #android.copy_libs = 1
