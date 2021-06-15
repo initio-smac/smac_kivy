@@ -6,7 +6,8 @@ from kivy.network.urlrequest import UrlRequest
 try:
     import urequests as requests
 except:
-    import requests
+    #import requests
+    pass
 
 import time
 import json

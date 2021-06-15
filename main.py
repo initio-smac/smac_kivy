@@ -1,5 +1,6 @@
 import base64
 import os
+import time
 from datetime import datetime
 #import time
 from os.path import join
@@ -11,6 +12,7 @@ from kivy.properties import *
 #from kivy.uix.screenmanager import ScreenManager, Screen, CardTransition, NoTransition, SlideTransition, SwapTransition, FadeTransition, WipeTransition, FallOutTransition, RiseInTransition
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 #from kivy.core.window import Window
+from plyer import notification
 
 from smac_device import set_property, get_device_property, get_property_value, property_listener
 from smac_platform import SMAC_PLATFORM
@@ -1393,8 +1395,6 @@ class SmacApp(App):
         for task in self._TASKS:
             task.cancel()
 
-    def on_resume(self):
-        return True
 
     def on_tcp_start(self, *args):
         print("TCP services started")
@@ -1496,36 +1496,68 @@ class SmacApp(App):
         print("ID_DEV", self.ID_DEVICE)
         r = restapi.rest_call(url, method="GET", data={"id_device": self.ID_DEVICE}, request=req, on_success=self.on_req_device_data)
         if SMAC_PLATFORM == "android":
-            check_update_url = "https://github.com/initio-smac/smac_kivy/blob/main/download.json"
+            #time.sleep(5)
+            #check_update_url = "https://api.github.com/repos/initio-smac/smac_kivy/contents/download.json"
+            check_update_url = "https://raw.githubusercontent.com/initio-smac/smac_kivy/main/download.json"
             restapi.rest_call(check_update_url, method="GET", request="check_for_update", on_success=self.on_update_available)
 
     def on_update_available(self, req, data):
         try:
+            print("NEw update available")
+            print(data)
+            data = json.loads(data)
             NEW_VERSION = data.get("VERSION", None)
             if (NEW_VERSION != None) and (NEW_VERSION > self.VERSION):
                 content = BoxLayout_downloadUpdateContent()
                 self.open_modal(title="Updates", content=content)
 
         except Exception as e:
-            print(e)
+            print("update app err", e)
 
     def download_app(self):
-        url = "https://github.com/initio-smac/smac_kivy/blob/main/bin/smacapp-0.1-armeabi-v7a-debug.apk"
+        #self.close_modal()
+        notification.notify(title="SMAC", message="Downloading Smac App.")
+        url = "https://raw.githubusercontent.com/initio-smac/smac_kivy/main/bin/smacapp-0.1-armeabi-v7a-debug.apk"
         download_path =  '/sdcard/Download/smac.apk'
-        UrlRequest(url=url, method="GET", file_path=download_path, on_success=self.install_app)
+        th = UrlRequest(url=url, method="GET", chunk_size=8192, on_progress=self.on_download_progress, on_success=self.install_app_success, on_failure=self.install_app_failure)
+        print("downloading app...")
+        loader = BoxLayout_loader()
+        self.open_modal(content=loader)
+        self.modal.ids["id_loader"] = loader
+
+    def on_download_progress(self,*args):
+        print(args)
+        progress = int(args[1]/args[2]*100)
+        self.modal.ids["id_loader"].text = "Downloading ({}%)".format(progress)
+        print("Download IP: {}%".format(progress))
+        notification.notify(title="SMAC", message="Downloading ({}%)".format(progress))
+        #print(cur_size/total_size)
+
 
     def install_app_success(self, req, data):
+        self.modal.ids["id_loader"].text = "App Downloaded."
+        notification.notify(message="Downloaded.", toast=True)
+        filename = '/sdcard/Download/smac.apk'
+        with open(filename, 'wb') as f:
+            f.write(data)
+            f.close()
+            print("File content written")
+        print("app downloades")
         from jnius import autoclass, cast
         Intent = autoclass("android.content.Intent")
+        Uri = autoclass('android.net.Uri')
+        File = autoclass('java.io.File')
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
+
         intent = Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType("/sdcard/Download/smac.apk", "application/vnd.android.package-archive");
+        intent.setDataAndType(Uri.fromFile( File(filename)), "application/vnd.android.package-archive");
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
-        currentActivity.startActivity(intent)
+        currentActivity = PythonActivity.mActivity
+        currentActivity.getApplicationContext().startActivity(intent)
         #startActivity(intent);
 
     def install_app_failure(self, req, data):
+        print("install app failure")
         print(data)
 
 
@@ -1537,6 +1569,12 @@ class SmacApp(App):
                 self.update_config_variable(key="LIMIT_DEVICE", value=data.get("limit_device"))
         except Exception as e:
             print("on_req_err", e)
+
+    def on_pause(self):
+        return True
+
+    def on_resume(self):
+        return True
 
     def on_start(self):
         print("kivy started")
@@ -1576,20 +1614,20 @@ class SmacApp(App):
                 db.add_property(id_device=self.ID_DEVICE, id_property=i["id_property"], type_property=i["type_property"], name_property=i["name_property"], value_min=i["value_min"], value_max=i["value_max"], value=i["value"])
 
 
-
-
         print("kivy started few seconds ago")
         if SMAC_PLATFORM == "android":
             from jnius import autoclass, cast
-            service = autoclass('com.smacsystem.smacapp.ServiceMyservice')
-            mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
-            argument = ''
-            service.start(mActivity, argument)
+            #service = autoclass('com.smacsystem.smacapp.ServiceMyservice')
+            #mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+            #argument = ''
+            #service.start(mActivity, argument)
 
             from android.permissions import request_permissions, check_permission, Permission
             print("permision", check_permission(Permission.CAMERA))
             if not check_permission(Permission.CAMERA):
-                request_permissions([Permission.CAMERA, Permission.WRITE_EXTERNAL_STORAGE])
+                request_permissions([Permission.CAMERA])
+            if not check_permission(Permission.WRITE_EXTERNAL_STORAGE):
+                request_permissions( [Permission.WRITE_EXTERNAL_STORAGE, Permission.READ_EXTERNAL_STORAGE] )
 
 
             Intent = autoclass('android.content.Intent')

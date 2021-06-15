@@ -89,10 +89,10 @@ fullscreen = 0
 android.presplash_color = #E0E0E0
 
 # (list) Permissions
-android.permissions = INTERNET, ACCESS_NETWORK_STATE,  BLUETOOTH, BLUETOOTH_ADMIN, CAMERA, WRITE_SETTINGS, WRITE_EXTERNAL_STORAGE
+android.permissions = INTERNET, ACCESS_NETWORK_STATE,  BLUETOOTH, BLUETOOTH_ADMIN, CAMERA, WRITE_SETTINGS, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
 
 # (int) Target Android API, should be as high as possible.
-#android.api = 27
+android.api = 28
 
 # (int) Minimum API your APK will support.
 #android.minapi = 21
@@ -161,6 +161,7 @@ android.permissions = INTERNET, ACCESS_NETWORK_STATE,  BLUETOOTH, BLUETOOTH_ADMI
 # (list) Gradle dependencies to add (currently works only with sdl2_gradle
 # bootstrap)
 #android.gradle_dependencies =
+android.gradle_dependencies = "com.google.android.gms:play-services-auth:17.0.0", "com.google.android.gms:play-services-auth-api-phone:17.4.0"
 
 # (list) add java compile options
 # this can for example be necessary when importing certain java libraries using the 'android.gradle_dependencies' option
@@ -224,7 +225,8 @@ android.logcat_filters = *:S python:D, *:S myservice:D
 #android.copy_libs = 1
 
 # (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
-android.arch = armeabi-v7a
+#android.arch = armeabi-v7a
+android.arch = arm64-v8a
 
 #
 # Python for android (p4a) specific

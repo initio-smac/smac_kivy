@@ -4,6 +4,7 @@ import asyncio
 #from kivy.core.window import Window
 #from kivy.properties import DictProperty
 import random
+import re
 from functools import partial
 
 from kivy.network.urlrequest import UrlRequest
@@ -72,6 +73,7 @@ class SelectClass(Screen):
         #self._keyboard.release()
         #self.get_selectable_nodes()
         asyncio.gather(self.get_nodes())
+
 
     def on_leave(self, *args):
         self.nodes = []
@@ -1463,6 +1465,7 @@ class Screen_deviceSetting(SelectClass):
 
 
 class Screen_register(SelectClass):
+    REQ_USER_CONSENT =  200
     br = None
     content_register = None
     LOGIN_BLOCKED = BooleanProperty(False)
@@ -1511,11 +1514,18 @@ class Screen_register(SelectClass):
             self.content_register.ids["id_btn_send_pin"].bind(on_release=self.request_login_pin)
             self.content_register.ids["id_btn_verify_pin"].bind(on_release=self.verify_login_pin_server)
 
+        if SMAC_PLATFORM == "android":
+            from android import activity
+            activity.bind(on_activity_result=self.on_activity_result)
+            self.start_msg_listener()
+            self.startSmsUserConsent()
 
     def start_msg_listener(self):
         if SMAC_PLATFORM == "android":
             from android.broadcast import BroadcastReceiver
-            self.br = BroadcastReceiver( self.on_broadcast, actions=["android.provider.Telephony.SMS_RECEIVED"] )
+            from jnius import autoclass
+            SmsRetriever = autoclass("com.google.android.gms.auth.api.phone.SmsRetriever")
+            self.br = BroadcastReceiver( self.on_broadcast, actions=[SmsRetriever.SMS_RETRIEVED_ACTION, 'headset_plug'] )
             self.br.start()
             print("BR started")
 
@@ -1524,22 +1534,6 @@ class Screen_register(SelectClass):
             if self.br != None:
                 self.br.stop()
 
-    def on_broadcast(self, context, intent):
-        print("on-broadcast")
-        print(context)
-        print(intent)
-        if intent.getAction() == "android.provider.Telephony.SMS_RECEIVED":
-            bundle = intent.getExtras()
-            msgs = []
-            msg_from = None
-            if bundle != None:
-                try:
-                    pdus = bundle.get("pdus")
-                    print(pdus)
-
-                except Exception as e:
-                    print("BR cast error", e)
-
 
     def on_leave(self, *args):
         if self.content_register.ids.get("id_btn_send_pin", None) != None:
@@ -1547,6 +1541,7 @@ class Screen_register(SelectClass):
             self.content_register.ids["id_btn_verify_pin"].unbind(on_release=self.verify_login_pin_server)
         self.content_register = None
         self.STATE = ""
+        self.stop_msg_listener()
 
     def open_register_modal(self, *args):
         print(self.content_register.children)
@@ -1554,6 +1549,83 @@ class Screen_register(SelectClass):
         app = App.get_running_app()
         app.open_modal(title="Register/Forgot Password", content=self.content_register, auto_dismiss=False)
 
+    def startSmsUserConsent(self):
+        from jnius import autoclass
+        from android import activity
+        activity.bind(on_activity_result=self.on_activity_result)
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        SmsRetriever = autoclass("com.google.android.gms.auth.api.phone.SmsRetriever")
+        client = SmsRetriever.getClient(PythonActivity.mActivity.getApplicationContext())
+        print(client)
+        c = client.startSmsUserConsent("+919738339820")
+        print(c)
+        c.addOnSuccessListener = self.on_ss
+        c.addOnFailureListener = self.on_st
+        c.add_on_success_listener = self.on_ss
+        c.add_on_failure_listener = self.on_st
+        #client.startSmsUserConsent(None).addOnFailureListener = self.on_msg_failure
+
+    def on_ss(self, *args):
+        print("SMS start", args)
+
+    def on_st(self, *args):
+        print("SMS stop", args)
+
+    def on_broadcast(self, context, intent):
+        print("on-broadcast")
+        print(context)
+        print(intent)
+        from jnius import autoclass, cast
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        CommonStatusCodes = autoclass("com.google.android.gms.common.api.CommonStatusCodes")
+        SmsRetriever = autoclass("com.google.android.gms.auth.api.phone.SmsRetriever")
+        print("GET ACTION", intent.getAction() )
+        print( SmsRetriever.SMS_RETRIEVED_ACTION )
+        if intent.getAction() == SmsRetriever.SMS_RETRIEVED_ACTION:
+            extras = intent.getExtras()
+            smsRetrieverStatus = extras.get(SmsRetriever.EXTRA_STATUS);
+            print(smsRetrieverStatus.getStatusCode())
+            print(CommonStatusCodes.SUCCESS)
+            print(CommonStatusCodes.TIMEOUT)
+            code = smsRetrieverStatus.getStatusCode()
+            if code == CommonStatusCodes.SUCCESS:
+                consentIntent = extras.getParcelable(SmsRetriever.EXTRA_CONSENT_INTENT)
+                consentIntent = cast('android.content.Intent', consentIntent)
+                currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
+                currentActivity.startActivityForResult(consentIntent, self.REQ_USER_CONSENT);
+            elif code == CommonStatusCodes.TIMEOUT:
+                self.on_msg_failure()
+
+    def on_activity_result(self,req_code, res_code, intent, *args):
+        print(args)
+        if req_code == self.REQ_USER_CONSENT:
+            from jnius import autoclass
+            SmsRetriever = autoclass("com.google.android.gms.auth.api.phone.SmsRetriever")
+            Activity = autoclass('android.app.Activity')
+            print(Activity.RESULT_OK)
+            if (res_code == Activity.RESULT_OK) and ( intent != None):
+                message = intent.getStringExtra(SmsRetriever.EXTRA_SMS_MESSAGE)
+                oneTimeCode = self.parseOneTimeCode(message)
+                if oneTimeCode != None:
+                    self.content_register.ids["id_text_email_pin"].text = str(oneTimeCode)
+                else:
+                    print("Cannot parse OTP from message")
+
+    def parseOneTimeCode(self, message):
+        print(message)
+        matches = re.findall(r"[0-9]{4}", message)
+        if len(matches) > 0:
+            return matches[0]
+        return None
+
+
+    def on_msg_success(self, *args):
+        print("ON_MSG_SUCCESS")
+        print(args)
+
+    def on_msg_failure(self, *args):
+        print("ON_MSG_FAIL")
+        print(args)
 
     def request_login_pin(self, *args):
         app = App.get_running_app()
@@ -1580,6 +1652,9 @@ class Screen_register(SelectClass):
         data["name_device"] = app.NAME_DEVICE
         #otp_url = "https://2factor.in/API/V1/{api_key}/SMS/{phone_number}/{otp}".format(api_key=app.OTP_API_KEY, phone_number=mobile_number, otp=OTP)
         r = restapi.rest_call(url=url, method="POST", request=request, data=data, on_success=self.on_req_otp_success, on_failure=self.on_req_otp_failure)
+        if SMAC_PLATFORM == "android":
+            self.startSmsUserConsent()
+
         '''if r != None:
             status_code = r[0]
             res = r[1]

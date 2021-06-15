@@ -282,12 +282,14 @@
                 size_hint_y: None
                 height: app.grid_min
                 id: id_text_email
+                input_type: "mail"
                 text: app.EMAIL if(app.EMAIL != "") else app.MOBILE_NUMBER
             TextInput_custom:
                 hint_text: "PIN"
                 size_hint_y: None
                 height: app.grid_min
                 id: id_text_email_pin
+                input_type: "number"
             Button_custom1:
                 text: "LOGIN"
                 on_release:

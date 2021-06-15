@@ -982,21 +982,25 @@
 <BoxLayout_downloadUpdateContent>:
     orientation: 'vertical'
     size_hint: 1, None
-    height: self.minimum_height
+    height: app.grid_min*3
     Label_custom:
         height: app.grid_min*2
-        text: "New Updates Available. Do You Want to Update to New Version?"
+        halign: 'center'
+        text: "New Updates Available.\nDo You Want to Update to New Version?"
     BoxLayout:
         size_hint: 1, None
         height: app.grid_min
         Button_custom1:
+            size_hint_x: 1
             text: "Cancel"
             on_release:
                 app.close_modal()
         Button_custom1:
+            size_hint_x: 1
             text: "Download"
             on_release:
                 app.download_app()
+
 <BoxLayout_updateWifiContent>:
     orientation: 'vertical'
     size_hint: 1, None
