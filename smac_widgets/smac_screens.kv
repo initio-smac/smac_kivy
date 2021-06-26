@@ -4,6 +4,7 @@
 
 
 <Screen_network>:
+    back_screen: None
     FloatLayout:
         BoxLayout:
             orientation: "vertical"
@@ -81,8 +82,8 @@
             #size_hint_y: 1
             BoxLayout_menu:
                 id: id_menu
-                padding: dp(2)
-                spacing: dp(2)
+                padding: dp(0)
+                spacing: dp(0)
 
                 Label_menuItem2:
                     text: "Homes"
@@ -97,7 +98,8 @@
                         root.on_menu_item_release(self)
                 BoxLayout_container:
                     id: id_menu_home_container
-
+                    padding: 0
+                    spacing: dp(1)
                 Label_menuItem2:
                     text: "Device"
                     bg_color: app.colors["COLOR_THEME"]
@@ -118,6 +120,7 @@
 
 
 <Screen_context>:
+    back_screen: "Screen_network"
     BoxLayout:
 		orientation: "vertical"
 		BoxLayout_header:
@@ -139,6 +142,7 @@
 
 
 <Screen_deviceSetting>:
+    back_screen: "Screen_network"
     BoxLayout:
 		orientation: "vertical"
 		BoxLayout_header:
@@ -270,11 +274,24 @@
 
 
 <Screen_register>:
+    back_screen: None
+
+
     ScrollView:
         BoxLayout_container:
             spacing: app.grid_min/5
-            padding: app.grid_min
+            padding: app.grid_min, 0
+            Widget:
+                size_hint: 1, None
+                height: app.grid_min
+                Image:
+                    source: 'smac_text.png'
+                    size_hint: None, None
+                    size: app.grid_min*2,  app.grid_min
+                    center: self.parent.center
             Label_custom:
+                size_hint_y: None
+                height: app.grid_min * 2
                 text: "LOGIN"
                 bold: True
             TextInput_custom:

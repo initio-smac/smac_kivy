@@ -48,7 +48,7 @@ requirements = python3==3.7.4, hostpython3==3.7.4, kivy==2.0.0, plyer
 
 # (str) Presplash of the application
 #presplash.filename = %(source.dir)s/data/presplash.png
-presplash.filename = %(source.dir)s/smac_logo.png
+presplash.filename = %(source.dir)s/smac_splash2.png
 
 # (str) Icon of the application
 #icon.filename = %(source.dir)s/data/icon.png
@@ -60,6 +60,9 @@ orientation = portrait
 # (list) List of service to declare
 #services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
 #services = myservice:%(source.dir)s/service_test.py
+# service not working in >= android oreo
+# https://stackoverflow.com/questions/51357772/android-service-not-restarted-when-app-back-from-idle-state
+#services = myservice:%(source.dir)s/service_test2.py
 
 #
 # OSX Specific
@@ -99,9 +102,11 @@ android.api = 28
 
 # (int) Android SDK version to use
 #android.sdk = 20
+#android.sdk = 25
 
 # (str) Android NDK version to use
 #android.ndk = 19b
+#android.ndk = 19c
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
 #android.ndk_api = 21
@@ -219,7 +224,8 @@ android.gradle_dependencies = "com.google.android.gms:play-services-auth:17.0.0"
 
 # (str) Android logcat filters to use
 #android.logcat_filters = *:S python:D
-android.logcat_filters = *:S python:D, *:S myservice:D
+#android.logcat_filters = *:S python:D, *:S myservice:D
+android.logcat_filters = *:S ActivityManager:D, *:S python:D, *:S myservice:D
 
 # (bool) Copy library instead of making a libpymodules.so
 #android.copy_libs = 1

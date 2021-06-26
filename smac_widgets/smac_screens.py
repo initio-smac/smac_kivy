@@ -7,6 +7,8 @@ import random
 import re
 from functools import partial
 
+from kivy import clock
+from kivy.clock import Clock
 from kivy.network.urlrequest import UrlRequest
 from kivy.uix.screenmanager import Screen
 #from kivy.app import App
@@ -494,6 +496,7 @@ class Screen_context(SelectClass):
         print("id_topic", app.APP_DATA["id_topic"])
         self._interval = asyncio.gather(self.interval(1))
         super().on_enter()
+        self.modal.ids["id_btn_close"].bind(on_release=self.close_modal)
 
     def on_leave(self, *args):
         #container = self.ids["id_context_container"]
@@ -501,6 +504,7 @@ class Screen_context(SelectClass):
         #if self._interval != None:
         #    self._interval.cancel()
         super().on_leave()
+        self.modal.ids["id_btn_close"].unbind(on_release=self.close_modal)
         pass
 
     async def load_widgets(self, *args):
@@ -1467,6 +1471,9 @@ class Screen_deviceSetting(SelectClass):
 class Screen_register(SelectClass):
     REQ_USER_CONSENT =  200
     br = None
+    CLK = None
+    OTP_REQ_COUNT = 0
+    OTP_REQ_MAX_COUNT = 30
     content_register = None
     LOGIN_BLOCKED = BooleanProperty(False)
     LOGIN_ATTEMPT_FAIL_COUNT = 0
@@ -1494,7 +1501,29 @@ class Screen_register(SelectClass):
                 self.content_register.ids["id_text_email"].disabled = False
                 self.content_register.ids["id_text_mobile_number"].disabled = False
                 self.content_register.ids["id_text_email_pin"].disabled = False
+        self.stop_otp_timer()
 
+    # timer to enable req_OTP_pin after 30 seconds
+    def start_otp_timer(self):
+        self.CLK = Clock.schedule_interval(self.update_OTP_count, 1)
+
+    def stop_otp_timer(self, *args):
+        if self.CLK != None:
+            self.CLK.cancel()
+            self.CLK = None
+        self.content_register.ids["id_label_info2"].text = ""
+
+    def update_OTP_count(self, *args):
+        if self.OTP_REQ_COUNT >= self.OTP_REQ_MAX_COUNT:
+            self.content_register.ids["id_btn_send_pin"].disabled = False
+            self.content_register.ids["id_btn_verify_pin"].disabled = True
+            self.content_register.ids["id_text_email"].disabled = False
+            self.content_register.ids["id_text_mobile_number"].disabled = False
+            self.content_register.ids["id_text_email_pin"].disabled = False
+            self.stop_otp_timer()
+        else:
+            self.OTP_REQ_COUNT += 1
+            self.content_register.ids["id_label_info2"].text = "Send OTP Again in {} sec.".format(self.OTP_REQ_MAX_COUNT-self.OTP_REQ_COUNT)
 
     def on_enter(self, *args):
         #app = App.get_running_app()
@@ -1514,11 +1543,11 @@ class Screen_register(SelectClass):
             self.content_register.ids["id_btn_send_pin"].bind(on_release=self.request_login_pin)
             self.content_register.ids["id_btn_verify_pin"].bind(on_release=self.verify_login_pin_server)
 
-        if SMAC_PLATFORM == "android":
+        '''if SMAC_PLATFORM == "android":
             from android import activity
             activity.bind(on_activity_result=self.on_activity_result)
             self.start_msg_listener()
-            self.startSmsUserConsent()
+            self.startSmsUserConsent()'''
 
     def start_msg_listener(self):
         if SMAC_PLATFORM == "android":
@@ -1557,12 +1586,12 @@ class Screen_register(SelectClass):
         SmsRetriever = autoclass("com.google.android.gms.auth.api.phone.SmsRetriever")
         client = SmsRetriever.getClient(PythonActivity.mActivity.getApplicationContext())
         print(client)
-        c = client.startSmsUserConsent("+919738339820")
+        c = client.startSmsUserConsent("AD-TFACTR")
         print(c)
-        c.addOnSuccessListener = self.on_ss
-        c.addOnFailureListener = self.on_st
-        c.add_on_success_listener = self.on_ss
-        c.add_on_failure_listener = self.on_st
+        #c.addOnSuccessListener = self.on_ss
+        #c.addOnFailureListener = self.on_st
+        #c.add_on_success_listener = self.on_ss
+        #c.add_on_failure_listener = self.on_st
         #client.startSmsUserConsent(None).addOnFailureListener = self.on_msg_failure
 
     def on_ss(self, *args):
@@ -1652,7 +1681,14 @@ class Screen_register(SelectClass):
         data["name_device"] = app.NAME_DEVICE
         #otp_url = "https://2factor.in/API/V1/{api_key}/SMS/{phone_number}/{otp}".format(api_key=app.OTP_API_KEY, phone_number=mobile_number, otp=OTP)
         r = restapi.rest_call(url=url, method="POST", request=request, data=data, on_success=self.on_req_otp_success, on_failure=self.on_req_otp_failure)
+        self.start_otp_timer()
+        #if SMAC_PLATFORM == "android":
+        #    self.startSmsUserConsent()
+
         if SMAC_PLATFORM == "android":
+            from android import activity
+            activity.bind(on_activity_result=self.on_activity_result)
+            self.start_msg_listener()
             self.startSmsUserConsent()
 
         '''if r != None:
