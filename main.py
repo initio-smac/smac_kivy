@@ -417,7 +417,10 @@ class SmacApp(App):
             c2[ smac_keys["NAME_CONTEXT"] ] = name_context
             client.send_message(frm=self.ID_DEVICE, to=dest_topic, cmd=smac_keys["CMD_SEND_INFO"], message=c2, udp=udp, tcp=tcp)
 
-        for id_topic2, id_context, id_device, id_property, value, type_trigger in db.get_trigger_by_device(self.ID_DEVICE):
+        triggers = db.get_trigger_by_device(self.ID_DEVICE)
+        if triggers == None:
+            triggers = []
+        for id_topic2, id_context, id_device, id_property, value, type_trigger in triggers:
             c2 = {}
             c2[ smac_keys["CONTEXT_TRIGGER"] ] = 1
             c2[ smac_keys["ID_TOPIC"]] = id_topic2 if (id_topic2 != None) else ""
@@ -1145,7 +1148,10 @@ class SmacApp(App):
 
             # check for trigger and update value
             if (COUNTER % 60) == 0:
-                for id_topic, id_context, id_device, id_property, value, type_trigger in db.get_trigger_by_device(self.ID_DEVICE):
+                triggers = db.get_trigger_by_device(self.ID_DEVICE)
+                if triggers == None:
+                    triggers = []
+                for id_topic, id_context, id_device, id_property, value, type_trigger in triggers:
                     if type_trigger == smac_keys["TYPE_TRIGGER_PROP"]:
                         db_value = db.get_value_by_property(id_device, id_property)
                         if str(db_value) == str(value):

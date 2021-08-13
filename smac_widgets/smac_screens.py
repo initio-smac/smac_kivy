@@ -707,7 +707,7 @@ class Screen_network(SelectClass):
                         online = True
                     else:
                         t_diff = int(time.time()) - last_updated
-                        online =  True if(t_diff <= interval_online+5) else False
+                        online =  True if(t_diff <= interval_online*2) else False
                     if online:
                         if( w.DEVICE_IDS.get(id_device, None) == None):
                             w1 = Widget_device(text=name_device)
