@@ -555,8 +555,8 @@
                 pos: self.parent.right-self.width+dp(5), self.parent.y-dp(5)
                 source: 'icons/DARK/CLOSE.png'
                 on_release:
-                    #print("dismiss")
-                    root.dismiss()
+                    print("dismiss", self)
+                    #root.dismiss()
         Widget:
             size_hint_y: None
             height: dp(4)
@@ -640,6 +640,10 @@
         id: id_text_email_pin
     Label_custom:
         id: id_label_info
+        text: ""
+        color: app.colors["COLOR_TEXT"]
+    Label_custom:
+        id: id_label_info2
         text: ""
         color: app.colors["COLOR_TEXT"]
     BoxLayout_container:

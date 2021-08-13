@@ -3,7 +3,7 @@ import json
 import time
 from datetime import datetime
 
-from kivy.app import App
+#from kivy.app import App
 
 from smac_client import client
 from smac_db import db

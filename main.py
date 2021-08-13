@@ -1,17 +1,14 @@
 import base64
 import os
-import time
 from datetime import datetime
-#import time
-from os.path import join
 
-from kivy.base import EventLoop
+import kivy.core.window
 from kivy.core.window import Window
 from kivy.properties import *
 #from kivy.utils import get_color_from_hex, platform
 #from kivy.uix.screenmanager import ScreenManager, Screen, CardTransition, NoTransition, SlideTransition, SwapTransition, FadeTransition, WipeTransition, FallOutTransition, RiseInTransition
 from kivy.uix.screenmanager import ScreenManager, NoTransition
-#from kivy.core.window import Window
+from kivy.utils import get_hex_from_color
 from plyer import notification
 
 from smac_device import set_property, get_device_property, get_property_value, property_listener
@@ -27,6 +24,26 @@ from smac_device_keys import SMAC_DEVICES
 from smac_widgets.smac_screens import *
 from smac_widgets.smac_layouts import *
 from smac_db import db
+
+if SMAC_PLATFORM == "android":
+    from android.runnable import run_on_ui_thread
+    @run_on_ui_thread
+    def change_statusbar_color(color):
+        #print(color)
+        from jnius import autoclass
+        Color = autoclass("android.graphics.Color")
+        WindowManager = autoclass('android.view.WindowManager$LayoutParams')
+        activity = autoclass('org.kivy.android.PythonActivity').mActivity
+        window = activity.getWindow()
+        window.clearFlags(WindowManager.FLAG_TRANSLUCENT_STATUS)
+        window.addFlags(WindowManager.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        #c = [ str(i) for i in Color.parseColor(color)]
+        print(color[:7])
+        c= get_hex_from_color(color)
+        print(c[:7])
+        c = Color.parseColor( c[:7] )
+        window.setStatusBarColor(c)
+        window.setNavigationBarColor(c)
 
 
 class BoxLayout_property(BoxLayout):
@@ -76,13 +93,15 @@ class SmacApp(App):
     DEBUG = False
     EMAIL = StringProperty("")
     MOBILE_NUMBER = StringProperty('')
-    OTP_API_KEY = "68a846d4-c386-11eb-8089-0200cd936042"
+    #OTP_API_KEY = "68a846d4-c386-11eb-8089-0200cd936042"
     _KEYBOARD = None
     VERSION = 0.1
+    BACK_BTN_COUNTER = 0
+    title="SMAC"
+    icon = "smac_logo.png"
 
     def on_theme(self, *args):
         print("on_theme", self.theme)
-
         if self.theme == "DARK":
             self.colors = THEME_DARK
             self.source_icon = "icons/DARK/"
@@ -92,7 +111,11 @@ class SmacApp(App):
             self.source_icon = "icons/LIGHT/"
             self.update_config_variable(key="theme", value="LIGHT")
         print(self.colors["COLOR_THEME"])
+        if SMAC_PLATFORM == "android":
+            change_statusbar_color(self.colors["COLOR_THEME"])
         Window.clearcolor = self.colors["COLOR_THEME"]
+
+
 
     def logout(self, *args):
         self.update_config_variable(key="EMAIL_VERIFIED", value=0)
@@ -114,6 +137,7 @@ class SmacApp(App):
         self.screen_manager.add_widget(Screen_network(name='Screen_network'))
         self.screen_manager.add_widget(Screen_deviceSetting(name='Screen_deviceSetting'))
         self.screen_manager.add_widget(Screen_context(name='Screen_context'))
+        self.screen_manager.add_widget(Screen_espConfig(name='Screen_espConfig'))
         #self.screen_manager.add_widget(Screen_devices(name='Screen_devices'))
         #self.screen_manager.add_widget(Screen_property(name='Screen_deviceSetting'))
 
@@ -144,6 +168,8 @@ class SmacApp(App):
         self.is_modal_open = False
         scr = self.screen_manager.get_screen(self.screen_manager.current)
         scr.get_selectable_nodes()
+        print(args)
+        return True
 
     def open_modalInfo(self, title="Info", text="", auto_dismiss=True):
         print("text", text)
@@ -1397,9 +1423,7 @@ class SmacApp(App):
                 f.write( json.dumps(fd) )
                 f.close()
 
-    def on_stop(self, *args):
-        for task in self._TASKS:
-            task.cancel()
+
 
 
     def on_tcp_start(self, *args):
@@ -1408,23 +1432,37 @@ class SmacApp(App):
         self.send_info(tcp=True, udp=False)
 
     def initialise_keyboard(self, *args):
-        self._KEYBOARD = EventLoop.window.request_keyboard(
-            self._keyboard_released,
-            self.screen_manager
-        )
+        #self._KEYBOARD = EventLoop.window.request_keyboard(
+        #    self._keyboard_released,
+        #    self.screen_manager
+        #)
+        self._KEYBOARD = kivy.core.window.Keyboard
 
     def _bind_keyboard(self):
         self.initialise_keyboard()
-        self._KEYBOARD.bind(on_key_down=self._on_keyboard_down)
+        Window.bind(on_key_down=self._on_keyboard_down)
 
     def _unbind_keyboard(self):
-        self._KEYBOARD.unbind(on_key_down=self._on_keyboard_down)
-        self._KEYBOARD.release()
+        Window.unbind(on_key_down=self._on_keyboard_down)
+        #self._KEYBOARD.release()
 
-    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        _, key = keycode
-        #print(key)
+    def _on_keyboard_down(self, window, keycode, *args):
+        #print(args)
+        #print(keycode)
+        key = self._KEYBOARD.keycode_to_string(self._KEYBOARD, keycode)
+        #print(k)
         scr = self.screen_manager.get_screen(name=self.screen_manager.current)
+        if key == "escape":
+            print(scr.back_screen)
+            if scr.back_screen != None:
+                self.BACK_BTN_COUNTER = 0
+                self.change_screen(scr.back_screen)
+            elif self.BACK_BTN_COUNTER == 1:
+                self.stop()
+            else:
+                self.BACK_BTN_COUNTER += 1
+                notification.notify(message="Press Again to Close.", toast=True)
+            return True
         if len(scr.nodes) > scr.index:
             if key  == "down":
                 print(scr.index)
@@ -1576,10 +1614,17 @@ class SmacApp(App):
         except Exception as e:
             print("on_req_err", e)
 
+    def on_stop(self, *args):
+        print("APP stopped")
+        for task in self._TASKS:
+            task.cancel()
+
     def on_pause(self):
+        print("APP pause")
         return True
 
     def on_resume(self):
+        print("APP resume")
         return True
 
     def on_start(self):
@@ -1623,9 +1668,9 @@ class SmacApp(App):
         print("kivy started few seconds ago")
         if SMAC_PLATFORM == "android":
             from jnius import autoclass, cast
-            #service = autoclass('com.smacsystem.smacapp.ServiceMyservice')
-            #mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
-            #argument = ''
+            service = autoclass('com.smacsystem.smacapp.ServiceMyservice')
+            mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+            argument = ''
             #service.start(mActivity, argument)
 
             from android.permissions import request_permissions, check_permission, Permission

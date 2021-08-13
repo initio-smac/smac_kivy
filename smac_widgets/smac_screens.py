@@ -3,22 +3,29 @@ import asyncio
 #from kivy import platform
 #from kivy.core.window import Window
 #from kivy.properties import DictProperty
+import json
 import random
 import re
 from functools import partial
 
+from kivy import clock
+from kivy.clock import Clock
 from kivy.network.urlrequest import UrlRequest
+from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.screenmanager import Screen
 #from kivy.app import App
 #from kivy.uix.scrollview import ScrollView
 
-from smac_client import client
+from smac_client_sel import client
 from smac_device import set_property, generate_id_topic, generate_id_context
 from smac_device_keys import SMAC_PROPERTY, SMAC_DEVICES
 from smac_keys import smac_keys
 from smac_platform import SMAC_PLATFORM
 from smac_requests import SMAC_SERVER, restapi
 from smac_widgets.smac_layouts import *
+from smac_tools import network_scanner
+from webrepl.webrepl_client import webrepl_client
+
 
 from kivy.lang import Builder
 Builder.load_file('smac_widgets/smac_modal.kv')
@@ -116,6 +123,144 @@ class SelectClass(Screen):
                     wid.dispatch("on_release")
                 elif TextInput in wid.__class__.__bases__:
                     wid.focus = True
+
+class Screen_espConfig(SelectClass):
+    CONNECTED = BooleanProperty(False)
+    ADDR = ""
+    scan_task = None
+    DATA = DictProperty({})
+    modal = None
+    UPDATE_FILE = None
+
+    def on_enter(self, *args):
+        #self.scan_task = asyncio.create_task(network_scanner.scan_network(port=8266) )
+        #asyncio.gather( self.scan_task )
+        #asyncio.run( self.scan_task )
+        #network_scanner.scan_network(port=8266)
+        pass
+
+    def on_CONNECTED(self, wid, value, *args):
+        app = App.get_running_app()
+        if value:
+            #app.open_modalInfo(text="Connected to {}".format(self.ADDR))
+            self.ids["id_config_state_text"].text = "Connected to {} ({})".format( network_scanner.get_hostname(self.ADDR), self.ADDR )
+            f = webrepl_client.get_file("config_esp.json", "config.json")
+            self.DATA = json.loads(f)
+            print("F", self.DATA)
+            self.add_config_widgets()
+        else:
+            self.clear_config_widgets()
+
+    def add_config_widgets(self):
+        app = App.get_running_app()
+        container = self.ids["id_esp_config_container"]
+
+        wa1 = Widget_block()
+        wa1.text = "Update Device Name"
+        w1 = BoxLayout(size_hint=(1, None))
+        w1.height = app.grid_min
+        txt1 = TextInput_custom(hint_text="Device Name")
+        txt1.text = self.DATA.get("name_device", "")
+        self.ids["id_name_device"] = txt1
+        btn1 = Button_custom1(text="Update")
+        btn1.bind(on_release=self.update_device_name)
+        w1.add_widget(txt1)
+        w1.add_widget(btn1)
+        wa1.add_widget(w1)
+
+        wa2 = Widget_block()
+        wa2.height = app.grid_min*4
+        wa2.text = "Update Wifi Config"
+        wifi_con = self.DATA.get("wifi_config_1", {"ssid": "", "password": ""})
+        txt2 = TextInput_custom(hint_text="SSID", size_hint_y=None, height=app.grid_min)
+        txt2.text = wifi_con["ssid"]
+        #txt2.height = app.grid_min
+        self.ids["id_ssid"] = txt2
+        txt3 = TextInput_custom(hint_text="Password",size_hint_y=None,  height=app.grid_min)
+        txt3.text = wifi_con["password"]
+        #txt3.height = app.grid_min
+        self.ids["id_password"] = txt3
+        btn2 = Button_custom1(text="Update")
+        btn2.bind(on_release=self.update_wifi_config)
+        wa2.add_widget(txt2)
+        wa2.add_widget(txt3)
+        wa2.add_widget(btn2)
+
+        wa3 = Widget_block()
+        wa3.text = "Software Update"
+        btn3 = Button_link(text="Select .Zip File")
+        btn3.bind(on_release=self.select_zip_file)
+        self.ids["id_btn_sel_file"] = btn3
+        btn4 = Button_custom1(text="Update")
+        btn4.bind(on_release=self.update_software)
+        wa3.add_widget(btn3)
+        wa3.add_widget(btn4)
+
+        container.add_widget(wa1)
+        container.add_widget(wa2)
+        container.add_widget(wa3)
+
+    def update_device_name(self, btn):
+        app = App.get_running_app()
+        text = self.ids["id_name_device"].text
+        res = webrepl_client.update_config_variable(key="name_device", value=text)
+        if res:
+            app.open_modalInfo(title="Info", text="Device Name Updated")
+        else:
+            app.open_modalInfo(title="Info", text="Device Name Not Updated")
+
+    def update_wifi_config(self, btn):
+        app = App.get_running_app()
+        ssid = self.ids["id_ssid"].text
+        password = self.ids["id_password"].text
+        res = webrepl_client.update_config_variable(key="wifi_config_1", value={"ssid": ssid, "password": password} )
+        if res:
+            app.open_modalInfo(title="Info", text="Wifi Config Updated")
+        else:
+            app.open_modalInfo(title="Info", text="Wifi Config Not Updated")
+
+    def select_zip_file(self, btn):
+        #app = App.get_running_app()
+        fc = FileChooserListView(on_submit=self.on_file_selection, filters=["*.zip"])
+        self.modal = Popup(title="Select A .zip Update File", content=fc)
+        self.modal.open()
+
+    def on_file_selection(self, filechooser, files,  *args):
+        print("file selection")
+        print(args)
+        self.UPDATE_FILE = files[0]
+        self.ids["id_btn_sel_file"].text += "({})".format(self.UPDATE_FILE)
+        if self.modal != None:
+            self.modal.dismiss()
+
+    def update_software(self, btn):
+        app = App.get_running_app()
+        app.open_modal(content=BoxLayout_loader(text="Updating Software..."))
+        if self.UPDATE_FILE != None:
+
+            res = webrepl_client.send_files(zip_file=self.UPDATE_FILE)
+            if res:
+                app.open_modalInfo(title="Info", text="Software Updated.")
+            else:
+                app.open_modalInfo(title="Info", text="Software Not Updated.")
+        else:
+            app.open_modalInfo(title="Info", text="Select A Valid File to Continue.")
+
+    def clear_config_widgets(self):
+        container = self.ids["id_esp_config_container"]
+        container.clear_widgets()
+
+    def on_leave(self, *args):
+        self.CONNECTED = False
+        if self.scan_task != None:
+            #self.scan_task.cancel()
+            self.scan_task = None
+
+    def connect_esp(self, addr):
+        self.ADDR = addr
+        self.CONNECTED = webrepl_client.connect_ws(host=addr, port=8266, passwd=1234)
+        #print(self.CONNECTED)
+
 
 class Screen_context(SelectClass):
     modal = ModalView_custom(size_hint_x=.9, size_hint_max_x=dp(400), size_hint_y=None, height=dp(400))
@@ -494,6 +639,7 @@ class Screen_context(SelectClass):
         print("id_topic", app.APP_DATA["id_topic"])
         self._interval = asyncio.gather(self.interval(1))
         super().on_enter()
+        self.modal.ids["id_btn_close"].bind(on_release=self.close_modal)
 
     def on_leave(self, *args):
         #container = self.ids["id_context_container"]
@@ -501,6 +647,7 @@ class Screen_context(SelectClass):
         #if self._interval != None:
         #    self._interval.cancel()
         super().on_leave()
+        self.modal.ids["id_btn_close"].unbind(on_release=self.close_modal)
         pass
 
     async def load_widgets(self, *args):
@@ -1075,7 +1222,8 @@ class Screen_deviceSetting(SelectClass):
         DEVS = db.get_topic_list_not_by_device(id_device=id_device)
         for id_topic, name_home, name_topic in DEVS:
             print(id_topic)
-            if (id_topic != None) and (id_topic != "") and (id_topic not in app.SUB_TOPIC):
+            #if (id_topic != None) and (id_topic != "") and (id_topic not in app.SUB_TOPIC):
+            if (id_topic != None) and (id_topic != ""):
                 '''label = Label_dropDown(text=name_home)
                 label.id_topic = id_topic
                 label.bind(on_release=self.on_dropdown_homeitem_release)
@@ -1467,6 +1615,9 @@ class Screen_deviceSetting(SelectClass):
 class Screen_register(SelectClass):
     REQ_USER_CONSENT =  200
     br = None
+    CLK = None
+    OTP_REQ_COUNT = 0
+    OTP_REQ_MAX_COUNT = 30
     content_register = None
     LOGIN_BLOCKED = BooleanProperty(False)
     LOGIN_ATTEMPT_FAIL_COUNT = 0
@@ -1494,7 +1645,29 @@ class Screen_register(SelectClass):
                 self.content_register.ids["id_text_email"].disabled = False
                 self.content_register.ids["id_text_mobile_number"].disabled = False
                 self.content_register.ids["id_text_email_pin"].disabled = False
+        self.stop_otp_timer()
 
+    # timer to enable req_OTP_pin after 30 seconds
+    def start_otp_timer(self):
+        self.CLK = Clock.schedule_interval(self.update_OTP_count, 1)
+
+    def stop_otp_timer(self, *args):
+        if self.CLK != None:
+            self.CLK.cancel()
+            self.CLK = None
+        self.content_register.ids["id_label_info2"].text = ""
+
+    def update_OTP_count(self, *args):
+        if self.OTP_REQ_COUNT >= self.OTP_REQ_MAX_COUNT:
+            self.content_register.ids["id_btn_send_pin"].disabled = False
+            self.content_register.ids["id_btn_verify_pin"].disabled = True
+            self.content_register.ids["id_text_email"].disabled = False
+            self.content_register.ids["id_text_mobile_number"].disabled = False
+            self.content_register.ids["id_text_email_pin"].disabled = False
+            self.stop_otp_timer()
+        else:
+            self.OTP_REQ_COUNT += 1
+            self.content_register.ids["id_label_info2"].text = "Send OTP Again in {} sec.".format(self.OTP_REQ_MAX_COUNT-self.OTP_REQ_COUNT)
 
     def on_enter(self, *args):
         #app = App.get_running_app()
@@ -1514,11 +1687,11 @@ class Screen_register(SelectClass):
             self.content_register.ids["id_btn_send_pin"].bind(on_release=self.request_login_pin)
             self.content_register.ids["id_btn_verify_pin"].bind(on_release=self.verify_login_pin_server)
 
-        if SMAC_PLATFORM == "android":
+        '''if SMAC_PLATFORM == "android":
             from android import activity
             activity.bind(on_activity_result=self.on_activity_result)
             self.start_msg_listener()
-            self.startSmsUserConsent()
+            self.startSmsUserConsent()'''
 
     def start_msg_listener(self):
         if SMAC_PLATFORM == "android":
@@ -1557,12 +1730,12 @@ class Screen_register(SelectClass):
         SmsRetriever = autoclass("com.google.android.gms.auth.api.phone.SmsRetriever")
         client = SmsRetriever.getClient(PythonActivity.mActivity.getApplicationContext())
         print(client)
-        c = client.startSmsUserConsent("+919738339820")
+        c = client.startSmsUserConsent("AD-TFACTR")
         print(c)
-        c.addOnSuccessListener = self.on_ss
-        c.addOnFailureListener = self.on_st
-        c.add_on_success_listener = self.on_ss
-        c.add_on_failure_listener = self.on_st
+        #c.addOnSuccessListener = self.on_ss
+        #c.addOnFailureListener = self.on_st
+        #c.add_on_success_listener = self.on_ss
+        #c.add_on_failure_listener = self.on_st
         #client.startSmsUserConsent(None).addOnFailureListener = self.on_msg_failure
 
     def on_ss(self, *args):
@@ -1652,7 +1825,14 @@ class Screen_register(SelectClass):
         data["name_device"] = app.NAME_DEVICE
         #otp_url = "https://2factor.in/API/V1/{api_key}/SMS/{phone_number}/{otp}".format(api_key=app.OTP_API_KEY, phone_number=mobile_number, otp=OTP)
         r = restapi.rest_call(url=url, method="POST", request=request, data=data, on_success=self.on_req_otp_success, on_failure=self.on_req_otp_failure)
+        self.start_otp_timer()
+        #if SMAC_PLATFORM == "android":
+        #    self.startSmsUserConsent()
+
         if SMAC_PLATFORM == "android":
+            from android import activity
+            activity.bind(on_activity_result=self.on_activity_result)
+            self.start_msg_listener()
             self.startSmsUserConsent()
 
         '''if r != None:

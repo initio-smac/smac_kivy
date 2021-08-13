@@ -391,8 +391,8 @@ class SMACClient():
                         else:
                             try:
                                 self.process_message(topic, msg, "ZMQ")
-                            except:
-                                pass
+                            except Exception as e:
+                                print("Exception process_message, zmq", e)
                             
                         del self.ZMQ_REQ[num]
                     else:
