@@ -2,6 +2,57 @@
 #: import BoxLayout_container smac_widgets.smac_layouts.BoxLayout_container
 #: import SMAC_DEVICES smac_device_keys.SMAC_DEVICES
 
+<Screen_espConfig>:
+    back_screen: "Screen_network"
+    BoxLayout:
+        orientation: "vertical"
+        BoxLayout_header:
+            Image_iconButton:
+                source: app.source_icon + 'LEFT.png'
+                on_release:
+                    app.change_screen(root.back_screen)
+            Label:
+                text: "Config Device"
+                color: app.colors["COLOR_TEXT"]
+                size_hint_y: None
+                height: app.grid_min
+            Image_iconButton:
+                source: app.source_icon + 'CHECK.png'
+                on_release:
+                    root.update_config()
+        ScrollView:
+            size_hint_y: 1
+            BoxLayout_container:
+                id: id_config_container
+                spacing: dp(10)
+                Widget_block:
+                    text: "Connect To Device"
+                    BoxLayout:
+                        size_hint: 1, None
+                        height: app.grid_min
+                        TextInput_custom:
+                            hint_text: "IP address"
+                            id: id_ip_address
+                            text: "192.168.43.123"
+                        Button_custom1:
+                            text: 'Connect'
+                            on_release:
+                                root.connect_esp(id_ip_address.text)
+                Widget_block:
+                    text: "Scanning..."
+                    height: self.minimum_height
+                    id: id_config_state_text
+                    BoxLayout_container:
+                        size_hint: 1, None
+                        height: self.minimum_height
+                        orientation: 'vertical'
+                        id: id_scan_container
+                BoxLayout_container:
+                    size_hint: 1, None
+                    height: self.minimum_height
+                    orientation: 'vertical'
+                    id: id_esp_config_container
+
 
 <Screen_network>:
     back_screen: None
@@ -113,6 +164,10 @@
                         #value: 1 if(app.theme == "DARK") else 0
                         on_value:
                             app.theme = "LIGHT" if(app.theme=="DARK") else "DARK"
+                Label_menuItem:
+                    text: "Config Device"
+                    on_release:
+                        app.change_screen("Screen_espConfig")
                 Label_menuItem:
                     text: "Log out"
                     on_release:

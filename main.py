@@ -137,6 +137,7 @@ class SmacApp(App):
         self.screen_manager.add_widget(Screen_network(name='Screen_network'))
         self.screen_manager.add_widget(Screen_deviceSetting(name='Screen_deviceSetting'))
         self.screen_manager.add_widget(Screen_context(name='Screen_context'))
+        self.screen_manager.add_widget(Screen_espConfig(name='Screen_espConfig'))
         #self.screen_manager.add_widget(Screen_devices(name='Screen_devices'))
         #self.screen_manager.add_widget(Screen_property(name='Screen_deviceSetting'))
 
@@ -1664,7 +1665,7 @@ class SmacApp(App):
             service = autoclass('com.smacsystem.smacapp.ServiceMyservice')
             mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
             argument = ''
-            service.start(mActivity, argument)
+            #service.start(mActivity, argument)
 
             from android.permissions import request_permissions, check_permission, Permission
             print("permision", check_permission(Permission.CAMERA))

@@ -62,7 +62,7 @@ orientation = portrait
 #services = myservice:%(source.dir)s/service_test.py
 # service not working in >= android oreo
 # https://stackoverflow.com/questions/51357772/android-service-not-restarted-when-app-back-from-idle-state
-#services = myservice:%(source.dir)s/service_test2.py
+services = myservice:%(source.dir)s/service_test3.py
 
 #
 # OSX Specific
@@ -224,8 +224,8 @@ android.gradle_dependencies = "com.google.android.gms:play-services-auth:17.0.0"
 
 # (str) Android logcat filters to use
 #android.logcat_filters = *:S python:D
-#android.logcat_filters = *:S python:D, *:S myservice:D
-android.logcat_filters = *:S ActivityManager:D, *:S python:D, *:S myservice:D
+android.logcat_filters = *:S python:D, *:S myservice:D
+#android.logcat_filters = *:S ActivityManager:D, *:S python:D, *:S myservice:D
 
 # (bool) Copy library instead of making a libpymodules.so
 #android.copy_libs = 1
