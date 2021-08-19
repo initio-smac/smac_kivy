@@ -23,3 +23,6 @@ python main.py
 # android build
 buildozer android debug deploy run logcat
 
+# repo
+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
+
