@@ -149,6 +149,7 @@ class SmacApp(App):
     def open_modal(self, content, title="Info", auto_dismiss=True):
         if content != None:
             #print(content.height)
+            print("modal content", self.modal.content)
             self.modal.content = content
             self.modal.title = title
             #self.modal.content.parent.parent.parent.height = content.height + dp(70)
@@ -334,7 +335,10 @@ class SmacApp(App):
         #print(type(self.PIN_DEVICE))
         if str(passkey) == str(self.PIN_DEVICE):
             #db.add_network_entry(name_topic=id_topic, id_topic=id_topic, id_device=id_device, name_device=self.NAME_DEVICE, type_device=self.TYPE_DEVICE)
-            db.delete_network_entry_by_topic(id_topic, id_device)
+            if id_device == self.ID_DEVICE:
+                db.delete_network_entry(id_topic)
+            else:
+                db.delete_network_entry_by_topic(id_topic, id_device)
             self.update_config_variable(key='SUB_TOPIC', value=id_topic, arr_op="REM")
             client.unsubscribe(id_topic)
             self.delete_topic_widget(id_topic)
@@ -696,7 +700,8 @@ class SmacApp(App):
                     name_topic = data.get(smac_keys["NAME_TOPIC"], "")
                     name_home = data.get(smac_keys["NAME_HOME"], "")
                     type_device = data.get(smac_keys["TYPE_DEVICE"], "")
-                    if ((protocol == "TCP") and len(db.get_property_list_by_device(frm)) > 0):
+                    if ( len(db.get_property_list_by_device(frm)) > 0):
+                    #if ((protocol == "TCP") and len(db.get_property_list_by_device(frm)) > 0):
                         db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device,
                                          type_device=type_device, remove=0)
                     #self.ACKS.append( "{}:{}:{}".format(id_topic, id_device, smac_keys["CMD_STATUS_ADD_TOPIC"]) )
@@ -705,7 +710,8 @@ class SmacApp(App):
 
                 if cmd == smac_keys["CMD_STATUS_REMOVE_TOPIC"]:
                     id_topic = data.get(smac_keys["ID_TOPIC"])
-                    if ((protocol == "TCP") and len(db.get_property_list_by_device(frm)) > 0):
+                    if len(db.get_property_list_by_device(frm)) > 0:
+                    #if ((protocol == "TCP") and len(db.get_property_list_by_device(frm)) > 0):
                         db.delete_network_entry_by_topic(id_topic=id_topic, id_device=frm)
                         db.add_command_status(id_topic=id_topic, id_device=frm, cmd=cmd)
                         scr = self.screen_manager.get_screen(name="Screen_network")
@@ -1634,6 +1640,11 @@ class SmacApp(App):
         self._bind_keyboard()
         self.load_app_data()
         self.load_device_data()
+        self.open_modal(content=BoxLayout_loader())
+        #print(self.modal.content.ids["id_loader_icon"].source)
+        print("modal opened")
+        print(self.modal.content)
+        print([i for i in self.modal.content.walk()])
 
     def load_app_data(self):
         self.load_config_variables()

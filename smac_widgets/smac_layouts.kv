@@ -811,6 +811,7 @@
                 size_hint_y: None
                 height: app.grid_min
                 orientation: "horizontal"
+                padding: dp(10)
                 CheckBox_custom:
                     #active: True
                     on_active:
@@ -826,6 +827,7 @@
                 height: app.grid_min*2
                 orientation: 'lr-tb'
                 spacing: dp(10)
+                padding: dp(10)
                 CheckBox_custom:
                     index: 0
                     on_active:
@@ -899,6 +901,14 @@
     #active: root.active
     #group: 'type_trigger'
     #value: root.type_trigger
+    background_checkbox_normal: app.source_icon + "SQUARE.png"
+    background_checkbox_down: app.source_icon + "SQUARE_CHECK.png"
+    background_checkbox_disabled_normal: app.source_icon + "SQUARE.png"
+    background_checkbox_disabled_down: app.source_icon + "SQUARE_CHECK.png"
+    background_radio_normal: app.source_icon + "CIRCLE_THIN.png"
+    background_radio_down: app.source_icon + "CIRCLE_CHECK.png"
+    background_radio_disabled_normal: app.source_icon + "CIRCLE_THIN.png"
+    background_radio_diabled_down: app.source_icon + "CIRCLE_CHECK.png"
 
 <BoxLayout_addHomeContent>:
     orientation: 'vertical'
@@ -971,11 +981,12 @@
         size_hint: 1, None
         height: app.grid_min*3
         Image_iconButton:
+            id: id_loader_icon
+            start_anim: True
             source: root.icon
             center: self.parent.center_x, self.parent.y
-            on_parent:
-                self.start_animation()
     Label_custom:
+        id: id_loader_text
         text: root.text
         size_hint: 1, None
         height: app.grid_min*3

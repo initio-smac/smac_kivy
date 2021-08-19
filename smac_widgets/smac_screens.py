@@ -16,7 +16,7 @@ from kivy.uix.screenmanager import Screen
 #from kivy.app import App
 #from kivy.uix.scrollview import ScrollView
 
-from smac_client_sel import client
+from smac_client import client
 from smac_device import set_property, generate_id_topic, generate_id_context
 from smac_device_keys import SMAC_PROPERTY, SMAC_DEVICES
 from smac_keys import smac_keys
@@ -27,8 +27,6 @@ from smac_tools import network_scanner
 from webrepl.webrepl_client import webrepl_client
 
 
-from kivy.lang import Builder
-Builder.load_file('smac_widgets/smac_modal.kv')
 
 from smac_db import db
 import time
@@ -1223,6 +1221,7 @@ class Screen_deviceSetting(SelectClass):
         for id_topic, name_home, name_topic in DEVS:
             print(id_topic)
             #if (id_topic != None) and (id_topic != "") and (id_topic not in app.SUB_TOPIC):
+            print(app.SUB_TOPIC)
             if (id_topic != None) and (id_topic != ""):
                 '''label = Label_dropDown(text=name_home)
                 label.id_topic = id_topic
@@ -1371,6 +1370,7 @@ class Screen_deviceSetting(SelectClass):
             btn = Button_custom1(text="Reconfigure")
             btn.bind( on_release=self.reconfigure_device )
             wid.add_widget( btn)
+            container.ids["id_reconfigure_device"] = wid
             container.add_widget(wid)
 
         if str( app.APP_DATA["type_device"] ) == SMAC_DEVICES["ESP"]:
@@ -1380,6 +1380,7 @@ class Screen_deviceSetting(SelectClass):
             b1 = BoxLayout_updateWifiContent()
             b1.ids["id_btn_wifi_config"].bind(on_release=self.update_device_wifi_config )
             w1.add_widget( b1)
+            container.ids["id_wifi_config"] = w1
             container.add_widget(w1)
 
             w2 = Widget_block()
@@ -1388,8 +1389,17 @@ class Screen_deviceSetting(SelectClass):
             b2.width = app.grid_min*4
             b2.bind(on_release=self.update_software)
             w2.add_widget(b2)
+            container.ids["id_device_updates"] = w2
             container.add_widget(w2)
 
+    def remove_device_specific_widgets(self):
+        container = self.ids["id_container"]
+        if container.ids.get("id_reconfigure_device", None) != None:
+            container.remove_widget(container.ids["id_reconfigure_device"])
+        if container.ids.get("id_wifi_config", None) != None:
+            container.remove_widget(container.ids["id_wifi_config"])
+        if container.ids.get("id_device_updates", None) != None:
+            container.remove_widget(container.ids["id_device_updates"])
 
         
     def reconfigure_device(self, *args):
@@ -1415,6 +1425,7 @@ class Screen_deviceSetting(SelectClass):
 
     def on_leave(self, *args):
         super().on_leave()
+        self.remove_device_specific_widgets()
 
     def unsunbscribe_topic(self, wid, *args):
         app = App.get_running_app()

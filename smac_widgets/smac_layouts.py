@@ -23,6 +23,8 @@ from kivy.utils import get_color_from_hex
 from smac_behaviors import SelectBehavior
 from smac_db import db
 
+from kivy.lang import Builder
+Builder.load_file('smac_widgets/smac_modal.kv')
 
 class Widget_base( ButtonBehavior, BoxLayout ):
     orientation = "vertical"
@@ -196,6 +198,11 @@ class BoxLayout_header(BoxLayout):
 class Image_iconButton(SelectBehavior, ButtonBehavior, Widget):
     angle = NumericProperty(0)
     source = StringProperty("")
+    start_anim = BooleanProperty(False)
+
+    def on_source(self, *args):
+        if self.start_anim:
+            self.start_animation()
 
     def on_angle(self, *args):
         if self.angle == -360:
@@ -266,24 +273,32 @@ class ModalView_custom(ModalView):
     _container = ObjectProperty(None)
 
     def add_widget(self, widget, *args, **kwargs):
+        import time
+        print(time.time())
+        print("ARGS", args)
+        print("KWARGS", kwargs)
         if self._container:
             if self.content:
-                raise PopupException(
-                    'Popup can have only one widget as content')
+                raise PopupException('Popup can have only one widget as content')
             self.content = widget
         else:
+            #super(ModalView, self).add_widget(widget, *args, **kwargs)
             super(ModalView_custom, self).add_widget(widget, *args, **kwargs)
 
     def on_content(self, instance, value):
+        print("on_content", value)
         if self._container:
             self._container.clear_widgets()
             self._container.add_widget(value)
 
     def on__container(self, instance, value):
+        print("_container", value)
+        print(self.content)
         if value is None or self.content is None:
             return
         self._container.clear_widgets()
         self._container.add_widget(self.content)
+        print("XXX")
 
     def on_touch_down(self, touch):
         if self.disabled and self.collide_point(*touch.pos):
