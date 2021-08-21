@@ -25,4 +25,5 @@ buildozer android debug deploy run logcat
 
 # repo
 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
+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
 
