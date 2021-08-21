@@ -162,20 +162,25 @@
     Label_title:
         id: id_label_act
         text: "Actions"
+        color: app.colors["COLOR_TEXT"]
     BoxLayout_container:
-        spacing: 0
+        spacing: dp(5)
+        height: self.minimum_height
         id: id_action_container
     Label_title:
         id: id_label_trig
         text: "Triggers"
+        color: app.colors["COLOR_TEXT"]
     BoxLayout_container:
-        spacing: 0
+        spacing: dp(5)
+        height: self.minimum_height
         id: id_trigger_container
 
 <BoxLayout_action>:
     size_hint_y: None
     height: self.minimum_height
     source: 'CHECK.png'
+    spacing: dp(2)
     opacity: 1 if self.status else .5
     Image_iconButton:
         source: app.source_icon + root.source
@@ -209,8 +214,9 @@
 
 <BoxLayout_trigger>:
     size_hint_y: None
-    height: app.grid_min
+    height: self.minimum_height
     source: 'CHECK.png'
+    spacing: dp(2)
     opacity: 1 if self.status else .5
     Image_iconButton:
         source: app.source_icon + root.source
@@ -638,14 +644,15 @@
         height: app.grid_min
         hint_text: "PIN"
         id: id_text_email_pin
+        disabled: True
     Label_custom:
         id: id_label_info
         text: ""
-        color: app.colors["COLOR_TEXT"]
+        color: app.colors["COLOR_TEXTINPUT"]
     Label_custom:
         id: id_label_info2
         text: ""
-        color: app.colors["COLOR_TEXT"]
+        color: app.colors["COLOR_TEXTINPUT"]
     BoxLayout_container:
         orientation: 'horizontal'
         Button_custom1:
@@ -781,15 +788,15 @@
                 text: root.data["value"]
                 id: id_btn_sel_value
         StackLayout_block:
-            height: app.grid_min*5
+            height: app.grid_min*6
             type_trigger: smac_keys["TYPE_TRIGGER_TIME"]
             Label_custom:
                 text: "When"
                 size_hint_x:  None
                 width: self.texture_size[0]
-            Button_link:
-                text: root.data["name_device"]
-                id: id_btn_sel_device1
+            #Button_link:
+            #    text: root.data["name_device"]
+            #    id: id_btn_sel_device1
             Label_custom:
                 text: "time :"
                 size_hint_x:  None

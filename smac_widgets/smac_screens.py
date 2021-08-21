@@ -348,7 +348,7 @@ class Screen_context(SelectClass):
             self.add_trig_content = BoxLayout_addTriggerContent()
             self.add_trig_content.data = self.data
             self.add_trig_content.ids["id_btn_sel_device"].bind(on_release=self.open_device_selection)
-            self.add_trig_content.ids["id_btn_sel_device1"].bind(on_release=self.open_device_selection)
+            #self.add_trig_content.ids["id_btn_sel_device1"].bind(on_release=self.open_device_selection)
             self.add_trig_content.ids["id_btn_sel_property"].bind(on_release=self.open_property_selection)
             self.add_trig_content.ids["id_btn_sel_value"].bind(on_release=self.open_value_selection)
             self.add_trig_content.ids["id_btn_sel_hour"].bind(on_release=self.open_value_time_selection)
@@ -377,6 +377,7 @@ class Screen_context(SelectClass):
         #id_device = self.data["id_device"]
         value = self.data["value"]
         id_context = self.data['id_context']
+        id_topic = app.APP_DATA["id_topic"]
         id_property = self.data["id_property"] if (type_trigger == smac_keys["TYPE_TRIGGER_PROP"]) else "TIME"
         print( type_trigger == smac_keys["TYPE_TRIGGER_TIME"] )
         print("DOW", add_trigger_root.DOW)
@@ -385,7 +386,7 @@ class Screen_context(SelectClass):
                 app.open_modalInfo(title="Info", text="Select a Timer Repetition")
                 return
             value = "{}:{}:{}".format(self.data["value_hour"], self.data["value_minute"], ",".join( [str(i) for i in add_trigger_root.DOW ]) )
-        if (id_device == None) or (id_device == ""):
+        elif (id_device == None) or (id_device == ""):
             app.open_modalInfo(text="Select A Device to Continue")
             return
         if (id_property == None) or (id_property == ""):
@@ -394,13 +395,22 @@ class Screen_context(SelectClass):
         if (value == None) or (value == ""):
             app.open_modalInfo(text="Select A Value to Continue")
             return
-        if  id_device == app.ID_DEVICE:
-
-            db.add_context_trigger(id_context=id_context, id_topic=self.data["id_topic"], id_device=id_device, id_property=id_property,  value=value, type_trigger=type_trigger)
+        if (id_device == app.ID_DEVICE) or (type_trigger == smac_keys["TYPE_TRIGGER_TIME"]):
+            db.add_context_trigger(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property,  value=value, type_trigger=type_trigger)
+            d1 = {}
+            d1[smac_keys["ID_DEVICE"]] = id_device
+            d1[smac_keys["ID_TOPIC"]] = id_topic
+            d1[smac_keys["ID_CONTEXT"]] = id_context
+            d1[smac_keys["ID_PROPERTY"]] = id_property
+            d1[smac_keys["TYPE_TRIGGER"]] = type_trigger
+            #d1[smac_keys["NAME_CONTEXT"]] = name_context
+            d1[smac_keys["VALUE"]] = value
+            # id_topic, id_context, id_device, id_property, value, name_context
+            client.send_message(frm=app.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_STATUS_ADD_TRIGGER"], message=d1)
             app.open_modalInfo(text="Context Trigger added")
         else:
             d = {}
-            d[smac_keys["ID_TOPIC"]] = self.data["id_topic"]
+            d[smac_keys["ID_TOPIC"]] = id_topic
             d[smac_keys["ID_DEVICE"]] = id_device
             d[smac_keys["ID_CONTEXT"]] = self.data["id_context"]
             d[smac_keys["ID_PROPERTY"]] = id_property
@@ -409,17 +419,19 @@ class Screen_context(SelectClass):
             d[smac_keys["VALUE"]] = value
             d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
             #id_topic, id_context, id_device, id_property, value
-            client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_TRIGGER"], message=d, udp=True,
+            client.send_message(frm=app.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_ADD_TRIGGER"], message=d, udp=True,
                                 tcp=True)
             #app.add_task(db.get_command_status, (self.data["id_topic"], id_device, [smac_keys["CMD_STATUS_ADD_TRIGGER"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_TRIGGER_LIMIT_EXCEEDED"]]))
-            app.add_task(db.get_command_status, (self.data["id_topic"], id_device, [smac_keys["CMD_STATUS_ADD_TRIGGER"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_ACTION_LIMIT_EXCEEDED"]], "", self.data["id_context"]))
+            app.add_task(db.get_command_status, (id_topic, id_device, [smac_keys["CMD_STATUS_ADD_TRIGGER"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_ACTION_LIMIT_EXCEEDED"]], "", self.data["id_context"]))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         self.set_context_data_default_values()
 
     def add_action(self, wid, *args):
         app = App.get_running_app()
+        print("self.data", self.data)
         id_device = self.data["id_device"]
         id_property = self.data["id_property"]
+        id_topic = app.APP_DATA["id_topic"]
         value = self.data["value"]
         if(id_device == None) or (id_device == ""):
             app.open_modalInfo(text="Select A Device to Continue")
@@ -433,11 +445,20 @@ class Screen_context(SelectClass):
         if  id_device == app.ID_DEVICE:
             #id_context = generate_id_context(id_device)
             id_context = self.data["id_context"]
-            db.add_context_action(id_context=id_context, id_topic=self.data["id_topic"], id_device=id_device, id_property=id_property, name_context=self.data["name_context"], value=value)
+            db.add_context_action(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property, name_context=self.data["name_context"], value=value)
+            d1 = {}
+            d1[smac_keys["ID_DEVICE"]] = id_device
+            d1[smac_keys["ID_TOPIC"]] = id_topic
+            d1[smac_keys["ID_CONTEXT"]] = self.data["id_context"]
+            d1[smac_keys["ID_PROPERTY"]] = id_property
+            d1[smac_keys["NAME_CONTEXT"]] = self.data["name_context"]
+            d1[smac_keys["VALUE"]] = value
+            # id_topic, id_context, id_device, id_property, value, name_context
+            client.send_message(frm=app.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_STATUS_ADD_ACTION"], message=d1)
             app.open_modalInfo(text="Context Action added")
         else:
             d = {}
-            d[smac_keys["ID_TOPIC"]] = self.data["id_topic"]
+            d[smac_keys["ID_TOPIC"]] = id_topic
             d[smac_keys["ID_DEVICE"]] = id_device
             d[smac_keys["ID_CONTEXT"]] = self.data["id_context"]
             d[smac_keys["ID_PROPERTY"]] = id_property
@@ -445,15 +466,15 @@ class Screen_context(SelectClass):
             d[smac_keys["VALUE"]] = value
             d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
             #id_topic, id_context, id_device, id_property, value, name_context
-            client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_ADD_ACTION"], message=d, udp=True,
+            client.send_message(frm=app.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_ADD_ACTION"], message=d, udp=True,
                                 tcp=True)
-            app.add_task(db.get_command_status, (self.data["id_topic"], id_device, [smac_keys["CMD_STATUS_ADD_ACTION"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_ACTION_LIMIT_EXCEEDED"]], "", self.data["id_context"]))
+            app.add_task(db.get_command_status, (id_topic, id_device, [smac_keys["CMD_STATUS_ADD_ACTION"], smac_keys["CMD_INVALID_PIN"], smac_keys["CMD_ACTION_LIMIT_EXCEEDED"]], "", self.data["id_context"]))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         self.set_context_data_default_values()
 
     def set_context_data_default_values(self, *args):
         self.data = {
-            "id_topic": "",
+            #"id_topic": "",
             "id_context": '',
             'name_context': '',
             "id_device": "",
@@ -474,11 +495,17 @@ class Screen_context(SelectClass):
         # id_topic, id_context, id_device, id_property
         id_device = parent.id_device
         id_context = parent.id_context
-        id_topic = self.data["id_topic"]
+        id_topic = app.APP_DATA["id_topic"]
         id_property = parent.id_property
         if id_device == app.ID_DEVICE:
             db.remove_action_by_property(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property)
             app.remove_action_widget(id_context, id_device, id_property)
+            d1 = {}
+            d1[smac_keys["ID_DEVICE"]] = id_device
+            d1[smac_keys["ID_TOPIC"]] = id_topic
+            d1[smac_keys["ID_CONTEXT"]] = id_context
+            d1[smac_keys["ID_PROPERTY"]] = id_property
+            client.send_message(frm=app.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_STATUS_REMOVE_ACTION"],message=d1)
             app.open_modalInfo(text="Context Action Removed")
         else:
             d = {}
@@ -488,7 +515,7 @@ class Screen_context(SelectClass):
             d[smac_keys["ID_PROPERTY"]] = id_property
             d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
             # id_topic, id_context, id_device, id_property, value, name_context
-            client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_ACTION"], message=d, udp=True,
+            client.send_message(frm=app.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_REMOVE_ACTION"], message=d, udp=True,
                                 tcp=True)
             app.add_task(db.get_command_status, (id_topic, id_device,[smac_keys["CMD_STATUS_REMOVE_ACTION"], smac_keys["CMD_INVALID_PIN"]], "", id_context))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
@@ -499,13 +526,19 @@ class Screen_context(SelectClass):
         # id_topic, id_context, id_device, id_property
         id_device = parent.id_device
         id_context = parent.id_context
-        id_topic = self.data["id_topic"]
+        id_topic = app.APP_DATA["id_topic"]
         id_property = parent.id_property
         type_trigger = parent.type_trigger
         print("type_trig", type_trigger)
         if id_device == app.ID_DEVICE:
             db.remove_trigger_by_property(id_context=id_context, id_topic=id_topic, id_device=id_device, id_property=id_property)
             app.remove_trigger_widget(id_context, id_device, id_property)
+            d1 = {}
+            d1[smac_keys["ID_DEVICE"]] = id_device
+            d1[smac_keys["ID_TOPIC"]] = id_topic
+            d1[smac_keys["ID_CONTEXT"]] = id_context
+            d1[smac_keys["ID_PROPERTY"]] = id_property
+            client.send_message(frm=app.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_STATUS_REMOVE_TRIGGER"],message=d1)
             app.open_modalInfo(text="Context Trigger Removed")
         else:
             d = {}
@@ -516,7 +549,7 @@ class Screen_context(SelectClass):
             d[smac_keys["TYPE_TRIGGER"]] = type_trigger
             d[smac_keys["PASSKEY"]] = db.get_pin_device(id_device)
             # id_topic, id_context, id_device, id_property, value, name_context
-            client.send_message(frm=app.ID_DEVICE, to=id_device, cmd=smac_keys["CMD_REMOVE_TRIGGER"], message=d, udp=True,
+            client.send_message(frm=app.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_REMOVE_TRIGGER"], message=d, udp=True,
                                 tcp=True)
             app.add_task(db.get_command_status, (id_topic, id_device,[smac_keys["CMD_STATUS_REMOVE_TRIGGER"], smac_keys["CMD_INVALID_PIN"]], "", id_context))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
@@ -711,7 +744,8 @@ class Screen_context(SelectClass):
             #        c.remove_widget(label_trig)
             for id_device, id_property, value,  status, last_updated, type_trigger in triggers:
                 #try:
-                if(id_device != None) and (id_device != ''):
+                #if(id_device != None) and (id_device != ''):
+                if (id_device != None):
                     id_trig = "trig_{}:{}".format(id_device, id_property)
                     name_device = db.get_device_name(id_device)
                     if c.ids.get(id_trig, None) == None:
@@ -731,7 +765,7 @@ class Screen_context(SelectClass):
                         t.id_device = id_device
                         t.id_property = id_property
                         t.type_trigger = type_trigger
-                        t.text = "When device: {} property: {} value is {}".format(name_device, t.name_property, value)
+                        #t.text = "When device: {} property: {} value is {}".format(name_device, t.name_property, value)
                         t.ids["id_btn_remove_trigger"].bind(on_release=self.remove_trigger)
                         c.ids[id_trig] = t
                         c.ids["id_trigger_container"].add_widget(t)
@@ -747,7 +781,7 @@ class Screen_context(SelectClass):
                         #print(DOW)
                         DOW = [ days[num] for num, i in enumerate(DOW.split(",")) if(int(i)) ]
                         #print(DOW)
-                        t.text = "When device: {} property: {} value is {}:{} {}".format(name_device, t.name_property, hh, mm, DOW)
+                        t.text = "When Time is {}:{} {}".format( hh, mm, DOW)
                     t.status = int(status)
                 #except Exception as e:
                 #    print("exception while adding trigger: {}".format(e))
@@ -852,7 +886,7 @@ class Screen_network(SelectClass):
                         online = True
                     else:
                         t_diff = int(time.time()) - last_updated
-                        online =  True if(t_diff <= interval_online*2) else False
+                        online =  True if(t_diff <= interval_online+20) else False
                     if online:
                         if( w.DEVICE_IDS.get(id_device, None) == None):
                             w1 = Widget_device(text=name_device)
@@ -990,6 +1024,8 @@ class Screen_network(SelectClass):
 
     def change_value(self, wid, *args):
         wid_prop = wid.parent.parent.parent
+        app = App.get_running_app()
+        print("ID_TOPIC", app.APP_DATA["id_topic"])
         value = int(wid.value)
         app = App.get_running_app()
         if wid_prop.id_device == app.ID_DEVICE:
@@ -1003,6 +1039,7 @@ class Screen_network(SelectClass):
             MSG_ID = (client.MSG_ID + 1)
             #asyncio.gather(app.check_for_ack(MSG_ID, 10))
             #app.open_modal(text="Sending message to the device...", auto_close=True, timeout=10)
+            #client.send_message(frm=app.ID_DEVICE, to=wid_prop.id_device, cmd=smac_keys["CMD_SET_PROPERTY"], message=d, udp=True, tcp=True)
             client.send_message(frm=app.ID_DEVICE, to=wid_prop.id_device, cmd=smac_keys["CMD_SET_PROPERTY"], message=d, udp=True, tcp=True)
             wid_prop.MSG_COUNTER = MSG_ID
 
@@ -1404,6 +1441,7 @@ class Screen_deviceSetting(SelectClass):
         
     def reconfigure_device(self, *args):
         app = App.get_running_app()
+        db.remove_all_entries()
         app.set_default_config()
         app.load_config_variables()
         app.open_modalInfo(text="Device Reconfigured.")
@@ -1666,7 +1704,8 @@ class Screen_register(SelectClass):
         if self.CLK != None:
             self.CLK.cancel()
             self.CLK = None
-        self.content_register.ids["id_label_info2"].text = ""
+        if self.content_register != None:
+            self.content_register.ids["id_label_info2"].text = ""
 
     def update_OTP_count(self, *args):
         if self.OTP_REQ_COUNT >= self.OTP_REQ_MAX_COUNT:
@@ -1741,7 +1780,7 @@ class Screen_register(SelectClass):
         SmsRetriever = autoclass("com.google.android.gms.auth.api.phone.SmsRetriever")
         client = SmsRetriever.getClient(PythonActivity.mActivity.getApplicationContext())
         print(client)
-        c = client.startSmsUserConsent("AD-TFACTR")
+        c = client.startSmsUserConsent(None)
         print(c)
         #c.addOnSuccessListener = self.on_ss
         #c.addOnFailureListener = self.on_st
@@ -1956,6 +1995,6 @@ class Screen_register(SelectClass):
     def on_verify_otp_failure(self, res, data):
         print(res)
         label = self.content_register.ids["id_label_info"]
-        label.text = data
+        label.text = data["error"]
         self.STATE = "VERIFY_PIN_FAILURE"
 

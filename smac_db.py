@@ -52,6 +52,21 @@ class Database():
         #except Exception as e:
         #    print(e)
 
+
+    def remove_all_entries(self, *args):
+        try:
+            lock.acquire(True)
+            self.cur.execute('DELETE FROM smac_network')
+            self.cur.execute('DELETE FROM smac_context_action')
+            self.cur.execute('DELETE FROM smac_context_trigger')
+            self.cur.execute('DELETE FROM smac_property')
+            self.cur.execute('DELETE FROM smac_command_status')
+            self.connection.commit()
+        except Exception as e:
+            print("eg: {}".format(e))
+        finally:
+            lock.release()
+
     # context actions
     def add_context(self, id_context, name_context, id_topic, id_device=""):
         try:
@@ -209,6 +224,17 @@ class Database():
         finally:
             lock.release()
 
+    def get_triggers_all(self):
+        try:
+            lock.acquire(True)
+            self.cur.execute('SELECT id_topic, id_context, id_device, id_property, value, type_trigger FROM smac_context_trigger WHERE remove=0')
+            return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+            return []
+        finally:
+            lock.release()
+
     def get_trigger_by_device(self, id_device):
         try:
             lock.acquire(True)
@@ -359,6 +385,18 @@ class Database():
             print("4a")
         except Exception as e:
             print(e)
+        finally:
+            lock.release()
+
+    def get_busy_devices(self, is_busy=1):
+        try:
+            lock.acquire(True)
+            self.cur.execute('SELECT id_device, is_busy, busy_period FROM smac_network WHERE is_busy=?', ( str(is_busy) ,))
+            #print('Noone')
+            return self.cur.fetchall()
+        except Exception as e:
+            print(e)
+            return []
         finally:
             lock.release()
 

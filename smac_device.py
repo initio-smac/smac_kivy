@@ -54,8 +54,10 @@ def get_device_type():
 def get_property_min_max(prop):
     if prop in [  SMAC_PROPERTY["BLUETOOTH"], SMAC_PROPERTY["FLASH"], SMAC_PROPERTY["SWITCH"], SMAC_PROPERTY["LIGHT"], SMAC_PROPERTY["GEYSER"] ]:
         return (0, 1, 0)
-    elif prop in [ SMAC_PROPERTY["BATTERY"], SMAC_PROPERTY["BRIGHTNESS"] ]:
+    elif prop in [ SMAC_PROPERTY["BATTERY"]]:
         return (0, 100, 0)
+    elif prop in [ SMAC_PROPERTY["BRIGHTNESS"]  ]:
+        return (0, 100, 10)
     elif prop in [ SMAC_PROPERTY["FAN"] ]:
         return  (0, 4, 0)
     elif prop in [ SMAC_PROPERTY["SHUTDOWN"], SMAC_PROPERTY["RESTART"] ]:

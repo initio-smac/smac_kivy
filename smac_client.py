@@ -350,12 +350,12 @@ class SMACClient():
                     msg = d[1]
                     #print(topic)
                     #print(self.SUB_TOPIC)
-                    #print(topic in self.SUB_TOPIC)
+                    print(topic in self.SUB_TOPIC)
                     if topic in self.SUB_TOPIC:
                         try:
                             self.process_message(topic, msg, "UDP")
-                        except:
-                            pass
+                        except Exception as e:
+                            print("Exception while processing UDP msg: ", e)
                         del self.UDP_REQ[num]
                     else:
                         self.UDP_REQ.remove(message)
@@ -376,6 +376,7 @@ class SMACClient():
                     d = message.split(" ", 1)
                     topic = d[0]
                     msg = d[1]
+                    print("#" in self.SUB_TOPIC)
                     if topic in self.SUB_TOPIC:
                         if "SPEED_TEST" in msg:
                             text,START_TIME, PKT_ID = msg.split(":")

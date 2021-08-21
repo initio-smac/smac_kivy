@@ -95,7 +95,7 @@ class SmacApp(App):
     MOBILE_NUMBER = StringProperty('')
     #OTP_API_KEY = "68a846d4-c386-11eb-8089-0200cd936042"
     _KEYBOARD = None
-    VERSION = 0.1
+    VERSION = 0.5
     BACK_BTN_COUNTER = 0
     title="SMAC"
     icon = "smac_logo.png"
@@ -339,6 +339,8 @@ class SmacApp(App):
                 db.delete_network_entry(id_topic)
             else:
                 db.delete_network_entry_by_topic(id_topic, id_device)
+            db.remove_action_by_topic(id_topic)
+            db.remove_trigger_by_topic(id_topic)
             self.update_config_variable(key='SUB_TOPIC', value=id_topic, arr_op="REM")
             client.unsubscribe(id_topic)
             self.delete_topic_widget(id_topic)
@@ -497,7 +499,7 @@ class SmacApp(App):
             #data = msg.get( smac_keys["MESSAGE"], None )
             data = msg
             #print("2")
-            #print(data)
+            print(data)
             if frm != self.ID_DEVICE:
                 if cmd == smac_keys["CMD_DEVICE_BUSY"]:
                     print("1a")
@@ -576,7 +578,8 @@ class SmacApp(App):
                         name_home = data.get(smac_keys["NAME_HOME"], "")
                         name_topic = data.get(smac_keys["NAME_TOPIC"], "")
                         type_device = data.get(smac_keys["TYPE_DEVICE"], "")
-                        if (protocol == "UDP") or ((protocol == "TCP") and (id_topic != '') and  (id_topic in self.SUB_TOPIC)):
+                        if (protocol == "UDP") or ((protocol == "ZMQ") and (id_topic != '') and  (id_topic in self.SUB_TOPIC)):
+                        #if (id_topic != "") and (id_topic in self.SUB_TOPIC):
                             db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=frm, name_device=name_device, type_device=type_device, remove=0)
                             #db.update_delete_by_topic_id(id_device=frm, id_topic=id_topic, value=0)
                             print("new network entry added: {}, {}".format(id_topic, frm))
@@ -590,7 +593,8 @@ class SmacApp(App):
                         value = data.get(smac_keys["VALUE"], 0)
                         value_min = data.get(smac_keys["VALUE_MIN"], 0)
                         value_max = data.get(smac_keys["VALUE_MAX"], 1)
-                        if (protocol == "UDP") or ((protocol == "TCP") and  len(db.get_property_list_by_device(id_device)) >0):
+                        if (protocol == "UDP") or ((protocol == "ZMQ") and  len(db.get_topic_list_by_device(id_device)) >0):
+                        #if True:
                             db.add_property(id_device=id_device, id_property=id_prop, type_property=type_prop, name_property=name_prop, value=value, value_min=value_min, value_max=value_max, remove=0)
                             #db.update_delete_by_prop_id(id_device=frm, id_property=id_prop, value=0)
                             print("new property entry added: {}".format(name_prop) )
@@ -920,7 +924,7 @@ class SmacApp(App):
                 d1[smac_keys["NAME_CONTEXT"]] = name_context
                 d1[smac_keys["VALUE"]] = value
                 # id_topic, id_context, id_device, id_property, value, name_context
-                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_ADD_ACTION"], message=d1)
+                client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_STATUS_ADD_ACTION"], message=d1)
             else:
                 d1 = {}
                 d1[smac_keys["MESSAGE"]] = "Context Action Not Added. Passkey Error"
@@ -938,7 +942,7 @@ class SmacApp(App):
                 d1[smac_keys["ID_TOPIC"]] = id_topic
                 d1[smac_keys["ID_CONTEXT"]] = id_context
                 d1[smac_keys["ID_PROPERTY"]] = id_property
-                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_REMOVE_ACTION"],message=d1)
+                client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_STATUS_REMOVE_ACTION"],message=d1)
             else:
                 d1 = {}
                 d1[smac_keys["MESSAGE"]] = "Context Action Not Removed. Passkey Error"
@@ -956,7 +960,7 @@ class SmacApp(App):
                 d1[smac_keys["ID_TOPIC"]] = id_topic
                 d1[smac_keys["ID_CONTEXT"]] = id_context
                 d1[smac_keys["ID_PROPERTY"]] = id_property
-                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_REMOVE_TRIGGER"],message=d1)
+                client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_STATUS_REMOVE_TRIGGER"],message=d1)
             else:
                 d1 = {}
                 d1[smac_keys["MESSAGE"]] = "Context Trigger Not Removed. Passkey Error"
@@ -974,11 +978,11 @@ class SmacApp(App):
                 d1[smac_keys["ID_TOPIC"]] = id_topic
                 d1[smac_keys["ID_CONTEXT"]] = id_context
                 d1[smac_keys["ID_PROPERTY"]] = id_property
-                d1[ smac_keys["TYPE_TRIGGER"]] = type_trigger
+                d1[smac_keys["TYPE_TRIGGER"]] = type_trigger
                 #d1[smac_keys["NAME_CONTEXT"]] = name_context
                 d1[smac_keys["VALUE"]] = value
                 # id_topic, id_context, id_device, id_property, value, name_context
-                client.send_message(frm=self.ID_DEVICE, to=frm, cmd=smac_keys["CMD_STATUS_ADD_TRIGGER"], message=d1)
+                client.send_message(frm=self.ID_DEVICE, to=id_topic, cmd=smac_keys["CMD_STATUS_ADD_TRIGGER"], message=d1)
             else:
                 d1 = {}
                 d1[smac_keys["MESSAGE"]] = "Context Trigger Not Added. Passkey Error"
@@ -1161,8 +1165,10 @@ class SmacApp(App):
 
             # check for busy period and update the db
             id_topic = ""
-            for id_device, name_device, type_device, view_device, is_busy, busy_period, pin_device, pin_device_valid, interval_online, last_updated  in db.get_device_list_by_topic(id_topic):
-                if busy_period == int(time.time()):
+            #print("busy_devs", db.get_busy_devices(is_busy=1))
+            for id_device, is_busy, busy_period  in db.get_busy_devices(is_busy=1):
+                #print("BUSY_DEV", id_device, is_busy, busy_period, int(time.time()))
+                if int(busy_period) == int(time.time()):
                     db.update_device_busy(id_device=id_device, is_busy=0, busy_period=0)
 
             if(SMAC_PLATFORM == "android") and ((COUNTER % 5) == 0):
@@ -1180,12 +1186,15 @@ class SmacApp(App):
 
             # check for trigger and update value
             if (COUNTER % 60) == 0:
-                triggers = db.get_trigger_by_device(self.ID_DEVICE)
+                triggers = db.get_triggers_all()
                 if triggers == None:
                     triggers = []
                 for id_topic, id_context, id_device, id_property, value, type_trigger in triggers:
                     if type_trigger == smac_keys["TYPE_TRIGGER_PROP"]:
                         db_value = db.get_value_by_property(id_device, id_property)
+                        print(str(db_value))
+                        print(str(value))
+                        print( str(db_value) == str(value) )
                         if str(db_value) == str(value):
                             self.trigger_context(id_context)
                             #self.send_trigger_context(id_context)
@@ -1349,11 +1358,12 @@ class SmacApp(App):
         d["LIMIT_TOPIC"] = 10
         d["LIMIT_DEVICE"] = 10
         d["INTERVAL_ONLINE"] = 30
-        d["EMAIL"] = "manjunathls13@gmail.com"
+        #d["EMAIL"] = "manjunathls13@gmail.com"
+        d["EMAIL"] = ""
         d["MOBILE_NUMBER"] = ""
         d["LOGIN_PIN"] = "1234"
         d["EMAIL_VERIFIED"] = False
-        d["VERSION"] = 0.1
+        d["VERSION"] = 0.5
         d['theme'] = "LIGHT"
         #d["PLATFORM"] = SMAC_PLATFORM
         f.write(json.dumps(d))
@@ -1640,11 +1650,11 @@ class SmacApp(App):
         self._bind_keyboard()
         self.load_app_data()
         self.load_device_data()
-        self.open_modal(content=BoxLayout_loader())
+        #self.open_modal(content=BoxLayout_loader())
         #print(self.modal.content.ids["id_loader_icon"].source)
-        print("modal opened")
-        print(self.modal.content)
-        print([i for i in self.modal.content.walk()])
+        #print("modal opened")
+        #print(self.modal.content)
+        #print([i for i in self.modal.content.walk()])
 
     def load_app_data(self):
         self.load_config_variables()
