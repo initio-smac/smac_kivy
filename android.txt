@@ -1,0 +1,3 @@
+title=Smac NEW
+author=manjunath
+orientation=portrait
