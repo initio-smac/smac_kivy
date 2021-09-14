@@ -222,7 +222,9 @@ class WebREPLClient:
             self.sock = s
             ai = socket.getaddrinfo(host, port)
             addr = ai[0][4]
+            s.settimeout(3)
             s.connect(addr)
+            s.settimeout(None)
             #s = s.makefile("rwb")
             websocket_helper.client_handshake(s)
             self.ws = websocket(s)

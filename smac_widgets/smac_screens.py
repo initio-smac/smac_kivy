@@ -140,8 +140,8 @@ class Screen_espConfig(SelectClass):
     def on_CONNECTED(self, wid, value, *args):
         app = App.get_running_app()
         if value:
-            #app.open_modalInfo(text="Connected to {}".format(self.ADDR))
-            self.ids["id_config_state_text"].text = "Connected to {} ({})".format( network_scanner.get_hostname(self.ADDR), self.ADDR )
+            app.open_modalInfo(text="Connected to {}".format(self.ADDR))
+            #self.ids["id_config_state_text"].text = "Connected to {} ({})".format( network_scanner.get_hostname(self.ADDR), self.ADDR )
             f = webrepl_client.get_file("config_esp.json", "config.json")
             self.DATA = json.loads(f)
             print("F", self.DATA)
@@ -257,6 +257,12 @@ class Screen_espConfig(SelectClass):
     def connect_esp(self, addr):
         self.ADDR = addr
         self.CONNECTED = webrepl_client.connect_ws(host=addr, port=8266, passwd=1234)
+        if self.CONNECTED:
+            text = "Connected to Address: {}".format(addr)
+        else:
+            text = "Couldn't connect to the Address: {}".format(addr)
+        app = App.get_running_app()
+        app.open_modalInfo(title="Info", text=text)
         #print(self.CONNECTED)
 
 
@@ -693,8 +699,9 @@ class Screen_context(SelectClass):
                 c.id_context = id_context
                 container.ids[id_context] = c
                 container.add_widget(c)
+                c.ids["id_icon1"].bind(on_release=self.on_release_remove_context)
                 c.ids["id_icon2"].bind(on_release=self.on_release_add_btn)
-                c.ids["id_icon1"].bind(on_release=self.on_release_trigger_context)
+                c.ids["id_icon3"].bind(on_release=self.on_release_trigger_context)
             else:
                 c = container.ids[id_context]
             c.name_context = name_context
@@ -786,6 +793,17 @@ class Screen_context(SelectClass):
                 #except Exception as e:
                 #    print("exception while adding trigger: {}".format(e))
 
+    def on_release_remove_context(self, wid,  *args):
+        cxt_obj = wid.parent.parent
+        app = App.get_running_app()
+        print(cxt_obj)
+        db.remove_context(cxt_obj.id_context, cxt_obj.id_topic)
+        container = self.ids["id_context_container"]
+        container.remove_widget(container.ids[cxt_obj.id_context])
+        d1 = {}
+        d1[smac_keys["ID_CONTEXT"]] = cxt_obj.id_context
+        d1[smac_keys["ID_TOPIC"]] = cxt_obj.id_topic
+        client.send_message(frm=app.ID_DEVICE, to=cxt_obj.id_topic, cmd=smac_keys["CMD_STATUS_REMOVE_CONTEXT"], message=d1)
 
     def open_add_context(self, *args):
         app = App.get_running_app()
@@ -823,7 +841,7 @@ class Screen_context(SelectClass):
         #d1[smac_keys["ID_DEVICE"]] = app.ID_DEVICE
         d1[smac_keys["NAME_CONTEXT"]] = name_context
         d1[smac_keys["ID_TOPIC"]] = app.APP_DATA["id_topic"]
-        client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_ADD_CONTEXT"], message=d1)
+        client.send_message(frm=app.ID_DEVICE, to=app.APP_DATA["id_topic"], cmd=smac_keys["CMD_STATUS_ADD_CONTEXT"], message=d1)
 
     def remove_context(self, wid, *args):
         content = wid.parent

@@ -107,6 +107,7 @@
 	height: self.minimum_height
 	icon1:  "TOP.png"
 	icon2:  "SETTING.png"
+	icon3: "TRANSPARENT.png"
 	BoxLayout:
         size_hint_y: None
         height: app.grid_min
@@ -114,6 +115,12 @@
             text: root.text + root.text1
             bold: True
             color: app.colors["COLOR_TEXT"]
+        Image_iconButton:
+            id: id_icon3
+            source: app.source_icon + root.icon3
+            disable: True if root.disable_icon3 else False
+            opacity: 0 if root.disable_icon3 else 1
+            width: 0 if root.disable_icon3 else app.grid_min
         Image_iconButton:
             id: id_icon2
             source: app.source_icon + root.icon2
@@ -126,6 +133,7 @@
             disable: True if root.disable_icon1 else False
             opacity: 0 if root.disable_icon1 else 1
             width: 0 if root.disable_icon1 else app.grid_min
+
 
 <Widget_network>:
 	size_hint: 1, None
@@ -150,8 +158,9 @@
 	height: self.minimum_height
 	font_size: dp(20)
 	padding: dp(10), dp(10)
+	icon1: 'CLOSE.png'
 	icon2: "PLUS.png"
-	icon1: 'CLOUD.png'
+	icon3: "CLOUD.png"
 	canvas.before:
         Color:
             rgba: app.colors["COLOR_THEME_BASIC"]
@@ -456,7 +465,7 @@
             id_dropdown.dismiss()
         on_release:
             id_dropdown.open(self)
-            id_img.source = app.source_icon+'TOP.png'
+            id_img.source = app.source_iconid_config_state_text+'TOP.png'
         Image_icon:
             #disabled: True
             id: id_img

@@ -34,6 +34,8 @@ class Widget_base( ButtonBehavior, BoxLayout ):
     disable_icon1 = BooleanProperty(False)
     icon2 = StringProperty("")
     disable_icon2 = BooleanProperty(False)
+    icon3 = StringProperty("")
+    disable_icon3 = BooleanProperty(True)
     hide = BooleanProperty(False)
 
     def __init__(self, text, *args, **kwargs):
@@ -50,6 +52,7 @@ class Widget_network( Widget_base ):
     pass
 
 class Widget_context( Widget_base ):
+    disable_icon3 = False
     pass
 
 class BoxLayout_action(ButtonBehavior, BoxLayout ):

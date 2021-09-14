@@ -1,8 +1,15 @@
 import asyncio
 import socket
+from smac_limits import STATE_CONNECTED_INTERNET, STATE_CONNECTED_NO_INTERNET, STATE_NO_CONNECTION
 
-
-
+def update_network_connection():
+    try:
+        socket.create_connection(("www.google.com", 80))
+        return STATE_CONNECTED_INTERNET
+    except OSError:
+        return STATE_NO_CONNECTION
+    except:
+        return STATE_CONNECTED_NO_INTERNET
 
 class NetworkScanner:
     SCAN_IPS = []

@@ -12,6 +12,7 @@ from kivy.utils import get_hex_from_color
 from plyer import notification
 
 from smac_device import set_property, get_device_property, get_property_value, property_listener
+from smac_limits import STATE_NO_CONNECTION, STATE_CONNECTED_INTERNET, STATE_CONNECTED_NO_INTERNET
 from smac_platform import SMAC_PLATFORM
 from smac_requests import restapi
 from smac_theme_colors import THEME_LIGHT, THEME_DARK
@@ -21,9 +22,12 @@ from smac_theme_colors import THEME_LIGHT, THEME_DARK
 import json
 
 from smac_device_keys import SMAC_DEVICES
+from smac_tools import update_network_connection
 from smac_widgets.smac_screens import *
 from smac_widgets.smac_layouts import *
 from smac_db import db
+
+
 
 if SMAC_PLATFORM == "android":
     from android.runnable import run_on_ui_thread
@@ -99,6 +103,22 @@ class SmacApp(App):
     BACK_BTN_COUNTER = 0
     title="SMAC"
     icon = "smac_logo.png"
+    BROADCAST_RECEIVER = None
+    STATE_CONNECTION = NumericProperty(1)
+
+    def on_STATE_CONNECTION(self, instance, value, *args):
+        print(value)
+        print(args)
+        if value == STATE_NO_CONNECTION:
+            #self.open_modalInfo(title="Info", text="No connection")
+            notification.notify(title="Info", message="No Connection")
+        elif value == STATE_CONNECTED_INTERNET:
+            #self.open_modalInfo(title="Info", text="Connected to Internet")
+            notification.notify(title="Info", message="Connected to Internet")
+        elif value == STATE_CONNECTED_NO_INTERNET:
+            #self.open_modalInfo(title="Info", text="Connected to Network. No Internet" )
+            notification.notify(title="Info", message="Connected to Network. No Internet")
+
 
     def on_theme(self, *args):
         print("on_theme", self.theme)
@@ -802,6 +822,10 @@ class SmacApp(App):
                     id_context = data.get( smac_keys["ID_CONTEXT"] )
                     id_topic = data.get( smac_keys["ID_TOPIC"] )
                     db.remove_context(id_context=id_context, id_topic=id_topic)
+                    scr = self.screen_manager.get_screen(name="Screen_context")
+                    container = scr.ids["id_context_container"]
+                    container.remove_widget(container.ids[id_context])
+                    #del scr.TOPIC_IDS[id_topic]
 
                 if cmd in  [ smac_keys["CMD_ADD_ACTION"], smac_keys["CMD_STATUS_ADD_ACTION"] ]:
                     print("cmd in CMD_ACTION")
@@ -1183,6 +1207,10 @@ class SmacApp(App):
                 await  asyncio.sleep(0)
 
 
+            if (COUNTER % 10) == 0:
+                print("updating state_connection")
+                self.STATE_CONNECTION = update_network_connection()
+                print(self.STATE_CONNECTION)
 
             # check for trigger and update value
             if (COUNTER % 60) == 0:
@@ -1632,6 +1660,8 @@ class SmacApp(App):
 
     def on_stop(self, *args):
         print("APP stopped")
+        if self.BROADCAST_RECEIVER != None:
+            self.BROADCAST_RECEIVER.stop()
         for task in self._TASKS:
             task.cancel()
 
@@ -1655,6 +1685,21 @@ class SmacApp(App):
         #print("modal opened")
         #print(self.modal.content)
         #print([i for i in self.modal.content.walk()])
+
+    def on_broadcast(self, context, intent):
+        print("on broadcast main")
+        from jnius import autoclass
+        ConnectivityManager = autoclass('android.net.ConnectivityManager')
+        if intent.getAction() == ConnectivityManager.CONNECTIVITY_ACTION:
+            extras = intent.getExtras()
+            ni = extras.get( ConnectivityManager.EXTRA_NETWORK_INFO )
+            if (ni != None) and (ni.isConnectedOrConnecting() ):
+                print("extra network info", ni)
+            else:
+                print("extra no network", extras.get( ConnectivityManager.EXTRA_NO_CONNECTIVITY ))
+
+
+
 
     def load_app_data(self):
         self.load_config_variables()
@@ -1689,9 +1734,10 @@ class SmacApp(App):
         print("kivy started few seconds ago")
         if SMAC_PLATFORM == "android":
             from jnius import autoclass, cast
-            service = autoclass('com.smacsystem.smacapp.ServiceMyservice')
-            mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
-            argument = ''
+            from android.broadcast import BroadcastReceiver
+            #service = autoclass('com.smacsystem.smacapp.ServiceMyservice')
+            #mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+            #argument = ''
             #service.start(mActivity, argument)
 
             from android.permissions import request_permissions, check_permission, Permission
@@ -1700,6 +1746,10 @@ class SmacApp(App):
                 request_permissions([Permission.CAMERA])
             if not check_permission(Permission.WRITE_EXTERNAL_STORAGE):
                 request_permissions( [Permission.WRITE_EXTERNAL_STORAGE, Permission.READ_EXTERNAL_STORAGE] )
+
+            ConnectivityManager = autoclass('android.net.ConnectivityManager')
+            self.BROADCAST_RECEIVER =  BroadcastReceiver( self.on_broadcast, actions=[ConnectivityManager.CONNECTIVITY_ACTION] )
+            self.BROADCAST_RECEIVER.start()
 
 
             Intent = autoclass('android.content.Intent')
