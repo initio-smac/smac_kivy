@@ -8,15 +8,13 @@ import random
 import re
 from functools import partial
 
-from kivy import clock
 from kivy.clock import Clock
-from kivy.network.urlrequest import UrlRequest
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.screenmanager import Screen
 #from kivy.app import App
 #from kivy.uix.scrollview import ScrollView
 
-from smac_client import client
+
 from smac_device import set_property, generate_id_topic, generate_id_context
 from smac_device_keys import SMAC_PROPERTY, SMAC_DEVICES
 from smac_keys import smac_keys
@@ -26,6 +24,9 @@ from smac_widgets.smac_layouts import *
 from smac_tools import network_scanner
 from webrepl.webrepl_client import webrepl_client
 
+
+
+from smac_client import client
 
 
 from smac_db import db
@@ -1796,15 +1797,15 @@ class Screen_register(SelectClass):
         activity.bind(on_activity_result=self.on_activity_result)
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         SmsRetriever = autoclass("com.google.android.gms.auth.api.phone.SmsRetriever")
-        client = SmsRetriever.getClient(PythonActivity.mActivity.getApplicationContext())
-        print(client)
-        c = client.startSmsUserConsent(None)
+        cli = SmsRetriever.getClient(PythonActivity.mActivity.getApplicationContext())
+        print(cli)
+        c = cli.startSmsUserConsent(None)
         print(c)
         #c.addOnSuccessListener = self.on_ss
         #c.addOnFailureListener = self.on_st
         #c.add_on_success_listener = self.on_ss
         #c.add_on_failure_listener = self.on_st
-        #client.startSmsUserConsent(None).addOnFailureListener = self.on_msg_failure
+        #cli.startSmsUserConsent(None).addOnFailureListener = self.on_msg_failure
 
     def on_ss(self, *args):
         print("SMS start", args)

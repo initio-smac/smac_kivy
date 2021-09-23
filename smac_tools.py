@@ -4,7 +4,9 @@ from smac_limits import STATE_CONNECTED_INTERNET, STATE_CONNECTED_NO_INTERNET, S
 
 def update_network_connection():
     try:
+        socket.settimeout(5)
         socket.create_connection(("www.google.com", 80))
+        socket.settimeout(None)
         return STATE_CONNECTED_INTERNET
     except OSError:
         return STATE_NO_CONNECTION

@@ -1673,9 +1673,27 @@ class SmacApp(App):
         print("APP resume")
         return True
 
+    def on_server_address_success(self, req, data):
+        print("on server address success")
+        print(req)
+        print(data)
+        print(client.ZMQ_PUB_PORT)
+        print(client.ZMQ_SUB_PORT)
+        client.ZMQ_SERVER = data.get("server",  client.ZMQ_SERVER)
+        client.ZMQ_PUB_PORT = data.get("port_pub", client.ZMQ_PUB_PORT)
+        client.ZMQ_SUB_PORT = data.get("port_sub", client.ZMQ_SUB_PORT)
+        print(client.ZMQ_PUB_PORT)
+        print(client.ZMQ_SUB_PORT)
+
+    def on_server_address_failure(self, req, err, *args):
+        print("on server address failure")
+        print(err)
+
     def on_start(self):
         print("kivy started")
         print("starting smac_client...")
+        restapi.rest_call(url="https://www.smacsystem.com/smacapi/request_server_address", request="request_server_address",
+                          method="GET", on_success=self.on_server_address_success, on_failure=self.on_server_address_failure)
         Window.softinput_mode = "below_target"
         self._bind_keyboard()
         self.load_app_data()
