@@ -28,7 +28,7 @@ source.include_exts = py,png,jpg,kv,atlas
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.4
+version = 0.6
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -232,7 +232,8 @@ android.logcat_filters = *:S python:D, *:S myservice:D
 
 # (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
 #android.arch = armeabi-v7a
-android.arch = arm64-v8a
+android.arch = armeabi-v7a, arm64-v8a
+#android.release_artifact = apk
 
 #
 # Python for android (p4a) specific
@@ -243,6 +244,7 @@ android.arch = arm64-v8a
 
 # (str) python-for-android branch to use, defaults to master
 #p4a.branch = master
+p4a.branch = develop
 
 # (str) python-for-android git clone directory (if empty, it will be automatically cloned from github)
 #p4a.source_dir =

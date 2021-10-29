@@ -33,7 +33,7 @@
                         TextInput_custom:
                             hint_text: "IP address"
                             id: id_ip_address
-                            text: "192.168.43.123"
+                            text: "192.168.4.1"
                         Button_custom1:
                             text: 'Connect'
                             on_release:
@@ -308,10 +308,10 @@
                                 root.update_device_interval_online(app.APP_DATA["id_device"], id_interval_online.text)
 
 
-                #Widget_block:
-				#    text: "Update Wifi Config"
-				#    disabled: 0 if(str(app.APP_DATA["type_device"]) == SMAC_DEVICES["ESP"]) else 1
-				#    height:  self.minimum_height
+                Widget_block:
+				    text: "Update Wifi Config"
+				    disabled: 0 if(str(app.APP_DATA["type_device"]) == SMAC_DEVICES["ESP"]) else 1
+				    height:  self.minimum_height
 
 
                 #Widget_block:
@@ -356,12 +356,14 @@
                 id: id_text_email
                 input_type: "mail"
                 text: app.EMAIL if(app.EMAIL != "") else app.MOBILE_NUMBER
+                #text: "manjunathls13@gmail.com"
             TextInput_custom:
                 hint_text: "PIN"
                 size_hint_y: None
                 height: app.grid_min
                 id: id_text_email_pin
                 input_type: "number"
+                #text: "1234"
             Button_custom1:
                 text: "LOGIN"
                 on_release:

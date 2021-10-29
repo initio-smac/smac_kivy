@@ -35,8 +35,8 @@ https://medium.com/modulotech/how-to-sign-an-unsigned-apk-using-command-line-636
 keytool -genkey -v -keystore smacapp.keystore -alias smacapp -keyalg RSA -keysize 2048 -validity 10000
 
 prompts for the following
-Password: Ssmrnk@61
-Re-enter password: Ssmrnk@61
+Password: Ssmrnk@6
+Re-enter password: Ssmrnk@6
 First Name and Last Name: Initio Energy
 Name of the Organizational Unit: Smacsystem
 Name of the Organization: Initio Energy Systems
@@ -50,4 +50,5 @@ verify the data and generate keystore
 jarsigner -keystore <keystore_file>  -storepass <storepass> -keypass <keypass> <unsigned_apk_file> <alias_name>
 jarsigner -keystore smacapp.keystore  -storepass Ssmrnk@6 -keypass Ssmrnk@6 smacapp-0.1-arm64-v8a-release-unsigned.apk smacapp
 
-
+# .aab generation 
+https://github.com/Android-for-Python/Android-for-Python-Users#release-builds

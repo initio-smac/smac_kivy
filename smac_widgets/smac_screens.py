@@ -262,9 +262,9 @@ class Screen_espConfig(SelectClass):
             text = "Connected to Address: {}".format(addr)
         else:
             text = "Couldn't connect to the Address: {}".format(addr)
-        app = App.get_running_app()
-        app.open_modalInfo(title="Info", text=text)
-        #print(self.CONNECTED)
+        #app = App.get_running_app()
+        #app.open_modalInfo(title="Info", text=text)
+        print(self.CONNECTED)
 
 
 class Screen_context(SelectClass):
@@ -1434,7 +1434,8 @@ class Screen_deviceSetting(SelectClass):
             w1.text = "Update Wifi Config"
             w1.height = w1.minimum_height
             b1 = BoxLayout_updateWifiContent()
-            b1.ids["id_btn_wifi_config"].bind(on_release=self.update_device_wifi_config )
+            #b1.ids["id_btn_wifi_config"].bind(on_release=self.update_device_wifi_config )
+            b1.ids["id_btn_update_wifi"].bind(on_release=self.update_device_wifi_config )
             w1.add_widget( b1)
             container.ids["id_wifi_config"] = w1
             container.add_widget(w1)
@@ -1725,6 +1726,8 @@ class Screen_register(SelectClass):
             self.CLK = None
         if self.content_register != None:
             self.content_register.ids["id_label_info2"].text = ""
+            self.content_register.ids["id_label_info"].text = ""
+        self.STATE == "SEND_PIN_FAILURE"
 
     def update_OTP_count(self, *args):
         if self.OTP_REQ_COUNT >= self.OTP_REQ_MAX_COUNT:

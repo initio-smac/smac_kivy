@@ -57,6 +57,8 @@ class SmacRest():
                 pass
             elif req.url == SMAC_SERVER + "request_verify_pin":
                 pass
+            elif req.url == SMAC_SERVER + "request_device_uid":
+                app.open_modalInfo(title="Info", text=data)
             else:
                 if data.get("error", None) != None:
                     app.open_modalInfo(title="Info", text=data["error"])

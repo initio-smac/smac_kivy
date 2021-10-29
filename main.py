@@ -111,13 +111,13 @@ class SmacApp(App):
         print(args)
         if value == STATE_NO_CONNECTION:
             #self.open_modalInfo(title="Info", text="No connection")
-            notification.notify(title="Info", message="No Connection")
+            notification.notify( message="No Connection", toast=True)
         elif value == STATE_CONNECTED_INTERNET:
             #self.open_modalInfo(title="Info", text="Connected to Internet")
-            notification.notify(title="Info", message="Connected to Internet")
+            notification.notify(message="Connected to Internet", toast=True)
         elif value == STATE_CONNECTED_NO_INTERNET:
             #self.open_modalInfo(title="Info", text="Connected to Network. No Internet" )
-            notification.notify(title="Info", message="Connected to Network. No Internet")
+            notification.notify(message="Connected to Network. No Internet", toast=True)
 
 
     def on_theme(self, *args):
@@ -1604,7 +1604,7 @@ class SmacApp(App):
 
     def download_app(self):
         #self.close_modal()
-        notification.notify(title="SMAC", message="Downloading Smac App.")
+        notification.notify(message="Downloading Smac App.", toast=True)
         url = "https://raw.githubusercontent.com/initio-smac/smac_kivy/main/bin/smacapp-0.1-armeabi-v7a-debug.apk"
         download_path =  '/sdcard/Download/smac.apk'
         th = UrlRequest(url=url, method="GET", chunk_size=8192, on_progress=self.on_download_progress, on_success=self.install_app_success, on_failure=self.install_app_failure)

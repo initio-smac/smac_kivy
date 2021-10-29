@@ -4,6 +4,7 @@ import sys
 import os
 import struct
 import time
+from threading import Thread
 
 try:
     import usocket as socket
@@ -32,9 +33,9 @@ def debugmsg(msg):
 
 
 if USE_BUILTIN_UWEBSOCKET:
-    from uwebsocket import websocket
+    from uwebsocket import websock
 else:
-    class websocket:
+    class websock:
 
         def __init__(self, s):
             self.s = s
@@ -122,8 +123,12 @@ class WebREPLClient:
 
     def get_ver(self, ws):
         self.send_req(ws, WEBREPL_GET_VER)
-        d = ws.read(3)
-        d = struct.unpack("<BBB", d)
+        # d = ws.read(3)
+        d = ws.read(1)
+        print("@@ ", d)
+        print(len(d))
+        # struct.unpack("<BBB", d)
+        d = struct.unpack("<B", d)
         return d
 
     def send_cmd(self, ws, cmd):
@@ -165,24 +170,34 @@ class WebREPLClient:
             debugmsg("%r %d" % (rec, len(rec)))
             self.ws.write(rec)
             assert self.read_resp(self.ws) == 0
-            with open(local_file, "wb") as f:
-                cnt = 0
-                while True:
-                    self.ws.write(b"\0")
-                    (sz,) = struct.unpack("<H", self.ws.read(2))
+            #with open(local_file, "wb") as f:
+            cnt = 0
+            while True:
+                self.ws.write(b"\0")
+                try:
+                    ff = self.ws.read(2)
+                    print("LEN(ff)", len(ff), ff)
+                    (sz,) = struct.unpack("<H", ff)
+                    print(sz)
                     if sz == 0:
                         break
                     while sz:
                         buf = self.ws.read(sz)
+                        #print(buf)
                         if not buf:
                             raise OSError()
                         cnt += len(buf)
                         content += buf
+                        #print(content)
                         #f.write(buf)
-                        sz -= len(buf)
+                        sz -= len(buf)/2
                         sys.stdout.write("Received %d bytes\r" % cnt)
                         sys.stdout.flush()
-            print()
+                except Exception as e:
+                    pass
+            content = content[2:]
+            #print("CONTENT ", content)
+            print(self.read_resp(self.ws))
             assert self.read_resp(self.ws) == 0
             return content.decode(encoding="utf-8")
 
@@ -227,14 +242,19 @@ class WebREPLClient:
             s.settimeout(None)
             #s = s.makefile("rwb")
             websocket_helper.client_handshake(s)
-            self.ws = websocket(s)
+            self.ws = websock(s)
+            #th = Thread(target=self.login, args=(self.ws, str(passwd)))
+            #th.daemon = True
+            #th.start()
             self.login(self.ws, str(passwd) )
-            print("Remote WebREPL version:", self.get_ver(self.ws))
+            #print("Remote WebREPL version:", self.get_ver(self.ws))
+            print("Remote WebREPL version:", self.ws)
             self.ws.ioctl(9, 2)
             self.CONNECTED = True
             return True
         except Exception as e:
             print("connect err: {}".format(e) )
+            self.CONNECTED = False
             return False
 
     def update_config_variable(self, key, value):
