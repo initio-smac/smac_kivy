@@ -24,10 +24,7 @@ python main.py
 buildozer android debug deploy run logcat
 
 # repo
-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
-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
-
-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
+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
 
 # buildozer android release
 https://medium.com/modulotech/how-to-sign-an-unsigned-apk-using-command-line-636a056373a0
