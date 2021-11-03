@@ -6,6 +6,7 @@ import asyncio
 import json
 import random
 import re
+import socket
 from functools import partial
 
 from kivy.clock import Clock
@@ -1707,13 +1708,19 @@ class Screen_register(SelectClass):
             self.content_register.ids["id_text_email"].disabled = True
             self.content_register.ids["id_text_mobile_number"].disabled = True
             self.content_register.ids["id_text_email_pin"].disabled = True
-        elif (self.STATE == "VERIFY_PIN_SUCCESS") or (self.STATE == "") or (self.STATE == "SEND_PIN_FAILURE"):
+        elif (self.STATE == "VERIFY_PIN_SUCCESS") or (self.STATE == ""):
             if self.content_register != None:
                 self.content_register.ids["id_btn_send_pin"].disabled = False
                 self.content_register.ids["id_btn_verify_pin"].disabled = False
                 self.content_register.ids["id_text_email"].disabled = False
                 self.content_register.ids["id_text_mobile_number"].disabled = False
                 self.content_register.ids["id_text_email_pin"].disabled = False
+        elif (self.STATE == "SEND_PIN_FAILURE"):
+            self.content_register.ids["id_btn_send_pin"].disabled = False
+            self.content_register.ids["id_btn_verify_pin"].disabled = True
+            self.content_register.ids["id_text_email"].disabled = False
+            self.content_register.ids["id_text_mobile_number"].disabled = False
+            self.content_register.ids["id_text_email_pin"].disabled = True
         self.stop_otp_timer()
 
     # timer to enable req_OTP_pin after 30 seconds
@@ -1727,7 +1734,8 @@ class Screen_register(SelectClass):
         if self.content_register != None:
             self.content_register.ids["id_label_info2"].text = ""
             self.content_register.ids["id_label_info"].text = ""
-        self.STATE == "SEND_PIN_FAILURE"
+        self.OTP_REQ_COUNT = 0
+        self.STATE = "SEND_PIN_FAILURE"
 
     def update_OTP_count(self, *args):
         if self.OTP_REQ_COUNT >= self.OTP_REQ_MAX_COUNT:
@@ -1924,11 +1932,18 @@ class Screen_register(SelectClass):
         self.STATE = "SEND_PIN_SUCCESS"
 
     def on_req_otp_failure(self, res, data, *args):
-        print(res)
+        print("OTP_FAIL", res)
         print(data)
+        print(type(data))
         try:
             label = self.content_register.ids["id_label_info"]
-            label.text = data["error"]
+            if type(data) == dict:
+                label.text = data["error"]
+            elif type(data) == socket.gaierror:
+                label.text = "Network Error."
+                self.stop_otp_timer()
+            else:
+                label.text=  data
             self.STATE = "SEND_PIN_FAILURE"
         except Exception as e:
             print(e)

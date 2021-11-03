@@ -1,7 +1,9 @@
 from kivy.app import App
 import asyncio
 
+from kivy.clock import Clock
 from kivy.network.urlrequest import UrlRequest
+from plyer import notification
 
 try:
     import urequests as requests
@@ -49,8 +51,13 @@ class SmacRest():
         except Exception as e:
             print("ERR", e)
 
+    def close_app(self, *args):
+        app = App.get_running_app()
+        app.stop()
+
     def on_req_failure(self, req, data):
         print(data)
+        print(req.url)
         app = App.get_running_app()
         try:
             if req.url == SMAC_SERVER + "request_send_pin":
@@ -58,7 +65,10 @@ class SmacRest():
             elif req.url == SMAC_SERVER + "request_verify_pin":
                 pass
             elif req.url == SMAC_SERVER + "request_device_uid":
-                app.open_modalInfo(title="Info", text=data)
+                Clock.schedule_once(self.close_app, 5)
+                t = "  Error while getting Device ID.\n Check your connection and try again."
+                app.open_modalInfo(title="Info", text=t)
+                notification.notify(message="No network. Closing App..", toast=True)
             else:
                 if data.get("error", None) != None:
                     app.open_modalInfo(title="Info", text=data["error"])
