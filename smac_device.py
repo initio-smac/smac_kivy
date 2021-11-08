@@ -21,16 +21,20 @@ if SMAC_PLATFORM == "android":
     bt = autoclass('android.bluetooth.BluetoothAdapter')
     mBluetoothAdapter = bt.getDefaultAdapter();
 
+# get plyer device id
 def get_id_device():
     print("uid", uniqueid.id)
     return uniqueid.id
 
+# generate topic_id
 def generate_id_topic(id_device):
     return id_device+".T{}".format( int(time.time()) )
 
+# generate context id
 def generate_id_context(id_device):
     return id_device+".C{}".format( int(time.time()) )
 
+# get device name of this device
 def get_device_name():
     if TEST_DEVICE:
         return SMAC_PLATFORM+"_{}".format( int(time.time()) )
@@ -42,6 +46,7 @@ def get_device_name():
         import socket
         return socket.gethostname()
 
+# get device type of this device
 def get_device_type():
     if SMAC_PLATFORM == "ESP":
         return SMAC_DEVICES["ESP"]
@@ -51,6 +56,7 @@ def get_device_type():
         elif (SMAC_PLATFORM == "linux") or (SMAC_PLATFORM == "win"):
             return SMAC_DEVICES["COMPUTER"]
 
+# get property min, max values
 def get_property_min_max(prop):
     if prop in [  SMAC_PROPERTY["BLUETOOTH"], SMAC_PROPERTY["FLASH"], SMAC_PROPERTY["SWITCH"], SMAC_PROPERTY["LIGHT"], SMAC_PROPERTY["GEYSER"] ]:
         return (0, 1, 0)
@@ -66,7 +72,7 @@ def get_property_min_max(prop):
         return (0,0,0)
 
 
-
+# get properties of this device
 def get_device_property(id_device=None):
     props = []
     arr = []
@@ -87,6 +93,7 @@ def get_device_property(id_device=None):
         props.append(p1)
     return props
 
+# get property value
 def get_property_value(type_property, id_property=None):
     type_property = str(type_property)
     if type_property == SMAC_PROPERTY["BATTERY"]:
@@ -113,6 +120,8 @@ def get_property_value(type_property, id_property=None):
         return 0
 
 
+# currently android only
+# listen to the property value change and if any change, send the status
 async def property_listener(id_device):
     for ent in db.get_property_list_by_device(id_device):
         id_property = ent[0]
@@ -130,6 +139,7 @@ async def property_listener(id_device):
         if value != db_value:
             send_status(id_property=id_property, value=value)
 
+#  change property function
 def set_property(type_property, value, id_property=None):
     #print(type_property, type(type_property))
     #print( SMAC_PROPERTY[type_property])
@@ -182,7 +192,7 @@ def set_property(type_property, value, id_property=None):
             print("rebooting system")
             os.system("sudo reboot")
 
-
+# send device property change status
 def send_status(id_property, value, update_ui=True):
     print("status updated")
     app = App.get_running_app()

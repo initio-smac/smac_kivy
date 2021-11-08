@@ -33,12 +33,14 @@ from smac_client import client
 from smac_db import db
 import time
 
+# implementation of Select Behavior 
 class SelectClass(Screen):
-    nodes = []
-    index = 0
-    max_index = 0
+    nodes = [] # store selectable widgets here
+    index = 0 # pointer to selectable widgets
+    max_index = 0 # len(nodes) - 1
     #scroll_containers = []
 
+    # get selectable widgets and store in 'nodes' variable
     def get_selectable_nodes(self, widget=None, *args):
         self.nodes = []
         self.index = 0
@@ -48,9 +50,12 @@ class SelectClass(Screen):
         #print(w)
         scroll_container = None
         #print("wid", [ a for a in w.walk()])
+
+        # go through all widgets in this screen
         for wid in w.walk():
             #print(wid)
 
+            # if widget is ScrollView then set it as scroll container
             if "ScrollView" == wid.__class__.__name__:
                 scroll_container = wid
             #print("scroll_con", scroll_container)
@@ -59,6 +64,8 @@ class SelectClass(Screen):
                 #print(SelectBehavior in wid.__class__.__bases__)
                 #print(wid.width)
                 #if(not wid.disabled) and (wid.width > 0) and (wid.height >= 0):
+
+                # if widget is disabled then skip it
                 if(not wid.disabled):
                     if SelectBehavior in wid.__class__.__bases__:
                         self.nodes.append(wid)
@@ -69,9 +76,11 @@ class SelectClass(Screen):
                 print(e)
             self.max_index = len(self.nodes) - 1
 
+    # get selectable nodes async
     async def get_nodes(self, *args):
         await asyncio.sleep(1)
         self.get_selectable_nodes()
+
 
     def on_enter(self, *args):
         #if platform != "android":
@@ -85,10 +94,13 @@ class SelectClass(Screen):
     def on_leave(self, *args):
         self.nodes = []
 
+    # unbind the keydown function on keyboard close
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
         self._keyboard = None
 
+    # widget selection based on key press
+    # keys - top, bottom
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         _, key = keycode
         print(key)
@@ -124,6 +136,9 @@ class SelectClass(Screen):
                 elif TextInput in wid.__class__.__bases__:
                     wid.focus = True
 
+
+# Not used anymore
+# config class for ESP
 class Screen_espConfig(SelectClass):
     CONNECTED = BooleanProperty(False)
     ADDR = ""
@@ -268,12 +283,14 @@ class Screen_espConfig(SelectClass):
         print(self.CONNECTED)
 
 
+# Context Screen
 class Screen_context(SelectClass):
+    # screen specific modal 
     modal = ModalView_custom(size_hint_x=.9, size_hint_max_x=dp(400), size_hint_y=None, height=dp(400))
-    is_modal_open = False
-    _interval = None
-    add_action_content = None
-    add_trig_content = None
+    is_modal_open = False  
+    _interval = None            # async interval variable
+    add_action_content = None   # add action data
+    add_trig_content = None     # add trigger data
     data = DictProperty({
         "id_topic": "",
         "id_context": '',
@@ -290,6 +307,8 @@ class Screen_context(SelectClass):
         "value_minute": "0"
     })
 
+    # open modal function
+    # open modal and get selectable widgets of modal
     def open_modal(self, content, title="Info", auto_dismiss=True):
         print(self.modal.children)
         if content != None:
@@ -305,6 +324,8 @@ class Screen_context(SelectClass):
             scr = app.screen_manager.get_screen(app.screen_manager.current)
             scr.get_selectable_nodes(widget=self.modal)
 
+    # close modal function
+    # and load selectable widgets of screen
     def close_modal(self, *args):
         self.modal.dismiss()
         self.modal.title = ""
@@ -318,6 +339,7 @@ class Screen_context(SelectClass):
         wid = app.modal if app.is_modal_open else self
         scr.get_selectable_nodes(widget=wid)
 
+    # open modal to choose "add_action" or "add_trigger"
     def on_release_add_btn(self, wid, *args):
         app = App.get_running_app()
         #content = BoxLayout(size_hint_y=None, orientation="vertical")
@@ -335,12 +357,14 @@ class Screen_context(SelectClass):
             child.bind(on_release=self.open_add_action_trigger_modal)
         app.open_modal(content)
 
+    # set action or trigger data 
     def on_data(self, *args):
         if self.add_action_content != None:
             self.add_action_content.data = self.data
         if self.add_trig_content != None:
             self.add_trig_content.data = self.data
 
+    # open "Add Action" content or "Add Trigger" content based on the mode
     def open_add_action_trigger_modal(self, wid, *args):
         app = App.get_running_app()
         #app.close_modal()
@@ -364,6 +388,7 @@ class Screen_context(SelectClass):
             self.add_trig_content.ids["id_btn_add_trigger"].bind(on_release=self.add_trigger)
             app.open_modal(content=self.add_trig_content, title="Add Trigger")
 
+    # add trigger function
     def add_trigger(self, wid, *args):
         add_trigger_root = wid.parent.parent
         add_trigger_container = wid.parent
@@ -434,6 +459,7 @@ class Screen_context(SelectClass):
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         self.set_context_data_default_values()
 
+    # add action function
     def add_action(self, wid, *args):
         app = App.get_running_app()
         print("self.data", self.data)
@@ -480,6 +506,8 @@ class Screen_context(SelectClass):
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         self.set_context_data_default_values()
 
+
+    # set default data values
     def set_context_data_default_values(self, *args):
         self.data = {
             #"id_topic": "",
@@ -497,6 +525,8 @@ class Screen_context(SelectClass):
             "value_minute": "0"
         }
 
+
+    # remove action function
     def remove_action(self, wid, *args):
         app = App.get_running_app()
         parent = wid.parent.parent
@@ -528,6 +558,7 @@ class Screen_context(SelectClass):
             app.add_task(db.get_command_status, (id_topic, id_device,[smac_keys["CMD_STATUS_REMOVE_ACTION"], smac_keys["CMD_INVALID_PIN"]], "", id_context))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
+    # remove trigger function
     def remove_trigger(self, wid, *args):
         app = App.get_running_app()
         parent = wid.parent.parent
@@ -562,6 +593,7 @@ class Screen_context(SelectClass):
             app.add_task(db.get_command_status, (id_topic, id_device,[smac_keys["CMD_STATUS_REMOVE_TRIGGER"], smac_keys["CMD_INVALID_PIN"]], "", id_context))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
+    #  open modal for selection of a device
     def open_device_selection(self, *args):
         app = App.get_running_app()
         scroll = ScrollView(size_hint_y=None)
@@ -578,12 +610,14 @@ class Screen_context(SelectClass):
         scroll.add_widget(content)
         self.open_modal(content=scroll, title="Select A Device")
 
+    # update device details based on the device selection
     def select_device(self, wid,  *args):
         self.data["id_device"] = wid.id_device
         self.data["name_device"] = wid.name_device
         self.data["type_device"] = wid.type_device
         self.close_modal()
 
+    # open modal for property selection
     def open_property_selection(self, *args):
         app = App.get_running_app()
         scroll = ScrollView(size_hint_y=None)
@@ -606,6 +640,7 @@ class Screen_context(SelectClass):
         else:
             app.open_modalInfo(text="Select A Device To Continue")
 
+    # update property values based on selected property
     def select_property(self, wid, *args):
         self.data["id_property"] = wid.id_property
         self.data["name_property"] = wid.name_property
@@ -614,6 +649,7 @@ class Screen_context(SelectClass):
         self.data["value_max"] = wid.value_max
         self.close_modal()
 
+    # modal to select time
     def open_value_time_selection(self, wid, *args):
         app = App.get_running_app()
         scroll = ScrollView(size_hint_y=None)
@@ -631,6 +667,7 @@ class Screen_context(SelectClass):
         scroll.add_widget(content)
         self.open_modal(content=scroll, title="Select A Value")
 
+    # update time values on time selection
     def select_value_time(self, wid, *args):
         if wid.time_selection == "hour":
             self.data["value_hour"] = wid.value
@@ -638,6 +675,7 @@ class Screen_context(SelectClass):
             self.data["value_minute"] = wid.value
         self.close_modal()
 
+    # open modal to select a "value"
     def open_value_selection(self, *args):
         app = App.get_running_app()
         if self.data["id_property"] != "":
@@ -658,16 +696,21 @@ class Screen_context(SelectClass):
         else:
             app.open_modalInfo(text="Select A Property To Continue")
 
+    # update value based on the selection
     def select_value(self, wid, *args):
         self.data["value"] = wid.value
         self.close_modal()
 
+    # async interval function
     async def interval(self, timeout=5):
         await asyncio.sleep(.5)
         while 1:
             await self.load_widgets()
             await asyncio.sleep(timeout)
 
+    # on screen enter
+    # start async interval to load widgets
+    # bind modal close button to a function
     def on_enter(self, *args):
         app = App.get_running_app()
         #c = self.modal.children[0].children[0]
@@ -680,6 +723,8 @@ class Screen_context(SelectClass):
         super().on_enter()
         self.modal.ids["id_btn_close"].bind(on_release=self.close_modal)
 
+    # on screen leave
+    # unbind modal close button to a function
     def on_leave(self, *args):
         #container = self.ids["id_context_container"]
         #container.clear_widgets()
@@ -689,6 +734,7 @@ class Screen_context(SelectClass):
         self.modal.ids["id_btn_close"].unbind(on_release=self.close_modal)
         pass
 
+    # update/add widgets based on db data 
     async def load_widgets(self, *args):
         await asyncio.sleep(0)
         app = App.get_running_app()
@@ -795,6 +841,7 @@ class Screen_context(SelectClass):
                 #except Exception as e:
                 #    print("exception while adding trigger: {}".format(e))
 
+    # remove context 
     def on_release_remove_context(self, wid,  *args):
         cxt_obj = wid.parent.parent
         app = App.get_running_app()
@@ -807,6 +854,7 @@ class Screen_context(SelectClass):
         d1[smac_keys["ID_TOPIC"]] = cxt_obj.id_topic
         client.send_message(frm=app.ID_DEVICE, to=cxt_obj.id_topic, cmd=smac_keys["CMD_STATUS_REMOVE_CONTEXT"], message=d1)
 
+    # open add context modal
     def open_add_context(self, *args):
         app = App.get_running_app()
         content = BoxLayout_addContextContent()
@@ -816,6 +864,7 @@ class Screen_context(SelectClass):
         app = App.get_running_app()
         app.open_modal(content=content, title="Add Context")
 
+    # trigger context on btn press
     def on_release_trigger_context(self, wid, *args):
         app = App.get_running_app()
         cxt_obj = wid.parent.parent
@@ -827,6 +876,7 @@ class Screen_context(SelectClass):
         client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_TRIGGER_CONTEXT"], message=d1)
         app.trigger_context(cxt_obj.id_context)
 
+    # add context function
     def add_context(self, wid, *args):
         content = wid.parent
         print(content)
@@ -845,6 +895,7 @@ class Screen_context(SelectClass):
         d1[smac_keys["ID_TOPIC"]] = app.APP_DATA["id_topic"]
         client.send_message(frm=app.ID_DEVICE, to=app.APP_DATA["id_topic"], cmd=smac_keys["CMD_STATUS_ADD_CONTEXT"], message=d1)
 
+    # remove context function
     def remove_context(self, wid, *args):
         content = wid.parent
         app = App.get_running_app()
@@ -857,14 +908,15 @@ class Screen_context(SelectClass):
         client.send_message(frm=app.ID_DEVICE, to="#", cmd=smac_keys["CMD_STATUS_REMOVE_CONTEXT"], message=d1)
 
 
-
+# device screen
 class Screen_network(SelectClass):
-    TOPIC_IDS = {}
-    RENDERING = False
-    RENDERING_COUNT = 0
-    CLEAR_WIDGETS = 0
-    _interval = None
+    TOPIC_IDS = {}      # variable to store topic_data
+    RENDERING = False   # variable to check whether widgets already rendered or not (add_widgets fn)
+    RENDERING_COUNT = 0 # rendering count
+    CLEAR_WIDGETS = 0   # global clear widgets variable
+    _interval = None    # async task variable
 
+    # add/update/delete device and properties 
     async def add_widgets(self, clear_widgets=False, *args):
         #print("RENDERING", self.RENDERING)
         app = App.get_running_app()
@@ -996,6 +1048,7 @@ class Screen_network(SelectClass):
         else:
             print("ALREADY RENDERING")
 
+    # on property_name click, open edit property_name modal 
     def on_prop_name_release(self, wid, *args):
         wid_prop = wid.parent
         prop_name = wid.text
@@ -1007,6 +1060,7 @@ class Screen_network(SelectClass):
         app = App.get_running_app()
         app.open_modal(content=content, title="Update Property Name")
 
+    # update property name
     def update_property_name(self, wid, *args):
         w = wid.parent
         name_property = w.name_property
@@ -1034,6 +1088,7 @@ class Screen_network(SelectClass):
             "", id_device, [smac_keys["CMD_STATUS_UPDATE_NAME_PROPERTY"], smac_keys["CMD_INVALID_PIN"]], id_property))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
+    # update device_data in APP_DATA and goto device settings page
     def goto_setting_page(self, wid, *args):
         w = wid.parent.parent
         app = App.get_running_app()
@@ -1042,6 +1097,8 @@ class Screen_network(SelectClass):
         app.APP_DATA["type_device"] = w.type_device
         app.change_screen(screen="Screen_deviceSetting")
 
+    # change the property value on widget click 
+    # and send message to that topic
     def change_value(self, wid, *args):
         wid_prop = wid.parent.parent.parent
         app = App.get_running_app()
@@ -1063,6 +1120,7 @@ class Screen_network(SelectClass):
             client.send_message(frm=app.ID_DEVICE, to=wid_prop.id_device, cmd=smac_keys["CMD_SET_PROPERTY"], message=d, udp=True, tcp=True)
             wid_prop.MSG_COUNTER = MSG_ID
 
+    # get property icon
     def get_icon(self, type_property, *args):
         app = App.get_running_app()
         if type_property == SMAC_PROPERTY["BATTERY"]:
@@ -1080,7 +1138,7 @@ class Screen_network(SelectClass):
         else:
             return ''
 
-
+    # change expandable/collapsible state of topics
     def change_topic_view(self, icon, *args):
         app = App.get_running_app()
         wid = icon.parent.parent
@@ -1092,6 +1150,7 @@ class Screen_network(SelectClass):
         #print( type(wid.view_topic) )
         db.set_topic_view(id_topic=wid.id_topic, view_topic=view)
 
+    # change expandable/collapsible state of devices
     def change_device_view(self, icon, *args):
         app = App.get_running_app()
         wid = icon.parent.parent
@@ -1103,12 +1162,15 @@ class Screen_network(SelectClass):
             i.hide = view
         db.set_device_view(id_topic=wid.id_topic, id_device=wid.id_device, view_device=view)
 
+    # on click topic
     def on_topic_release(self, wid, *args):
         #anim = Animation(size=self.size, duration=1)
         #anim.repeat = True
         #anim.start(wid)
         pass
 
+    # rotate animation for iconButton widget
+    # used in loader screen
     def start_animation(self, img, duration=1, *args):
         #anim = Animation(size=[dp(60), dp(60)], duration=.1)
         #anim += Animation(size=[dp(50), dp(50)], duration=.5)\
@@ -1118,16 +1180,19 @@ class Screen_network(SelectClass):
         anim.start(img)
         anim.on_start = self.on_anim_start
 
+    # on animation start
     def on_anim_start(self, wid, *args):
         #wid.rot.origin = wid.center
         pass
 
+    # async function to update widgets
     async def interval(self, timeout=5):
         await asyncio.sleep(.5)
         while 1:
             await self.add_widgets()
             await asyncio.sleep(timeout)
 
+    # add menu tabs (side navigation)
     def add_menu_widgets(self, *args):
         #app = App.get_running_app()
         menu = self.ids["id_menu_home_container"]
@@ -1146,13 +1211,15 @@ class Screen_network(SelectClass):
                     menu.ids[name_home] = wid
                     menu.add_widget(wid)
 
+    # clear side navigation widgets
     def clear_menu_widgets(self, *args):
         menu = self.ids["id_menu_home_container"]
         menu.clear_widgets()
         menu.ids = {}
 
+    # on screen_enter
+    # initiate the async interval function to update widgets
     def on_enter(self, *args):
-
         #self.add_widgets()
         #Clock.schedule_interval(self.add_widgets, 1)
         #print(self.ids)
@@ -1160,10 +1227,10 @@ class Screen_network(SelectClass):
         #app = App.get_running_app()
         #self.center_x = app.screen_manager.center_x
 
-
         self._interval = asyncio.gather(self.interval(1))
         super().on_enter()
 
+    # on screen leave
     def on_leave(self, *args):
         #container = self.ids["id_network_container"]
         #container.clear_widgets()
@@ -1171,6 +1238,7 @@ class Screen_network(SelectClass):
         #if self._interval != None:
         #    self._interval.cancel()
 
+    # open/close side navigation menu
     def open_close_menu(self,  *args):
         app = App.get_running_app()
         menu_container = self.ids["id_menu_container"]
@@ -1194,7 +1262,7 @@ class Screen_network(SelectClass):
             self.get_selectable_nodes()
 
 
-
+    # on side navigation menu tab is clicked
     def on_menu_item_release(self, wid, *args):
         app = App.get_running_app()
         app.APP_DATA["name_home"] = wid.text
@@ -1202,10 +1270,11 @@ class Screen_network(SelectClass):
         self.open_close_menu()
         self.CLEAR_WIDGETS = 1
 
+    # set property details on APP_DATA and goto Screen_property
     def goto_prop_page(self, wid,  *args):
         app = App.get_running_app()
-        app.app_data["id_device"] = wid.id_device
-        app.app_data["name_device"] = wid.name_device
+        app.APP_DATA["id_device"] = wid.id_device
+        app.APP_DATA["name_device"] = wid.name_device
         app.change_screen("Screen_property")
 
     def add_widgets_old(self, *args):
@@ -1242,14 +1311,22 @@ class Screen_network(SelectClass):
                     w2.value = value
                     w1.add_widget(w2)
 
+# Device Settings Screen
 class Screen_deviceSetting(SelectClass):
-
-    data = DictProperty({
-        'interval_online': 10
+    data = DictProperty({           # screen data
+        'interval_online': 10    
     })
 
     #modal.content = None
 
+    # load widgets 
+    # add topics that are subscribed
+    # remove topics that are subscribed
+    # update device pin
+    # update device name
+    # update device interval online
+    # update wifi config*
+    # update device software*
     def load_widgets(self, clear=True, *args):
         '''dd_home_container = self.ids["id_dropdown_home_container"]
         dd_home = dd_home_container.ids["id_dropdown"]
@@ -1269,7 +1346,8 @@ class Screen_deviceSetting(SelectClass):
         print("ID_DEV", id_device)
         print("DEVS", db.get_topic_list_not_by_device(id_device=id_device))
         btn = Button_custom1(text="Add Home/Room")
-        btn.size_hint_x=1
+        btn.width = app.grid_min * 3
+        #btn.size_hint_x=1
         #btn.background_color = app.colors["COLOR_THEME_BASIC"]
         btn.bind(on_release=self.create_topic)
         self.ids["id_topic_container"].clear_widgets()
@@ -1346,6 +1424,7 @@ class Screen_deviceSetting(SelectClass):
             label = Label_custom(text="No Homes", size_hint_y=None, height=app.grid_min)
             device_container.add_widget(label)
 
+    # get device interval period
     def get_device_interval(self, id_device):
         interval = db.get_device_interval_online(id_device)
         if interval != None:
@@ -1353,12 +1432,15 @@ class Screen_deviceSetting(SelectClass):
         else:
             return str(30)
 
+    # open modal to add new topic
     def create_topic(self, *args):
         content = BoxLayout_addTopicContent(spacing='2dp')
         content.ids["id_btn"].bind(on_release=self.add_topic_widget)
         app = App.get_running_app()
         app.open_modal(content=content, title="Add Home")
 
+    # add new topic widget
+    # subscribe to that topic
     def add_topic_widget(self, wid, *args):
         print(args)
         print(wid.parent)
@@ -1375,18 +1457,21 @@ class Screen_deviceSetting(SelectClass):
         self.subscribe_topic(name_home, name_room, id_topic)
 
 
+    # open "Add Home" modal
     def create_home(self, *args):
         content = BoxLayout_addHomeContent()
         content.ids["id_btn"].bind(on_release=self.add_home_widget)
         app = App.get_running_app()
         app.open_modal(content=content, title="Add home")
 
+    # open "Add Room" modal
     def create_room(self, *args):
         content = BoxLayout_addRoomContent()
         content.ids["id_btn"].bind(on_release=self.add_room_widget)
         app = App.get_running_app()
         app.open_modal(content=content, title="Add room")
 
+    # add home widget
     def add_home_widget(self, wid, *args):
         name_home = wid.parent.name_home
         dd_home_container = self.ids["id_dropdown_home_container"]
@@ -1399,6 +1484,7 @@ class Screen_deviceSetting(SelectClass):
         app = App.get_running_app()
         app.close_modal()
 
+    # add room widgets
     def add_room_widget(self, wid, *args):
         app = App.get_running_app()
         #dd_home_container = self.ids["id_dropdown_home_container"]
@@ -1418,6 +1504,8 @@ class Screen_deviceSetting(SelectClass):
         app.close_modal()
         #self.add_home(name_home, name_topic, show_popup=True)
 
+    # add device specific widgets such as
+    # wifi_config and software_update for ESP
     def add_device_specific_widgets(self):
         container = self.ids["id_container"]
         app = App.get_running_app()
@@ -1450,6 +1538,7 @@ class Screen_deviceSetting(SelectClass):
             container.ids["id_device_updates"] = w2
             container.add_widget(w2)
 
+    # remove specific widgets that are created for devices
     def remove_device_specific_widgets(self):
         container = self.ids["id_container"]
         if container.ids.get("id_reconfigure_device", None) != None:
@@ -1459,7 +1548,7 @@ class Screen_deviceSetting(SelectClass):
         if container.ids.get("id_device_updates", None) != None:
             container.remove_widget(container.ids["id_device_updates"])
 
-        
+    # reset a device
     def reconfigure_device(self, *args):
         app = App.get_running_app()
         db.remove_all_entries()
@@ -1467,6 +1556,8 @@ class Screen_deviceSetting(SelectClass):
         app.load_config_variables()
         app.open_modalInfo(text="Device Reconfigured.")
 
+    # on screen_enter
+    # load device settings widgets and their values
     def on_enter(self, *args):
         super().on_enter()
         self.load_widgets()
@@ -1482,10 +1573,12 @@ class Screen_deviceSetting(SelectClass):
         print( type(SMAC_DEVICES["ESP"]))
         print(app.APP_DATA["type_device"] == SMAC_DEVICES["ESP"])
 
+    # on_screen_leave
     def on_leave(self, *args):
         super().on_leave()
         self.remove_device_specific_widgets()
 
+    # unsubscribe to a topic
     def unsunbscribe_topic(self, wid, *args):
         app = App.get_running_app()
         id_device = app.APP_DATA["id_device"]
@@ -1505,6 +1598,7 @@ class Screen_deviceSetting(SelectClass):
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
         self.load_widgets()
 
+    # subscribe to a topic
     def subscribe_topic(self, name_home, name_room, id_topic,*args):
         #name_home, name_room, id_topic = wid.parent.name_home, wid.parent.name_room, wid.parent.id_topic
         app = App.get_running_app()
@@ -1562,7 +1656,7 @@ class Screen_deviceSetting(SelectClass):
             if app.ID_DEVICE not in topics:
                 db.add_network_entry(name_home=name_home, name_topic=name_topic, id_topic=id_topic, id_device=app.ID_DEVICE,
                                  name_device=app.NAME_DEVICE, type_device=app.TYPE_DEVICE)
-        self.load_widgets()'''
+        self.load_widgets()
 
 
     def on_dropdown_homeitem_release(self, wid, *args):
@@ -1577,7 +1671,7 @@ class Screen_deviceSetting(SelectClass):
         dropdown.select(wid.text)
         dropdown.id_topic = wid.id_topic
 
-    '''def add_home(self, name_home, name_topic, show_popup=False, *args):
+    def add_home(self, name_home, name_topic, show_popup=False, *args):
         app = App.get_running_app()
         id_topic = generate_id_topic(app.ID_DEVICE)
         app.add_topic(frm=app.ID_DEVICE, id_topic=id_topic, name_home=name_home, name_topic=name_topic, id_device=app.ID_DEVICE, passkey=app.PIN_DEVICE)
@@ -1589,6 +1683,7 @@ class Screen_deviceSetting(SelectClass):
 
         self.load_widgets()'''
 
+    # update device pin
     def update_device_pin(self, id_device, passkey):
         app = App.get_running_app()
         if (passkey == "") or (passkey == None):
@@ -1601,6 +1696,7 @@ class Screen_deviceSetting(SelectClass):
         print("Pin updated")
         app.open_modalInfo(text="PIN updated")
 
+    # update device name in the smac_server
     def update_device_name(self, id_device, name_device):
         app = App.get_running_app()
         if (name_device == "") or (name_device == None):
@@ -1625,6 +1721,7 @@ class Screen_deviceSetting(SelectClass):
             app.add_task(db.get_command_status, ("", id_device,[smac_keys["CMD_STATUS_UPDATE_NAME_DEVICE"], smac_keys["CMD_INVALID_PIN"]]))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
+    # update device interval
     def update_device_interval_online(self, id_device, interval_online):
         app = App.get_running_app()
         if (interval_online == "") or (interval_online == None):
@@ -1645,7 +1742,8 @@ class Screen_deviceSetting(SelectClass):
             app.add_task(db.get_command_status, ("", id_device,[smac_keys["CMD_STATUS_UPDATE_INTERVAL_ONLINE"], smac_keys["CMD_INVALID_PIN"]]))
             app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
-
+    # update wifi_config
+    # send new wifi config to all devices in the group
     def update_device_wifi_config(self, wid, *args):
         app = App.get_running_app()
         id_device = app.APP_DATA["id_device"]
@@ -1668,6 +1766,7 @@ class Screen_deviceSetting(SelectClass):
         app.add_task(db.get_command_status, ("", id_device,[smac_keys["CMD_STATUS_UPDATE_WIFI_CONFIG"], smac_keys["CMD_INVALID_PIN"]]))
         app.open_modal(content=BoxLayout_loader(), auto_dismiss=False)
 
+    # sending a msg to update software
     def update_software(self, wid, *args):
         app = App.get_running_app()
         id_device = app.APP_DATA["id_device"]
@@ -1682,19 +1781,23 @@ class Screen_deviceSetting(SelectClass):
         app.open_modalInfo(text="Request sending to check for Updates...")
 
 
+# Device Register/Login Screen
 class Screen_register(SelectClass):
-    REQ_USER_CONSENT =  200
-    br = None
-    CLK = None
-    OTP_REQ_COUNT = 0
-    OTP_REQ_MAX_COUNT = 30
-    content_register = None
-    LOGIN_BLOCKED = BooleanProperty(False)
-    LOGIN_ATTEMPT_FAIL_COUNT = 0
-    LOGIN_ATTEMPT_FAIL_COUNT_MAX = 3
+    REQ_USER_CONSENT =  200     # request success class
+    br = None                   # broadcast reciver
+    CLK = None                  # clock instance for OTP
+    OTP_REQ_COUNT = 0           # OTP timer
+    OTP_REQ_MAX_COUNT = 30      # OTP max time
+    content_register = None     # register/login data
+    LOGIN_BLOCKED = BooleanProperty(False) # check if login blocked or not
+    LOGIN_ATTEMPT_FAIL_COUNT = 0         # Login attempt fail counter
+    LOGIN_ATTEMPT_FAIL_COUNT_MAX = 3     # Login attempt fail counter max
+    # state of OTP process
     STATE = OptionProperty("", options=["", "SEND_PIN", "SEND_PIN_SUCCESS", "SEND_PIN_FAILURE", \
                                         "VERIFY_PIN", "VERIFY_PIN_SUCCESS", "VERIFY_PIN_FAILURE"])
 
+    # on STATE_CHANGE
+    # based on the STATE value, enable/disable the widgets
     def on_STATE(self, val, *args):
         if (self.STATE == "SEND_PIN") or (self.STATE == "VERIFY_PIN_FAILURE") or (self.STATE == "SEND_PIN_SUCCESS"):
             self.content_register.ids["id_btn_send_pin"].disabled = True
@@ -1721,12 +1824,13 @@ class Screen_register(SelectClass):
             self.content_register.ids["id_text_email"].disabled = False
             self.content_register.ids["id_text_mobile_number"].disabled = False
             self.content_register.ids["id_text_email_pin"].disabled = True
-        self.stop_otp_timer()
+        #self.stop_otp_timer()
 
     # timer to enable req_OTP_pin after 30 seconds
     def start_otp_timer(self):
         self.CLK = Clock.schedule_interval(self.update_OTP_count, 1)
 
+    # timer to stop req_OTP_pin interval
     def stop_otp_timer(self, *args):
         if self.CLK != None:
             self.CLK.cancel()
@@ -1737,6 +1841,8 @@ class Screen_register(SelectClass):
         self.OTP_REQ_COUNT = 0
         self.STATE = "SEND_PIN_FAILURE"
 
+    # update OTP_REQ_COUNT for every one second
+    # if OTP_REQ_COUNT > OTP_REQ_MAX_COUNT --> stop the counter
     def update_OTP_count(self, *args):
         if self.OTP_REQ_COUNT >= self.OTP_REQ_MAX_COUNT:
             self.content_register.ids["id_btn_send_pin"].disabled = False
@@ -1749,6 +1855,9 @@ class Screen_register(SelectClass):
             self.OTP_REQ_COUNT += 1
             self.content_register.ids["id_label_info2"].text = "Send OTP Again in {} sec.".format(self.OTP_REQ_MAX_COUNT-self.OTP_REQ_COUNT)
 
+    # on screen_enter
+    # check if login blocked
+    # set login button events
     def on_enter(self, *args):
         #app = App.get_running_app()
         #self.ids["id_text_email"].text = app.EMAIL
@@ -1773,6 +1882,7 @@ class Screen_register(SelectClass):
             self.start_msg_listener()
             self.startSmsUserConsent()'''
 
+    # set a broadcast receiver to recive the message on android
     def start_msg_listener(self):
         if SMAC_PLATFORM == "android":
             from android.broadcast import BroadcastReceiver
@@ -1782,12 +1892,15 @@ class Screen_register(SelectClass):
             self.br.start()
             print("BR started")
 
+    # stop broadcast receiver that listens to the messages on android
     def stop_msg_listener(self):
         if SMAC_PLATFORM == "android":
             if self.br != None:
                 self.br.stop()
 
-
+    # on screen leave
+    # unbind events for login widgets
+    # stop broadcast receiver
     def on_leave(self, *args):
         if self.content_register.ids.get("id_btn_send_pin", None) != None:
             self.content_register.ids["id_btn_send_pin"].unbind(on_release=self.request_login_pin)
@@ -1796,12 +1909,15 @@ class Screen_register(SelectClass):
         self.STATE = ""
         self.stop_msg_listener()
 
+    # open register/forgot modal
     def open_register_modal(self, *args):
         print(self.content_register.children)
         self.content_register.ids["id_label_info"].text = ""
         app = App.get_running_app()
         app.open_modal(title="Register/Forgot Password", content=self.content_register, auto_dismiss=False)
 
+    # android event to invoke SmsUserConsent to listen to the incoming messages
+    # to parse OTP
     def startSmsUserConsent(self):
         from jnius import autoclass
         from android import activity
@@ -1824,6 +1940,8 @@ class Screen_register(SelectClass):
     def on_st(self, *args):
         print("SMS stop", args)
 
+    # on broadcast_reciver -->
+    # on_message receive
     def on_broadcast(self, context, intent):
         print("on-broadcast")
         print(context)
@@ -1849,6 +1967,8 @@ class Screen_register(SelectClass):
             elif code == CommonStatusCodes.TIMEOUT:
                 self.on_msg_failure()
 
+    # android onActivityResult equivalent
+    # parse OTP from the result
     def on_activity_result(self,req_code, res_code, intent, *args):
         print(args)
         if req_code == self.REQ_USER_CONSENT:
@@ -1864,6 +1984,8 @@ class Screen_register(SelectClass):
                 else:
                     print("Cannot parse OTP from message")
 
+    # parse OTP from incoming message
+    # {4} indicates 4 digit code
     def parseOneTimeCode(self, message):
         print(message)
         matches = re.findall(r"[0-9]{4}", message)
@@ -1880,6 +2002,7 @@ class Screen_register(SelectClass):
         print("ON_MSG_FAIL")
         print(args)
 
+    # request a new login PIN, if forgotten or new User
     def request_login_pin(self, *args):
         app = App.get_running_app()
         email = self.content_register.ids["id_text_email"].text
@@ -1925,12 +2048,14 @@ class Screen_register(SelectClass):
                 label.text = res
                 self.STATE = "SEND_PIN_FAILURE"'''
 
+    # if OTP is sent successfully
     def on_req_otp_success(self, *args):
         print(args)
         label = self.content_register.ids["id_label_info"]
         label.text = "PIN sent to Email and Mobile Number"
         self.STATE = "SEND_PIN_SUCCESS"
 
+    # if OTP is not sent
     def on_req_otp_failure(self, res, data, *args):
         print("OTP_FAIL", res)
         print(data)
@@ -1940,14 +2065,15 @@ class Screen_register(SelectClass):
             if type(data) == dict:
                 label.text = data["error"]
             elif type(data) == socket.gaierror:
-                label.text = "Network Error."
                 self.stop_otp_timer()
+                label.text = "Network Error.\nCheck Network Settings."
             else:
                 label.text=  data
             self.STATE = "SEND_PIN_FAILURE"
         except Exception as e:
             print(e)
 
+    # check email syntax before proceeding
     def check_syntax_email(self, email):
         app = App.get_running_app()
         if len(email.split("@")) < 2:
@@ -1957,7 +2083,7 @@ class Screen_register(SelectClass):
 
     #def _verify_pin_local(self, entered_pin, saved_pin):
 
-
+    # verify login pin if not LOGIN_BLOCKED locally
     def verify_login_pin(self, *args):
         app = App.get_running_app()
         if not self.LOGIN_BLOCKED:
@@ -1974,6 +2100,7 @@ class Screen_register(SelectClass):
             #if (email == app.EMAIL) and (str(saved_pin) == str(pin) ):
             if str(saved_pin) == str(pin):
                 app.change_screen(screen="Screen_network")
+                app.EMAIL = email
                 app.update_config_variable(key="EMAIL_VERIFIED", value=1)
             else:
                 app.open_modalInfo(title="Info", text="Incorrect PIN (or) Email Is Not Valid")
@@ -1985,7 +2112,7 @@ class Screen_register(SelectClass):
         else:
             app.open_modalInfo(title="Info", text="Login Blocked. Try After Some Time.")
 
-
+    # verify login PIN in the server
     def verify_login_pin_server(self, *args):
         app = App.get_running_app()
         email = self.content_register.ids["id_text_email"].text
@@ -2015,6 +2142,7 @@ class Screen_register(SelectClass):
         #app.open_modal(content=BoxLayout_loader())
         r = restapi.rest_call(url=url, method="POST", request=request, data=data, on_success=self.on_verify_otp_succeed, on_failure=self.on_verify_otp_failure)
 
+    # on OTP verification is succedded in the server
     def on_verify_otp_succeed(self, res, data):
         print(res)
         print(data)
@@ -2027,11 +2155,18 @@ class Screen_register(SelectClass):
         app.update_config_variable(key="MOBILE_NUMBER", value=mobile_number)
         app.update_config_variable(key="LOGIN_PIN", value=pin)
         self.STATE = "VERIFY_PIN_SUCCESS"
+        app.EMAIL = email
         app.delete_config_variable(key="LOGIN_BLOCKED")
 
+    # on OTP verification is failed in the server
     def on_verify_otp_failure(self, res, data):
         print(res)
-        label = self.content_register.ids["id_label_info"]
-        label.text = data["error"]
+        try:
+            label = self.content_register.ids["id_label_info"]
+            if type(data) == socket.gaierror:
+                label.text = "Network Error.\nCheck Network Settings."
+            elif type(data) == dict:
+                label.text = data["error"]
+        except:
+            print(data)
         self.STATE = "VERIFY_PIN_FAILURE"
-

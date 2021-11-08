@@ -164,10 +164,10 @@
                         #value: 1 if(app.theme == "DARK") else 0
                         on_value:
                             app.theme = "LIGHT" if(app.theme=="DARK") else "DARK"
-                Label_menuItem:
-                    text: "Config Device"
-                    on_release:
-                        app.change_screen("Screen_espConfig")
+                #Label_menuItem:
+                #    text: "Config Device"
+                #    on_release:
+                #        app.change_screen("Screen_espConfig")
                 Label_menuItem:
                     text: "Log out"
                     on_release:
@@ -187,6 +187,7 @@
 				text: "Contexts"
 				color: app.colors["COLOR_TEXT"]
             Image_iconButton:
+                disabled: True if(app.APP_DATA["id_topic"] == "") else False
                 source: app.source_icon + "PLUS.png"
                 on_release:
                     root.open_add_context()
@@ -206,7 +207,7 @@
 		        on_release:
 		            app.change_screen("Screen_network")
 			Label:
-				text: root.name
+				text: "Device Settings"
 				color: app.colors["COLOR_TEXT"]
 		ScrollView:
 			size_hint_y: 1
@@ -226,11 +227,12 @@
                             id: id_name_device
                             text: app.APP_DATA["name_device"]
                             #disabled: 1 if(app.APP_DATA["id_device"] != app.ID_DEVICE) else 0
-                        Button_custom1:
-                            text: 'Update Name'
-                            #disabled: 1 if(app.APP_DATA["id_device"] != app.ID_DEVICE) else 0
-                            on_release:
-                                root.update_device_name(app.APP_DATA["id_device"], id_name_device.text)
+                    Button_custom1:
+                        text: 'Update Name'
+                        width: app.grid_min * 3
+                        #disabled: 1 if(app.APP_DATA["id_device"] != app.ID_DEVICE) else 0
+                        on_release:
+                            root.update_device_name(app.APP_DATA["id_device"], id_name_device.text)
 				Widget_block:
 				    text: "Add device to a Home"
 				    size_hint_y: None
@@ -287,10 +289,10 @@
                             hint_text: "PIN"
                             id: id_passkey
                             password: True
-                        Button_custom1:
-                            text: 'Update PIN'
-                            on_release:
-                                root.update_device_pin(app.APP_DATA["id_device"], id_passkey.text)
+                    Button_custom1:
+                        text: 'Update PIN'
+                        on_release:
+                            root.update_device_pin(app.APP_DATA["id_device"], id_passkey.text)
                 Widget_block:
 				    text: "Update Online Interval of the device"
                     BoxLayout:
@@ -302,11 +304,10 @@
                             text: str(root.data["interval_online"])
                             #cursor: 0,0
                             #password: True
-                        Button_custom1:
-                            text: 'Update Interval'
-                            on_release:
-                                root.update_device_interval_online(app.APP_DATA["id_device"], id_interval_online.text)
-
+                    Button_custom1:
+                        text: 'Update Interval'
+                        on_release:
+                            root.update_device_interval_online(app.APP_DATA["id_device"], id_interval_online.text)
 
                 Widget_block:
 				    text: "Update Wifi Config"

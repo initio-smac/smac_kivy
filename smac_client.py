@@ -18,38 +18,40 @@ else:
 
 
 class SMACClient():
-    SUB_TOPIC = []
-    UDP_PORT = 37020
-    UDP_REQ = []
-    ZMQ_PUB_PORT = 5556
-    ZMQ_SUB_PORT = 5572
+    SUB_TOPIC = []                  # subscription list
+    UDP_PORT = 37020          
+    UDP_REQ = []                    # UDP messages to be processed
+    ZMQ_PUB_PORT = 5556             # ZMQ publish PORT
+    ZMQ_SUB_PORT = 5572             # ZMQ subscribe PORT
     ZMQ_SERVER = "smacsystem.com"
     #ZMQ_SERVER = "192.168.43.85"
     #ZMQ_SERVER = "192.168.0.178"
-    ZMQ_REQ = []
-    ZMQ_PUB_CONNECTED = 0
-    ZMQ_SUB_CONNECTED = 0
-    ZMQ_RECONNECT_INTERVAL = 10
-    ZMQ_CONN_INITIALIZED = False
-    ZMQ_SEND_MSG_QUEUE = []
+    ZMQ_REQ = []                    # ZMQ messages to be processed
+    ZMQ_PUB_CONNECTED = 0           # status of ZMQ PUB server connection
+    ZMQ_SUB_CONNECTED = 0           # status of ZMQ SUB server connection
+    ZMQ_RECONNECT_INTERVAL = 10     # on disconnection, try to reconnect every 10 seconds 
+    ZMQ_CONN_INITIALIZED = False    # status to indicate ZMQ connections initialized or not
+    ZMQ_SEND_MSG_QUEUE = []         # ZMQ send msg queue
     #ZMQ_FRAME_FLAG = b"\x00"
-    ZMQ_LONG_FRAME = True
+    ZMQ_LONG_FRAME = True           # ZMQ has 2 modes to send data.
+                                    # 1. short mode
+                                    # 2. long mode
     #_zmq_pub_connected = 0
     #_zmq_sub_connected = 0
-    MAX_BUFFER = 512
-    zmq_pub_reader = None
-    zmq_pub_writer = None
-    zmq_sub_reader = None
-    zmq_sub_writer = None
-    _process_message = None
-    SPD_TEST_SET = 1
+    MAX_BUFFER = 512                # maximum buffer size UDP
+    zmq_pub_reader = None           # socket pub reader
+    zmq_pub_writer = None           # socket pub writer
+    zmq_sub_reader = None           # socket sub reader
+    zmq_sub_writer = None           # socket sub writer
+    _process_message = None         # on_message callback
+    SPD_TEST_SET = 1                # speed test
     SPD_TEST_SRT_TIME = None
     SPD_TEST_END_TIME = None
     SPD_TEST_PKT_ID = 0
     SPD_TEST = None
     SPD_TEST_INTERVAL = 5
-    _on_start = None
-    _on_speed_test = None
+    _on_start = None                # on start callback
+    _on_speed_test = None           # on speed_test callback
     MSG_ID = 0
     PENDING_ACKS = []
 
@@ -168,14 +170,21 @@ class SMACClient():
             #l = len(msg)
 
             try:
-                # encoding keyword is not supported in micropython
+                # 'encoding' keyword is not supported in micropython
                 #ba1 = self.smac_bytearray('\x00' + len(msg))
                 #l = len(msg)
                 #self.zmq_pub_writer.write(  self.smac_bytearray("\x00{}{}".format(str(hex(l))[2:], msg) ) )
+
+                # ZMQ Frame
+                # <frame_mode><len of message><message>
+                # frame_mode - 
+                #      \x00 for short mode
+                #      \x02 for long mode    
                 if self.ZMQ_LONG_FRAME:
-                    l = str(hex(len(msg)+1))[2:]
-                    l = l.zfill(16)
-                    N = 2
+                    l = str(hex(len(msg)+1))[2:]             # get hex value of message length
+                    l = l.zfill(16)                          # adjust it to 16 bits  
+                    N = 2                                    
+                    # get the unicode value of each character and add        
                     l = "".join( [ chr( int(l[i:i+N], 16) )  for i in range(0, len(l), N)])
                     m = bytearray("\x02{}{}\n".format(l, msg), encoding="raw_unicode_escape")
                 else:
@@ -207,6 +216,7 @@ class SMACClient():
             print("ZMQ message not sent: either not connected or not initialized")
             await self.initialize_zmq_connections()
 
+    # process send message queue ZMQ
     async def send_message_listener_zmq(self, *args):
         await asyncio.sleep(0)
         while 1:

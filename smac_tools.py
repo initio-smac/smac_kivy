@@ -2,6 +2,7 @@ import asyncio
 import socket
 from smac_limits import STATE_CONNECTED_INTERNET, STATE_CONNECTED_NO_INTERNET, STATE_NO_CONNECTION
 
+# return network connection status
 def update_network_connection():
     try:
         socket.settimeout(5)
@@ -10,9 +11,11 @@ def update_network_connection():
         return STATE_CONNECTED_INTERNET
     except OSError:
         return STATE_NO_CONNECTION
-    except:
+    except Exception as e:
+        print("SMAC CONN ERR: {}".format(e))
         return STATE_CONNECTED_NO_INTERNET
 
+# port scanner class
 class NetworkScanner:
     SCAN_IPS = []
     IS_SCANNING = False

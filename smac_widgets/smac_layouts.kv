@@ -404,12 +404,13 @@
     size: app.grid_min, app.grid_min
     #texture_size: app.grid_min, app.grid_min
     #mipmap: True
+    disabled_icon: app.source_icon + 'TRANSPARENT.png'
     Image:
         size_hint: None, None
         size: self.parent.width/2, self.parent.height/2
         allow_stretch: True
         center: self.parent.center
-        source: root.source
+        source: root.disabled_icon if(root.disabled) else root.source
         canvas.before:
             PushMatrix
             Rotate:
@@ -657,10 +658,12 @@
     Label_custom:
         id: id_label_info
         text: ""
+        halign: 'center'
         color: app.colors["COLOR_TEXTINPUT"]
     Label_custom:
         id: id_label_info2
         text: ""
+        halign: 'center'
         color: app.colors["COLOR_TEXTINPUT"]
     BoxLayout_container:
         orientation: 'horizontal'

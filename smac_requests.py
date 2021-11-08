@@ -1,3 +1,5 @@
+import socket
+
 from kivy.app import App
 import asyncio
 
@@ -14,7 +16,9 @@ except:
 import time
 import json
 
+# server address
 SMAC_SERVER = "https://smacsystem.com/smacapi/"
+# default http headers
 REQ_HEADERS = {'Accept': 'application/json',
                'content-type': 'application/json'
                }
@@ -23,6 +27,7 @@ RES_DATA ={}
 class SmacRest():
     request = None
 
+    # get smac_password to authorize smac requests
     def get_password(self, username):
         try:
             print(username)
@@ -36,6 +41,7 @@ class SmacRest():
         except Exception as e:
             print("get password err: {}".format(e) )
 
+    # request success callback
     def on_req_success(self, req, data):
         app = App.get_running_app()
         print("UTL", req.url)
@@ -51,10 +57,12 @@ class SmacRest():
         except Exception as e:
             print("ERR", e)
 
+    # close the app
     def close_app(self, *args):
         app = App.get_running_app()
         app.stop()
 
+    # request failure callback
     def on_req_failure(self, req, data):
         print(data)
         print(req.url)
@@ -70,12 +78,15 @@ class SmacRest():
                 app.open_modalInfo(title="Info", text=t)
                 notification.notify(message="No network. Closing App..", toast=True)
             else:
-                if data.get("error", None) != None:
+                if type(data) == socket.gaierror:
+                    t = "Network Error.\nCheck Network Settings."
+                    app.open_modalInfo(title="Info", text=t)
+                elif type(data) == dict:
                     app.open_modalInfo(title="Info", text=data["error"])
         except Exception as e:
             print(e)
 
-
+    # restapi call
     def rest_call(self, url, method, request, data={}, headers=REQ_HEADERS, on_success=None, on_failure=None):
         app = App.get_running_app()
         self.request = request
@@ -100,6 +111,7 @@ class SmacRest():
             print("urequests error: {}".format(e))
             app.open_modalInfo(title="Info", text="Some error occured")
 
+    # request device id
     def req_get_device_id(self):
         request = "request_device_uid"
         url = SMAC_SERVER + request

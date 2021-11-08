@@ -9,17 +9,18 @@ from kivy.properties import BooleanProperty, NumericProperty, StringProperty
 from kivy.uix.textinput import TextInput
 
 
+# select widget behvior
 class SelectBehavior(object):
-    is_selectable = BooleanProperty(True)
-    select = BooleanProperty(False)
-    mask_select = BooleanProperty(False)
-    is_border_animating = BooleanProperty(False)
-    border_clock = None
-    border_line = None
-    border_color = [1,1,1,1]
+    is_selectable = BooleanProperty(True)         # is widget selectable
+    select = BooleanProperty(False)               # state of selection
+    mask_select = BooleanProperty(False)          # bypass select
+    is_border_animating = BooleanProperty(False)  
+    border_clock = None                           # border animation clock
+    border_line = None                            # border widget
+    border_color = [1,1,1,1]                      # border color 
     # options --> top, left, right, bottom, all
-    border_options = StringProperty("all")
-    max_border_width = NumericProperty(2)
+    border_options = StringProperty("all")      
+    max_border_width = NumericProperty(2)         
     min_border_width = NumericProperty(0.01)
     border_width = NumericProperty(1)
     anime_duration = 0.4
@@ -43,6 +44,8 @@ class SelectBehavior(object):
         )
         anim.start(self.border_line)'''
 
+    # on position change, update the border points and
+    # set cursor of text field to 0,0
     def on_pos(self, *args):
         #print(args)
         #print(self.is_border_animating)
@@ -55,11 +58,13 @@ class SelectBehavior(object):
         #    self.stop_border_animation()
         #    self.start_border_animation()
 
+    # on size change, update the border points
     def on_size(self, *args):
         self.update_points()
         #if self.is_border_animating:
         #    self.stop_border_animation()
         #    self.start_border_animation()
+
 
     def start_border_animation(self, *args):
         if not self.is_border_animating:
@@ -84,6 +89,7 @@ class SelectBehavior(object):
             self.select = True
         return True'''
 
+    # get border points
     def get_points(self):
         node = self
         if self.border_options == "left":
@@ -111,6 +117,7 @@ class SelectBehavior(object):
             self.initialize_border_line(width=self.max_border_width)
         #node.canvas.ask_update()
 
+    # initialize border canvas object
     def initialize_border_line(self, group="border_group", width=0, *args):
         points = self.get_points()
         with self.canvas:
@@ -118,6 +125,7 @@ class SelectBehavior(object):
             Color(rgba=self.border_color)
             self.border_line = Line(points=points, width=self.max_border_width, group=group)
 
+    # get border points 
     def update_points(self):
         if self.border_line != None:
             self.border_line.points = self.get_points()
@@ -129,6 +137,7 @@ class SelectBehavior(object):
         if self.border_line != None:
             self.border_line.width = self.min_border_width
 
+    # on selection, show or hide the border
     def on_select(self, node, value, *args):
         group = "border_group"
         print(self)
